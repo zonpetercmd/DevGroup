@@ -1300,7 +1300,7 @@
 
         // ============ A4 HALF PAGE PRINT FORMAT ============
         function generateA4Print(v) {
-    let printWindow = window.open('', '_blank', 'width=800,height=600');
+    let printWindow = window.open('', '_blank', 'width=900,height=700');
     if(!printWindow) { 
         showToast('Please allow popups'); 
         return; 
@@ -1308,11 +1308,11 @@
     
     let itemsHtml = (v.items || []).map((item,idx) => `
         <tr>
-            <td style="padding:3px 5px; text-align:center; font-size:9px; border:1px solid #000;">${idx+1}</td>
-            <td style="padding:3px 5px; font-size:9px; border:1px solid #000;">${item.name}</td>
-            <td style="padding:3px 5px; text-align:center; font-size:9px; border:1px solid #000;">${item.qty}</td>
-            <td style="padding:3px 5px; text-align:right; font-size:9px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
-            <td style="padding:3px 5px; text-align:right; font-size:9px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
+            <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${idx+1}</td>
+            <td style="padding:4px 6px; font-size:10px; border:1px solid #000;">${item.name}</td>
+            <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${item.qty}</td>
+            <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
+            <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
         </tr>
     `).join('');
     
@@ -1329,69 +1329,123 @@
     <head><meta charset="UTF-8"><title>${v.vno}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #fff; padding: 8mm; font-family: 'Courier New', monospace; }
+        body { 
+            background: #f0f0f0; 
+            padding: 8mm; 
+            font-family: 'Courier New', Courier, monospace;
+        }
         
         .page {
             width: 100%;
             max-width: 210mm;
             margin: 0 auto;
+            background: #fff;
+            padding: 0;
         }
         
         /* Each voucher takes exactly half page */
         .voucher-half {
             height: 48%;
-            min-height: 135mm;
-            border: 1.5px solid #000;
-            padding: 6mm 8mm;
+            min-height: 140mm;
+            border: 2px solid #000;
+            padding: 8mm 10mm;
             margin-bottom: 4mm;
             page-break-after: avoid;
             display: flex;
             flex-direction: column;
             background: #fff;
+            position: relative;
         }
         
         .voucher-half:last-child {
             margin-bottom: 0;
         }
         
-        /* Header Section */
+        /* Watermark Logo - Fade Effect */
+        .watermark-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.08;
+            font-size: 80px;
+            font-weight: bold;
+            color: #000;
+            pointer-events: none;
+            letter-spacing: 5px;
+            white-space: nowrap;
+            z-index: 0;
+        }
+        .watermark-logo img {
+            opacity: 0.08;
+            max-width: 150px;
+            max-height: 150px;
+        }
+        
+        /* Header Section with Logo */
         .header {
             text-align: center;
-            border-bottom: 1.5px dashed #000;
-            padding-bottom: 4px;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 6px;
             margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 2px;
+        }
+        .header-logo {
+            max-height: 45px;
+            max-width: 80px;
+            object-fit: contain;
         }
         .header .firm-name {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
             letter-spacing: 1px;
         }
         .header .address {
-            font-size: 8px;
+            font-size: 9px;
             color: #333;
+            letter-spacing: 0.5px;
+        }
+        .header .contact {
+            font-size: 8px;
+            color: #444;
+            font-weight: bold;
+            margin-top: 1px;
         }
         .header .gst {
             font-size: 8px;
             font-weight: bold;
+            color: #555;
         }
         
         /* Title */
         .bill-title {
             text-align: center;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             text-decoration: underline;
-            margin: 3px 0 6px 0;
+            margin: 4px 0 6px 0;
+            position: relative;
+            z-index: 1;
         }
         
         /* Info Rows - Tally Style */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2px 15px;
-            font-size: 9px;
-            margin-bottom: 4px;
+            gap: 2px 20px;
+            font-size: 10px;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
         }
         .info-grid .label {
             font-weight: bold;
@@ -1408,20 +1462,22 @@
             width: 100%;
             border-collapse: collapse;
             margin: 4px 0;
-            font-size: 9px;
+            font-size: 10px;
+            position: relative;
+            z-index: 1;
         }
         table th {
             background: #e8e8e8;
-            padding: 4px 5px;
+            padding: 5px 6px;
             border: 1px solid #000;
             text-align: center;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 9px;
         }
         table td {
-            padding: 3px 5px;
+            padding: 4px 6px;
             border: 1px solid #000;
-            font-size: 8.5px;
+            font-size: 10px;
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
@@ -1429,99 +1485,146 @@
         /* Total Section */
         .total-section {
             margin-top: auto;
-            padding-top: 4px;
-            border-top: 1.5px double #000;
+            padding-top: 5px;
+            border-top: 2px double #000;
+            position: relative;
+            z-index: 1;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: bold;
-            padding: 2px 0;
+            padding: 3px 0;
         }
         .amount-words {
-            font-size: 8px;
+            font-size: 9px;
             font-weight: bold;
             text-align: right;
             padding: 2px 0;
+            color: #333;
         }
         
         /* Signature Section - Tally Style */
         .sign-section {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
+            gap: 15px;
             margin-top: 8px;
             padding-top: 6px;
-            border-top: 1px dashed #000;
+            border-top: 1.5px dashed #000;
+            position: relative;
+            z-index: 1;
         }
         .sign-box {
             text-align: center;
-            font-size: 8px;
+            font-size: 9px;
         }
         .sign-box .line {
-            border-top: 1px solid #000;
-            margin-top: 18px;
-            padding-top: 2px;
+            border-top: 1.5px solid #000;
+            margin-top: 20px;
+            padding-top: 3px;
         }
         .sign-box .label-text {
-            font-size: 7px;
+            font-size: 8px;
             color: #555;
+        }
+        .sign-box .user-name {
+            font-size: 9px;
+            font-weight: bold;
+            color: #1a3a6e;
         }
         
         /* Footer */
         .footer {
             text-align: center;
-            font-size: 6.5px;
-            color: #666;
-            border-top: 1px dashed #000;
-            padding-top: 3px;
-            margin-top: 4px;
+            font-size: 7px;
+            color: #777;
+            border-top: 1px dashed #999;
+            padding-top: 4px;
+            margin-top: 5px;
+            position: relative;
+            z-index: 1;
         }
         
         /* Copy Label */
         .copy-label {
             text-align: center;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: bold;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-            padding: 2px;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            padding: 3px;
+            position: relative;
+            z-index: 1;
         }
-        .copy-original { color: #1a5e1a; }
-        .copy-duplicate { color: #a8641a; }
+        .copy-original { 
+            color: #1a7a1a; 
+            border-bottom: 2px solid #1a7a1a;
+            padding-bottom: 2px;
+        }
+        .copy-duplicate { 
+            color: #b85a0a; 
+            border-bottom: 2px solid #b85a0a;
+            padding-bottom: 2px;
+        }
         
         /* Print Button */
-        .no-print { text-align: center; margin: 15px; }
+        .no-print { text-align: center; margin: 20px; }
         .no-print button {
-            padding: 10px 25px;
+            padding: 12px 30px;
             cursor: pointer;
             background: #2563eb;
             color: white;
             border: none;
-            border-radius: 5px;
-            margin: 0 5px;
-            font-size: 14px;
+            border-radius: 6px;
+            margin: 0 8px;
+            font-size: 15px;
+            font-weight: bold;
         }
-        .no-print button:hover { background: #1d4ed8; }
+        .no-print button:hover { background: #1d4ed8; transform: scale(1.02); }
+        .no-print .btn-close { background: #64748b; }
+        .no-print .btn-close:hover { background: #475569; }
         
         @media print {
-            body { padding: 5mm; }
+            body { 
+                background: #fff; 
+                padding: 3mm; 
+                margin: 0;
+            }
+            .page {
+                background: #fff;
+                padding: 0;
+            }
             .no-print { display: none !important; }
             .voucher-half {
                 height: 48%;
-                min-height: 135mm;
+                min-height: 138mm;
                 page-break-after: avoid;
                 border-color: #000;
+                margin-bottom: 3mm;
+                padding: 6mm 8mm;
             }
             .voucher-half:last-child {
                 page-break-after: avoid;
+            }
+            .watermark-logo {
+                opacity: 0.06;
+            }
+            .watermark-logo img {
+                opacity: 0.06;
+            }
+            .header-logo {
+                max-height: 40px;
+            }
+            .header .firm-name {
+                font-size: 16px;
             }
         }
         
         @page {
             size: A4;
-            margin: 0;
+            margin: 3mm;
         }
     </style>
     </head>
@@ -1530,12 +1633,23 @@
             
             <!-- ============ ORIGINAL COPY - TOP HALF ============ -->
             <div class="voucher-half">
+                <!-- Watermark Logo -->
+                <div class="watermark-logo">
+                    <img src="${config.logo}" onerror="this.style.display='none'">
+                </div>
+                
                 <div class="copy-label copy-original">◆◆◆ ORIGINAL COPY ◆◆◆</div>
                 
                 <div class="header">
-                    <div class="firm-name">${config.name}</div>
-                    <div class="address">${config.addr}</div>
-                    <div class="gst">${config.gst}</div>
+                    <div class="header-top">
+                        <img src="${config.logo}" class="header-logo" onerror="this.style.display='none'">
+                        <div>
+                            <div class="firm-name">${config.name}</div>
+                            <div class="address">${config.addr}</div>
+                            <div class="contact">📞 9414037764 | ✉ info@dev.edu.in</div>
+                            <div class="gst">${config.gst}</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="bill-title">${title}</div>
@@ -1543,8 +1657,9 @@
                 <div class="info-grid">
                     <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
                     <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
-                    <div><span class="label">Party</span> <span class="value">${partyName}</span></div>
-                    <div><span class="label">Mode</span> <span class="value-right">${modeText}</span></div>
+                    <div><span class="label">Party / Customer</span> <span class="value">${partyName}</span></div>
+                    <div><span class="label">Payment Mode</span> <span class="value-right">${modeText}</span></div>
+                    ${v.rem ? `<div style="grid-column: span 2;"><span class="label">Remark</span> <span class="value">${v.rem}</span></div>` : ''}
                 </div>
                 
                 ${v.items && v.items.length ? `
@@ -1554,8 +1669,8 @@
                             <th style="width:8%;">#</th>
                             <th style="width:47%;">Particulars</th>
                             <th style="width:15%;">Qty</th>
-                            <th style="width:15%;">Rate</th>
-                            <th style="width:15%;">Amount</th>
+                            <th style="width:15%;">Rate (₹)</th>
+                            <th style="width:15%;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${itemsHtml}</tbody>
@@ -1564,41 +1679,55 @@
                 
                 <div class="total-section">
                     <div class="total-row">
-                        <span>Total Amount</span>
+                        <span>TOTAL AMOUNT</span>
                         <span>₹ ${total.toFixed(2)}</span>
                     </div>
-                    <div class="amount-words">₹ ${words} Only</div>
+                    <div class="amount-words">₹ ${words} Rupees Only</div>
                 </div>
                 
                 <div class="sign-section">
                     <div class="sign-box">
                         <div>Authorised</div>
                         <div>Signatory</div>
-                        <div class="line">(Signature)</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                     <div class="sign-box">
                         <div>Receiver's</div>
                         <div>Signature</div>
-                        <div class="line">(Signature)</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                     <div class="sign-box">
                         <div>Prepared By</div>
-                        <div>${v.createdBy || currentUser}</div>
-                        <div class="line">(Signature)</div>
+                        <div class="user-name">${v.createdBy || currentUser}</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                 </div>
                 
-                <div class="footer">Computer Generated | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
+                <div class="footer">This is a Computer Generated Document | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
             </div>
             
             <!-- ============ DUPLICATE COPY - BOTTOM HALF ============ -->
             <div class="voucher-half">
+                <!-- Watermark Logo -->
+                <div class="watermark-logo">
+                    <img src="${config.logo}" onerror="this.style.display='none'">
+                </div>
+                
                 <div class="copy-label copy-duplicate">◆◆◆ DUPLICATE COPY ◆◆◆</div>
                 
                 <div class="header">
-                    <div class="firm-name">${config.name}</div>
-                    <div class="address">${config.addr}</div>
-                    <div class="gst">${config.gst}</div>
+                    <div class="header-top">
+                        <img src="${config.logo}" class="header-logo" onerror="this.style.display='none'">
+                        <div>
+                            <div class="firm-name">${config.name}</div>
+                            <div class="address">${config.addr}</div>
+                            <div class="contact">📞 9414037764 | ✉ info@dev.edu.in</div>
+                            <div class="gst">${config.gst}</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="bill-title">${title}</div>
@@ -1606,8 +1735,9 @@
                 <div class="info-grid">
                     <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
                     <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
-                    <div><span class="label">Party</span> <span class="value">${partyName}</span></div>
-                    <div><span class="label">Mode</span> <span class="value-right">${modeText}</span></div>
+                    <div><span class="label">Party / Customer</span> <span class="value">${partyName}</span></div>
+                    <div><span class="label">Payment Mode</span> <span class="value-right">${modeText}</span></div>
+                    ${v.rem ? `<div style="grid-column: span 2;"><span class="label">Remark</span> <span class="value">${v.rem}</span></div>` : ''}
                 </div>
                 
                 ${v.items && v.items.length ? `
@@ -1617,8 +1747,8 @@
                             <th style="width:8%;">#</th>
                             <th style="width:47%;">Particulars</th>
                             <th style="width:15%;">Qty</th>
-                            <th style="width:15%;">Rate</th>
-                            <th style="width:15%;">Amount</th>
+                            <th style="width:15%;">Rate (₹)</th>
+                            <th style="width:15%;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody>${itemsHtml}</tbody>
@@ -1627,44 +1757,47 @@
                 
                 <div class="total-section">
                     <div class="total-row">
-                        <span>Total Amount</span>
+                        <span>TOTAL AMOUNT</span>
                         <span>₹ ${total.toFixed(2)}</span>
                     </div>
-                    <div class="amount-words">₹ ${words} Only</div>
+                    <div class="amount-words">₹ ${words} Rupees Only</div>
                 </div>
                 
                 <div class="sign-section">
                     <div class="sign-box">
                         <div>Authorised</div>
                         <div>Signatory</div>
-                        <div class="line">(Signature)</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                     <div class="sign-box">
                         <div>Receiver's</div>
                         <div>Signature</div>
-                        <div class="line">(Signature)</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                     <div class="sign-box">
                         <div>Prepared By</div>
-                        <div>${v.createdBy || currentUser}</div>
-                        <div class="line">(Signature)</div>
+                        <div class="user-name">${v.createdBy || currentUser}</div>
+                        <div class="line"></div>
+                        <div class="label-text">(Signature & Date)</div>
                     </div>
                 </div>
                 
-                <div class="footer">Computer Generated | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
+                <div class="footer">This is a Computer Generated Document | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
             </div>
             
         </div>
         
         <!-- Print Buttons -->
         <div class="no-print">
-            <button onclick="window.print();setTimeout(()=>window.close(),1000)">🖨️ Print</button>
-            <button onclick="window.close()" style="background:#64748b;">✖ Close</button>
+            <button onclick="window.print();setTimeout(()=>window.close(),1000)">🖨️ Print Both Copies</button>
+            <button class="btn-close" onclick="window.close()">✖ Close</button>
         </div>
         
         <script>
             window.onload = function() { 
-                setTimeout(window.print, 600); 
+                setTimeout(window.print, 700); 
             };
         <\/script>
     </body>
