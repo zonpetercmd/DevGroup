@@ -2382,41 +2382,84 @@
             showToast('📄 Template downloaded');
         }
         
-        function importStockFromExcel(input){ 
-            let file = input.files[0]; 
-            if(!file) return; 
-            let reader = new FileReader(); 
-            reader.onload = function(e){ 
-                let data = new Uint8Array(e.target.result); 
-                let wb = XLSX.read(data,{type:'array'}); 
-                let sheet = wb.Sheets[wb.SheetNames[0]]; 
-                let rows = XLSX.utils.sheet_to_json(sheet); 
-                let added = 0;
-                rows.forEach((row,i)=>{ 
-                    let name = row['Item Name'] || row['item_name'] || 'Unknown';
-                    let existing = stockItems.find(item => item.name.toLowerCase() === name.toLowerCase());
-                    if(!existing) {
-                        stockItems.push({ 
-                            id: Date.now()+i, 
-                            name: name, 
-                            category: row['Category']||'General', 
-                            unit: row['Unit']||'Piece', 
-                            sellPrice: parseFloat(row['Selling Price']||0), 
-                            purchasePrice: parseFloat(row['Purchase Price']||0), 
-                            stock: parseFloat(row['Current Stock']||0) 
-                        }); 
-                        added++;
-                    }
-                }); 
-                saveStockToFirebase(); 
-                renderStock(); 
-                updateStockCategoryFilter(); 
-                showToast(`✅ Imported ${added} new items. Duplicates skipped.`); 
-            }; 
-            reader.readAsArrayBuffer(file); 
-            input.value = ''; 
+        function importStockFromExcel(input) { 
+    let file = input.files[0]; 
+    if(!file) { 
+        showToast('No file selected'); 
+        return; 
+    }
+    
+    showToast('📥 Reading file...');
+    
+    let reader = new FileReader(); 
+    reader.onload = function(e){ 
+        try {
+            let data = new Uint8Array(e.target.result); 
+            let wb = XLSX.read(data, {type:'array'}); 
+            let sheet = wb.Sheets[wb.SheetNames[0]]; 
+            let rows = XLSX.utils.sheet_to_json(sheet); 
+            
+            if(rows.length === 0) {
+                showToast('❌ No data found in file');
+                return;
+            }
+            
+            let added = 0;
+            let skipped = 0;
+            
+            rows.forEach((row, i) => { 
+                let name = row['Item Name'] || row['item_name'] || row['ItemName'] || 'Unknown';
+                
+                // Skip if no name
+                if(!name || name === 'Unknown') {
+                    skipped++;
+                    return;
+                }
+                
+                // Check for duplicate
+                let existing = stockItems.find(item => 
+                    item.name.toLowerCase() === name.toLowerCase()
+                );
+                
+                if(!existing) {
+                    stockItems.push({ 
+                        id: Date.now() + i + Math.random() * 1000, 
+                        name: name, 
+                        category: row['Category'] || row['category'] || 'General', 
+                        unit: row['Unit'] || row['unit'] || 'Piece', 
+                        sellPrice: parseFloat(row['Selling Price'] || row['selling_price'] || row['SellingPrice'] || 0), 
+                        purchasePrice: parseFloat(row['Purchase Price'] || row['purchase_price'] || row['PurchasePrice'] || 0), 
+                        stock: parseFloat(row['Current Stock'] || row['stock'] || row['CurrentStock'] || 0) 
+                    }); 
+                    added++;
+                } else {
+                    skipped++;
+                }
+            }); 
+            
+            // Save to Firebase
+            saveStockToFirebase();
+            
+            // Update UI
+            renderStock(); 
+            updateStockCategoryFilter(); 
+            calculateStockValue();
+            
+            showToast(`✅ Imported ${added} new items. ${skipped} skipped (duplicates/invalid).`);
+            
+        } catch(err) {
+            console.error('Import error:', err);
+            showToast('❌ Import failed: ' + err.message);
         }
-
+    }; 
+    
+    reader.onerror = function() {
+        showToast('❌ Error reading file');
+    };
+    
+    reader.readAsArrayBuffer(file); 
+    input.value = ''; 
+}
         // ============ REPORTS ============
         function loadReport(){ 
             let type = document.getElementById('report_type')?.value; 
