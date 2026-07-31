@@ -985,14 +985,14 @@
 
         // ============ STOCK MANAGEMENT ============
         function initSampleStock() { 
-            if(stockItems.length) return; 
-            stockItems = [
-                { id: 1, name: '14.2 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 950, purchasePrice: 850, stock: 50 },
-                { id: 2, name: '5 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 350, purchasePrice: 300, stock: 30 },
-                { id: 3, name: '19 Kg Commercial Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 1250, purchasePrice: 1100, stock: 20 }
-            ]; 
-            saveStockToFirebase(); 
-        }
+    if(stockItems.length) return; 
+    stockItems = [
+        { id: 1, name: '14.2 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 950, purchasePrice: 850, stock: 50 },
+        { id: 2, name: '5 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 350, purchasePrice: 300, stock: 30 },
+        { id: 3, name: '19 Kg Commercial Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 1250, purchasePrice: 1100, stock: 20 }
+    ]; 
+    saveStockToFirebase(); 
+}
         
         function saveStockToFirebase() { 
             const obj = {}; 
@@ -1035,27 +1035,31 @@
         function closeAddItemModal() { document.getElementById('addItemModal').style.display='none'; }
         
         function addNewItem(){ 
-            let name = document.getElementById('new_item_name').value.trim(); 
-            if(!name){ showToast("Item name required"); return; }
-            let existing = stockItems.find(i => i.name.toLowerCase() === name.toLowerCase());
-            if(existing){ showToast("Item already exists!"); return; }
-            stockItems.push({ 
-                id: Date.now(), 
-                name, 
-                category: document.getElementById('new_item_category').value||'General', 
-                unit: document.getElementById('new_item_unit').value, 
-                sellPrice: parseFloat(document.getElementById('new_item_sell_price').value)||0, 
-                purchasePrice: parseFloat(document.getElementById('new_item_pur_price').value)||0, 
-                stock: parseFloat(document.getElementById('new_item_stock').value)||0 
-            }); 
-            saveStockToFirebase(); 
-            renderStock(); 
-            updateStockCategoryFilter(); 
-            calculateStockValue(); 
-            closeAddItemModal(); 
-            renderItemsList(); 
-            showToast("Item added successfully");
-        }
+    let name = document.getElementById('new_item_name').value.trim(); 
+    if(!name){ showToast("Item name required"); return; }
+    let existing = stockItems.find(i => i.name.toLowerCase() === name.toLowerCase());
+    if(existing){ showToast("Item already exists!"); return; }
+    
+    // 🔥 FIX: Use Date.now() without decimal
+    let newId = Date.now() + Math.floor(Math.random() * 1000);
+    
+    stockItems.push({ 
+        id: newId, 
+        name, 
+        category: document.getElementById('new_item_category').value||'General', 
+        unit: document.getElementById('new_item_unit').value, 
+        sellPrice: parseFloat(document.getElementById('new_item_sell_price').value)||0, 
+        purchasePrice: parseFloat(document.getElementById('new_item_pur_price').value)||0, 
+        stock: parseFloat(document.getElementById('new_item_stock').value)||0 
+    }); 
+    saveStockToFirebase(); 
+    renderStock(); 
+    updateStockCategoryFilter(); 
+    calculateStockValue(); 
+    closeAddItemModal(); 
+    renderItemsList(); 
+    showToast("Item added successfully");
+}
 
         // ============ ITEMS IN TRANSACTION ============
         function addItemRow(){ 
@@ -2410,20 +2414,21 @@
             rows.forEach((row, i) => { 
                 let name = row['Item Name'] || row['item_name'] || row['ItemName'] || 'Unknown';
                 
-                // Skip if no name
                 if(!name || name === 'Unknown') {
                     skipped++;
                     return;
                 }
                 
-                // Check for duplicate
                 let existing = stockItems.find(item => 
                     item.name.toLowerCase() === name.toLowerCase()
                 );
                 
                 if(!existing) {
+                    // 🔥 FIX: Use integer ID without decimal
+                    let newId = Date.now() + i + Math.floor(Math.random() * 1000);
+                    
                     stockItems.push({ 
-                        id: Date.now() + i + Math.random() * 1000, 
+                        id: newId, 
                         name: name, 
                         category: row['Category'] || row['category'] || 'General', 
                         unit: row['Unit'] || row['unit'] || 'Piece', 
@@ -2437,15 +2442,12 @@
                 }
             }); 
             
-            // Save to Firebase
             saveStockToFirebase();
-            
-            // Update UI
             renderStock(); 
             updateStockCategoryFilter(); 
             calculateStockValue();
             
-            showToast(`✅ Imported ${added} new items. ${skipped} skipped (duplicates/invalid).`);
+            showToast(`✅ Imported ${added} new items. ${skipped} skipped.`);
             
         } catch(err) {
             console.error('Import error:', err);
