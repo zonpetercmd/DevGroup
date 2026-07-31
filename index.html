@@ -1811,7 +1811,6 @@
         async function generatePDFBlob(voucher) {
     return new Promise((resolve) => {
         try {
-            // Check libraries
             if (typeof html2canvas === 'undefined') {
                 console.error('html2canvas not loaded');
                 showToast('❌ PDF library not loaded');
@@ -1819,71 +1818,205 @@
                 return;
             }
 
-            // Create a simple HTML structure
+            let itemsHtml = (voucher.items || []).map((item, idx) => `
+                <tr>
+                    <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${idx+1}</td>
+                    <td style="padding:4px 6px; font-size:10px; border:1px solid #000;">${item.name}</td>
+                    <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${item.qty}</td>
+                    <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
+                    <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
+                </tr>
+            `).join('');
+            
+            let total = voucher.amt;
+            let title = voucher.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
+            let words = numberToWords(total);
+            let partyName = voucher.party || '';
+            let modeText = voucher.mode || 'Cash';
+            if(voucher.chequeNo) modeText += ' | Chq: '+voucher.chequeNo;
+
+            // Create container
             let container = document.createElement('div');
             container.style.cssText = `
                 position: absolute;
                 left: -9999px;
                 top: -9999px;
-                width: 700px;
-                padding: 20px;
+                width: 210mm;
                 background: white;
-                font-family: Arial, sans-serif;
+                font-family: 'Courier New', monospace;
                 z-index: -1;
+                padding: 8mm;
             `;
-            
-            let itemsHtml = (voucher.items || []).map((item, idx) => `
-                <tr>
-                    <td style="padding:5px; border:1px solid #000; text-align:center;">${idx+1}</td>
-                    <td style="padding:5px; border:1px solid #000;">${item.name}</td>
-                    <td style="padding:5px; border:1px solid #000; text-align:center;">${item.qty}</td>
-                    <td style="padding:5px; border:1px solid #000; text-align:right;">₹${(item.rate||0).toFixed(2)}</td>
-                    <td style="padding:5px; border:1px solid #000; text-align:right;">₹${(item.amount||0).toFixed(2)}</td>
-                </tr>
-            `).join('');
-            
-            let total = voucher.amt;
-            
+
             container.innerHTML = `
-                <div style="padding:20px; font-family:Arial; width:700px; background:white; border:1px solid #000;">
-                    <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
-                        <h2 style="margin:5px 0;">${config.name}</h2>
-                        <p style="margin:2px 0; font-size:12px;">${config.addr}</p>
-                        <p style="margin:2px 0; font-size:11px; font-weight:bold;">${config.gst}</p>
+            <div style="width:100%; max-width:210mm; margin:0 auto; background:#fff; padding:0;">
+                
+                <!-- ORIGINAL COPY - TOP HALF -->
+                <div style="height:48%; min-height:140mm; border:2px solid #000; padding:8mm 10mm; margin-bottom:4mm; display:flex; flex-direction:column; background:#fff; position:relative;">
+                    
+                    <!-- Watermark Logo -->
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:0.08; font-size:80px; font-weight:bold; color:#000; pointer-events:none; letter-spacing:5px; white-space:nowrap; z-index:0;">
+                        <img src="${config.logo}" style="opacity:0.08; max-width:150px; max-height:150px;" onerror="this.style.display='none'">
                     </div>
-                    <h3 style="text-align:center; margin:10px 0;">${voucher.type} VOUCHER</h3>
-                    <p style="font-size:13px; margin:5px 0;">
-                        <strong>No:</strong> ${voucher.vno} | 
-                        <strong>Date:</strong> ${voucher.date} | 
-                        <strong>Party:</strong> ${voucher.party || ''}
-                    </p>
+                    
+                    <div style="text-align:center; font-size:10px; font-weight:bold; letter-spacing:3px; margin-bottom:5px; padding:3px; position:relative; z-index:1; color:#1a7a1a; border-bottom:2px solid #1a7a1a; padding-bottom:2px;">◆◆◆ ORIGINAL COPY ◆◆◆</div>
+                    
+                    <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px; position:relative; z-index:1;">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:2px;">
+                            <img src="${config.logo}" style="max-height:45px; max-width:80px; object-fit:contain;" onerror="this.style.display='none'">
+                            <div>
+                                <div style="font-size:18px; font-weight:bold; letter-spacing:1px;">${config.name}</div>
+                                <div style="font-size:9px; color:#333; letter-spacing:0.5px;">${config.addr}</div>
+                                <div style="font-size:8px; color:#444; font-weight:bold; margin-top:1px;">📞 9414037764 | ✉ info@dev.edu.in</div>
+                                <div style="font-size:8px; font-weight:bold; color:#555;">${config.gst}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:3px; text-decoration:underline; margin:4px 0 6px 0; position:relative; z-index:1;">${title}</div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; font-size:10px; margin-bottom:5px; position:relative; z-index:1;">
+                        <div><span style="font-weight:bold;">Voucher No.</span> <span>${voucher.vno}</span></div>
+                        <div><span style="font-weight:bold;">Date</span> <span style="text-align:right;">${voucher.date}</span></div>
+                        <div><span style="font-weight:bold;">Party / Customer</span> <span>${partyName}</span></div>
+                        <div><span style="font-weight:bold;">Payment Mode</span> <span style="text-align:right;">${modeText}</span></div>
+                        ${voucher.rem ? `<div style="grid-column: span 2;"><span style="font-weight:bold;">Remark</span> <span>${voucher.rem}</span></div>` : ''}
+                    </div>
+                    
                     ${voucher.items && voucher.items.length ? `
-                        <table style="width:100%; border-collapse:collapse; margin:10px 0; font-size:12px;">
-                            <thead>
-                                <tr style="background:#f2f2f2;">
-                                    <th style="padding:8px; border:1px solid #000;">#</th>
-                                    <th style="padding:8px; border:1px solid #000;">Item</th>
-                                    <th style="padding:8px; border:1px solid #000;">Qty</th>
-                                    <th style="padding:8px; border:1px solid #000;">Rate</th>
-                                    <th style="padding:8px; border:1px solid #000;">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>${itemsHtml}</tbody>
-                        </table>
+                    <table style="width:100%; border-collapse:collapse; margin:4px 0; font-size:10px; position:relative; z-index:1;">
+                        <thead>
+                            <tr>
+                                <th style="width:8%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">#</th>
+                                <th style="width:47%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Particulars</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Qty</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Rate (₹)</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
                     ` : ''}
-                    <h3 style="text-align:right; margin:10px 0;">Total: ₹${total.toFixed(2)}</h3>
-                    <p style="margin-top:30px; text-align:center; font-size:12px;">Thank you for business!</p>
-                    <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:12px; border-top:1px dashed #000; padding-top:10px;">
-                        <div>Authorised Signatory</div>
-                        <div>Receiver's Signature</div>
-                        <div>Prepared By: ${voucher.createdBy || currentUser}</div>
+                    
+                    <div style="margin-top:auto; padding-top:5px; border-top:2px double #000; position:relative; z-index:1;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; padding:3px 0;">
+                            <span>TOTAL AMOUNT</span>
+                            <span>₹ ${total.toFixed(2)}</span>
+                        </div>
+                        <div style="font-size:12px; font-weight:bold; text-align:right; padding:3px 0; color:#000;">₹ ${words} Rupees Only</div>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-top:8px; padding-top:6px; border-top:1.5px dashed #000; position:relative; z-index:1;">
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Authorised</div>
+                            <div>Signatory</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Receiver's</div>
+                            <div>Signature</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Prepared By</div>
+                            <div style="font-size:9px; font-weight:bold; color:#1a3a6e;">${voucher.createdBy || currentUser}</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; font-size:7px; color:#777; border-top:1px dashed #999; padding-top:4px; margin-top:5px; position:relative; z-index:1;">
+                        This is a Computer Generated Document | ${voucher.createdAt || new Date().toLocaleString()} | E.& O.E.
                     </div>
                 </div>
-            `;
-            
+                
+                <!-- DUPLICATE COPY - BOTTOM HALF -->
+                <div style="height:48%; min-height:140mm; border:2px solid #000; padding:8mm 10mm; margin-bottom:0; display:flex; flex-direction:column; background:#fff; position:relative;">
+                    
+                    <!-- Watermark Logo -->
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:0.08; font-size:80px; font-weight:bold; color:#000; pointer-events:none; letter-spacing:5px; white-space:nowrap; z-index:0;">
+                        <img src="${config.logo}" style="opacity:0.08; max-width:150px; max-height:150px;" onerror="this.style.display='none'">
+                    </div>
+                    
+                    <div style="text-align:center; font-size:10px; font-weight:bold; letter-spacing:3px; margin-bottom:5px; padding:3px; position:relative; z-index:1; color:#b85a0a; border-bottom:2px solid #b85a0a; padding-bottom:2px;">◆◆◆ DUPLICATE COPY ◆◆◆</div>
+                    
+                    <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px; position:relative; z-index:1;">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:2px;">
+                            <img src="${config.logo}" style="max-height:45px; max-width:80px; object-fit:contain;" onerror="this.style.display='none'">
+                            <div>
+                                <div style="font-size:18px; font-weight:bold; letter-spacing:1px;">${config.name}</div>
+                                <div style="font-size:9px; color:#333; letter-spacing:0.5px;">${config.addr}</div>
+                                <div style="font-size:8px; color:#444; font-weight:bold; margin-top:1px;">📞 9414037764 | ✉ info@dev.edu.in</div>
+                                <div style="font-size:8px; font-weight:bold; color:#555;">${config.gst}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:3px; text-decoration:underline; margin:4px 0 6px 0; position:relative; z-index:1;">${title}</div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; font-size:10px; margin-bottom:5px; position:relative; z-index:1;">
+                        <div><span style="font-weight:bold;">Voucher No.</span> <span>${voucher.vno}</span></div>
+                        <div><span style="font-weight:bold;">Date</span> <span style="text-align:right;">${voucher.date}</span></div>
+                        <div><span style="font-weight:bold;">Party / Customer</span> <span>${partyName}</span></div>
+                        <div><span style="font-weight:bold;">Payment Mode</span> <span style="text-align:right;">${modeText}</span></div>
+                        ${voucher.rem ? `<div style="grid-column: span 2;"><span style="font-weight:bold;">Remark</span> <span>${voucher.rem}</span></div>` : ''}
+                    </div>
+                    
+                    ${voucher.items && voucher.items.length ? `
+                    <table style="width:100%; border-collapse:collapse; margin:4px 0; font-size:10px; position:relative; z-index:1;">
+                        <thead>
+                            <tr>
+                                <th style="width:8%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">#</th>
+                                <th style="width:47%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Particulars</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Qty</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Rate (₹)</th>
+                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    ` : ''}
+                    
+                    <div style="margin-top:auto; padding-top:5px; border-top:2px double #000; position:relative; z-index:1;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; padding:3px 0;">
+                            <span>TOTAL AMOUNT</span>
+                            <span>₹ ${total.toFixed(2)}</span>
+                        </div>
+                        <div style="font-size:12px; font-weight:bold; text-align:right; padding:3px 0; color:#000;">₹ ${words} Rupees Only</div>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-top:8px; padding-top:6px; border-top:1.5px dashed #000; position:relative; z-index:1;">
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Authorised</div>
+                            <div>Signatory</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Receiver's</div>
+                            <div>Signature</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                        <div style="text-align:center; font-size:9px;">
+                            <div>Prepared By</div>
+                            <div style="font-size:9px; font-weight:bold; color:#1a3a6e;">${voucher.createdBy || currentUser}</div>
+                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
+                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align:center; font-size:7px; color:#777; border-top:1px dashed #999; padding-top:4px; margin-top:5px; position:relative; z-index:1;">
+                        This is a Computer Generated Document | ${voucher.createdAt || new Date().toLocaleString()} | E.& O.E.
+                    </div>
+                </div>
+                
+            </div>`;
+
             document.body.appendChild(container);
             
-            // Wait for render
             setTimeout(async () => {
                 try {
                     const canvas = await html2canvas(container, { 
@@ -1891,12 +2024,11 @@
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
-                        width: 700
+                        width: container.scrollWidth
                     });
                     
                     const imgData = canvas.toDataURL('image/png');
                     
-                    // Get jsPDF
                     let PDFLib = window.jspdf || jspdf;
                     if (!PDFLib) {
                         document.body.removeChild(container);
@@ -1918,10 +2050,10 @@
                 } catch(e) { 
                     console.error('html2canvas error:', e);
                     document.body.removeChild(container);
-                    showToast('❌ PDF generation failed: ' + e.message);
+                    showToast('❌ PDF generation failed');
                     resolve(null);
                 }
-            }, 200);
+            }, 300);
             
         } catch(e) {
             console.error('generatePDFBlob error:', e);
