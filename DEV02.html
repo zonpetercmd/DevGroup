@@ -209,7 +209,6 @@
             padding: 3px 7px;
         }
         
-        /* Loading Spinner */
         .loading-spinner {
             display: none;
             text-align: center;
@@ -533,16 +532,16 @@
 
     <script>
         // ============ FIREBASE CONFIG ============
-const firebaseConfig = {
-  apiKey: "AIzaSyDMwE-Vg6Q10VUQi41fQpW-fQGIwNidqqg",
-  authDomain: "dev-vidyalaya-erp.firebaseapp.com",
-  databaseURL: "https://dev-vidyalaya-erp-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dev-vidyalaya-erp",
-  storageBucket: "dev-vidyalaya-erp.firebasestorage.app",
-  messagingSenderId: "677011391483",
-  appId: "1:677011391483:web:f12522edb952292912815e",
-  measurementId: "G-WLPC1QF9TH"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMwE-Vg6Q10VUQi41fQpW-fQGIwNidqqg",
+            authDomain: "dev-vidyalaya-erp.firebaseapp.com",
+            databaseURL: "https://dev-vidyalaya-erp-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dev-vidyalaya-erp",
+            storageBucket: "dev-vidyalaya-erp.firebasestorage.app",
+            messagingSenderId: "677011391483",
+            appId: "1:677011391483:web:f12522edb952292912815e"
+        };
+        
         firebase.initializeApp(firebaseConfig);
         const rtdb = firebase.database();
 
@@ -757,7 +756,6 @@ const firebaseConfig = {
             document.getElementById('stat_bank').innerHTML = '₹ ' + bankBalance.toLocaleString();
             calculateTotalBalance();
             
-            // Update bank dropdowns
             let bankSelect = document.getElementById('bank_account');
             let chequeBankSelect = document.getElementById('cheque_bank_select');
             if(bankSelect) {
@@ -769,7 +767,6 @@ const firebaseConfig = {
                     bankAccounts.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
             }
             
-            // Update bank accounts list
             let listDiv = document.getElementById('bank_accounts_list');
             if(listDiv) {
                 if(bankAccounts.length === 0) {
@@ -1174,14 +1171,11 @@ const firebaseConfig = {
                 timestamp: Date.now() 
             };
             
-            // Show loading
             showLoading(true);
             
-            // Save to Firebase
             rtdb.ref('data_v2/'+currentFirmId+'/'+id).set(v).then(()=>{ 
                 lastSavedVoucher = v; 
                 saveFirmData();
-                // Update local db
                 let existingIdx = db.findIndex(d => d.id === id);
                 if(existingIdx >= 0) {
                     db[existingIdx] = v;
@@ -1195,7 +1189,6 @@ const firebaseConfig = {
                 showLoading(false);
                 showToast('✅ Saved successfully!');
                 
-                // Auto print after save
                 setTimeout(() => {
                     generateA4Print(v);
                 }, 500);
@@ -1389,7 +1382,6 @@ const firebaseConfig = {
             const pdfUrl = URL.createObjectURL(generatedPdfBlob);
             const message = `*${config.name}*\nVoucher: ${lastSavedVoucher.vno}\nDate: ${lastSavedVoucher.date}\nParty: ${lastSavedVoucher.party}\nAmount: ₹${lastSavedVoucher.amt.toFixed(2)}\n\nThank you for business!`;
             
-            // Download PDF
             const downloadLink = document.createElement('a');
             downloadLink.href = pdfUrl;
             downloadLink.download = `Voucher_${lastSavedVoucher.vno}.pdf`;
@@ -1397,7 +1389,6 @@ const firebaseConfig = {
             downloadLink.click();
             document.body.removeChild(downloadLink);
             
-            // Open WhatsApp
             window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
             
             showToast('📥 PDF downloaded. Please attach it in WhatsApp chat.', 4000);
@@ -1467,7 +1458,6 @@ const firebaseConfig = {
                     else if(v.type === 'PR') updateStock(item.itemId, item.qty);
                 }
             }
-            // Reverse cash/bank balance
             if(v) {
                 if(v.type === 'REC') {
                     if(v.mode === 'Cash') cashBalance -= v.amt;
@@ -1503,12 +1493,10 @@ const firebaseConfig = {
             showLoading(false);
         }
         
-        // Real-time listener for auto-refresh
         function setupRealtimeListener() {
             rtdb.ref('data_v2/'+currentFirmId).on('value', (snapshot) => {
                 if(snapshot.val()) {
-                    let newData = Object.values(snap.val());
-                    // Check if data changed
+                    let newData = Object.values(snapshot.val());
                     if(JSON.stringify(newData) !== JSON.stringify(db)) {
                         db = newData;
                         renderAll();
@@ -1560,7 +1548,6 @@ const firebaseConfig = {
             </tr>`).join(''); 
         }
         
-        // Download PDF for specific voucher
         async function downloadPDF(id) {
             let v = db.find(x=>x.id==id);
             if(!v) { showToast('Voucher not found'); return; }
@@ -1580,7 +1567,6 @@ const firebaseConfig = {
             }
         }
         
-        // Share specific voucher
         async function shareSpecificVoucher(id) {
             let v = db.find(x=>x.id==id);
             if(!v) { showToast('Voucher not found'); return; }
@@ -1758,7 +1744,6 @@ const firebaseConfig = {
 
         // ============ SWITCH FIRM ============
         function switchFirm(id){ 
-            // Remove old listener
             rtdb.ref('data_v2/'+currentFirmId).off();
             
             currentFirmId = id; 
@@ -1768,7 +1753,6 @@ const firebaseConfig = {
             applyConfig(); 
             applyPermissionsUI();
             
-            // Load data
             loadData();
             rtdb.ref('stock_v2/'+currentFirmId).once('value',(snap)=>{ 
                 if(snap.val()) stockItems = Object.values(snap.val()); 
@@ -1778,7 +1762,6 @@ const firebaseConfig = {
                 updateStockCategoryFilter(); 
             });
             
-            // Setup realtime listener
             setupRealtimeListener();
         }
         
@@ -1832,7 +1815,6 @@ const firebaseConfig = {
             if(role==='Admin' || config.perms.bank) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('bank')">🏦 Bank & Cash</button>`;
             if(role==='Admin' || config.perms.reports) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
             
-            // Set active class on first tab
             document.querySelectorAll('.module-tab')[0]?.classList.add('active');
             
             loadFirmData();
@@ -1848,7 +1830,6 @@ const firebaseConfig = {
             applyPermissionsUI();
             updateBankUI();
             
-            // Setup realtime listener
             setupRealtimeListener();
         }
         
@@ -1864,7 +1845,6 @@ const firebaseConfig = {
             document.querySelectorAll('.module-tab').forEach(t=>t.classList.remove('active')); 
             let pane = document.getElementById(`module-${m}`);
             if(pane) pane.classList.add('active'); 
-            // Find and activate corresponding tab
             document.querySelectorAll('.module-tab').forEach(t => {
                 if(t.textContent.includes(m === 'transactions' ? 'Transactions' : 
                     m === 'stock' ? 'Stock' : 
@@ -1937,7 +1917,6 @@ const firebaseConfig = {
                 closeSettings(); 
                 applyConfig(); 
                 if(currentRole !== 'Admin') auth('Staff'); 
-                // Rebuild tabs
                 let tabsContainer = document.getElementById('moduleTabsContainer');
                 tabsContainer.innerHTML = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
                 if(currentRole==='Admin' || config.perms.stock) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('stock')">🏷️ Stock Management</button>`;
@@ -1958,12 +1937,10 @@ const firebaseConfig = {
 
         // ============ KEYBOARD SHORTCUTS ============
         document.addEventListener('keydown', function(e) {
-            // Ctrl+S to save
             if(e.ctrlKey && e.key === 's') {
                 e.preventDefault();
                 saveVoucher();
             }
-            // Escape to close modals
             if(e.key === 'Escape') {
                 document.querySelectorAll('.modal, .whatsapp-share-modal').forEach(m => {
                     if(m.style.display === 'flex') m.style.display = 'none';
@@ -1972,7 +1949,6 @@ const firebaseConfig = {
         });
 
         // ============ INITIALIZATION ============
-        // Load settings from Firebase
         rtdb.ref('app_settings_v2').once('value',(snap)=>{ 
             if(snap.val()){ 
                 allConfigs = snap.val(); 
@@ -1982,11 +1958,9 @@ const firebaseConfig = {
             } 
         });
         
-        // Check for saved session
         document.getElementById('loginBtn').onclick = doLogin;
         document.getElementById('user_pass').addEventListener('keypress', (e) => { if(e.key === 'Enter') doLogin(); });
         
-        // Auto-login if session exists
         if(sessionStorage.getItem('auth')==='ok') {
             let savedFirm = sessionStorage.getItem('firm') || 'firm1';
             currentFirmId = savedFirm;
