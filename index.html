@@ -1858,28 +1858,36 @@
         }
 
         async function shareInvoiceViaWhatsApp() {
-            if(!lastSavedVoucher) { 
-                showToast('No recent voucher to share. Save a transaction first.'); 
-                return; 
-            }
-            if(!config.perms.whatsapp && currentRole !== 'Admin') { 
-                showToast('No permission'); 
-                return; 
-            }
-            
-            document.getElementById('waShareMessage').innerHTML = '📄 Generating PDF... Please wait';
-            document.getElementById('whatsappShareModal').style.display = 'flex';
-            document.getElementById('waSendBtn').disabled = true;
-            
-            let pdfBlob = await generatePDFBlob(lastSavedVoucher);
-            if(pdfBlob) {
-                generatedPdfBlob = pdfBlob;
-                document.getElementById('waShareMessage').innerHTML = `✅ PDF Ready: ${lastSavedVoucher.vno}<br>Click below to share via WhatsApp`;
-                document.getElementById('waSendBtn').disabled = false;
-            } else {
-                document.getElementById('waShareMessage').innerHTML = '❌ PDF generation failed. Please try again.';
-                document.getElementById('waSendBtn').disabled = true;
-            }
+    if(!lastSavedVoucher) { 
+        showToast('No recent voucher to share. Save a transaction first.'); 
+        return; 
+    }
+    if(!config.perms.whatsapp && currentRole !== 'Admin') { 
+        showToast('No permission'); 
+        return; 
+    }
+    
+    showToast('📄 Generating PDF...');
+    
+    let pdfBlob = await generatePDFBlob(lastSavedVoucher);
+    if(pdfBlob) {
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const message = `*${config.name}*\nVoucher: ${lastSavedVoucher.vno}\nDate: ${lastSavedVoucher.date}\nParty: ${lastSavedVoucher.party}\nAmount: ₹${lastSavedVoucher.amt.toFixed(2)}\n\nThank you for business!`;
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = `Voucher_${lastSavedVoucher.vno}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        
+        showToast('📥 PDF downloaded. Attach it in WhatsApp chat.', 4000);
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+    } else {
+        showToast('❌ PDF generation failed. Please try again.');
+    }
         }
         
         function closeWhatsAppModal() {
