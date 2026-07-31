@@ -995,10 +995,13 @@
 }
         
         function saveStockToFirebase() { 
-            const obj = {}; 
-            stockItems.forEach(i=>obj[i.id]=i); 
-            rtdb.ref('stock_v2/'+currentFirmId).set(obj).catch(err=>console.warn(err));
-        }
+    const obj = {}; 
+    stockItems.forEach(i => {
+        let key = String(i.id).replace(/[.#$\/\[\]]/g, '_');
+        obj[key] = i;
+    }); 
+    rtdb.ref('stock_v2/'+currentFirmId).set(obj);
+}
         
         function updateStock(itemId, changeQty) { 
             let i = stockItems.find(x=>x.id==itemId); 
