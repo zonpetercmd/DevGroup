@@ -1809,54 +1809,127 @@
 
         // ============ WHATSAPP SHARE ============
         async function generatePDFBlob(voucher) {
-            return new Promise(async (resolve) => {
-                let tempDiv = document.createElement('div');
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '-9999px';
-                
-                let itemsHtml = (voucher.items || []).map((item,idx) => `<tr><td>${idx+1}</td><td>${item.name}</td><td>${item.qty}</td><td>₹${(item.rate||0).toFixed(2)}</td><td>₹${(item.amount||0).toFixed(2)}</td></tr>`).join('');
-                let total = voucher.amt;
-                
-                tempDiv.innerHTML = `
-                    <div style="padding:20px; font-family:Arial; width:700px; background:white; border:1px solid #000;">
-                        <div style="text-align:center; border-bottom:2px solid #000;">
-                            <img src="${config.logo}" style="max-height:60px;" onerror="this.style.display='none'">
-                            <h2>${config.name}</h2>
-                            <p>${config.addr}<br>${config.gst}</p>
-                        </div>
-                        <h3 style="text-align:center;">${voucher.type} VOUCHER</h3>
-                        <p><strong>No:</strong> ${voucher.vno} | <strong>Date:</strong> ${voucher.date} | <strong>Party:</strong> ${voucher.party || ''}</p>
-                        ${voucher.items && voucher.items.length ? `<table border="1" cellpadding="5" style="width:100%; border-collapse:collapse;"><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>${itemsHtml}</table>` : ''}
-                        <h3>Total: ₹${total.toFixed(2)}</h3>
-                        <p style="margin-top:20px;">Thank you for business!</p>
-                        <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:12px;">
-                            <div>Authorised Signatory</div>
-                            <div>Receiver's Signature</div>
-                            <div>Prepared By: ${voucher.createdBy || currentUser}</div>
-                        </div>
-                    </div>`;
-                document.body.appendChild(tempDiv);
-                
+    return new Promise((resolve) => {
+        try {
+            // Check libraries
+            if (typeof html2canvas === 'undefined') {
+                console.error('html2canvas not loaded');
+                showToast('❌ PDF library not loaded');
+                resolve(null);
+                return;
+            }
+
+            // Create a simple HTML structure
+            let container = document.createElement('div');
+            container.style.cssText = `
+                position: absolute;
+                left: -9999px;
+                top: -9999px;
+                width: 700px;
+                padding: 20px;
+                background: white;
+                font-family: Arial, sans-serif;
+                z-index: -1;
+            `;
+            
+            let itemsHtml = (voucher.items || []).map((item, idx) => `
+                <tr>
+                    <td style="padding:5px; border:1px solid #000; text-align:center;">${idx+1}</td>
+                    <td style="padding:5px; border:1px solid #000;">${item.name}</td>
+                    <td style="padding:5px; border:1px solid #000; text-align:center;">${item.qty}</td>
+                    <td style="padding:5px; border:1px solid #000; text-align:right;">₹${(item.rate||0).toFixed(2)}</td>
+                    <td style="padding:5px; border:1px solid #000; text-align:right;">₹${(item.amount||0).toFixed(2)}</td>
+                </tr>
+            `).join('');
+            
+            let total = voucher.amt;
+            
+            container.innerHTML = `
+                <div style="padding:20px; font-family:Arial; width:700px; background:white; border:1px solid #000;">
+                    <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
+                        <h2 style="margin:5px 0;">${config.name}</h2>
+                        <p style="margin:2px 0; font-size:12px;">${config.addr}</p>
+                        <p style="margin:2px 0; font-size:11px; font-weight:bold;">${config.gst}</p>
+                    </div>
+                    <h3 style="text-align:center; margin:10px 0;">${voucher.type} VOUCHER</h3>
+                    <p style="font-size:13px; margin:5px 0;">
+                        <strong>No:</strong> ${voucher.vno} | 
+                        <strong>Date:</strong> ${voucher.date} | 
+                        <strong>Party:</strong> ${voucher.party || ''}
+                    </p>
+                    ${voucher.items && voucher.items.length ? `
+                        <table style="width:100%; border-collapse:collapse; margin:10px 0; font-size:12px;">
+                            <thead>
+                                <tr style="background:#f2f2f2;">
+                                    <th style="padding:8px; border:1px solid #000;">#</th>
+                                    <th style="padding:8px; border:1px solid #000;">Item</th>
+                                    <th style="padding:8px; border:1px solid #000;">Qty</th>
+                                    <th style="padding:8px; border:1px solid #000;">Rate</th>
+                                    <th style="padding:8px; border:1px solid #000;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                    ` : ''}
+                    <h3 style="text-align:right; margin:10px 0;">Total: ₹${total.toFixed(2)}</h3>
+                    <p style="margin-top:30px; text-align:center; font-size:12px;">Thank you for business!</p>
+                    <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:12px; border-top:1px dashed #000; padding-top:10px;">
+                        <div>Authorised Signatory</div>
+                        <div>Receiver's Signature</div>
+                        <div>Prepared By: ${voucher.createdBy || currentUser}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(container);
+            
+            // Wait for render
+            setTimeout(async () => {
                 try {
-                    const { jsPDF } = window.jspdf;
-                    const canvas = await html2canvas(tempDiv.firstChild, { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(container, { 
+                        scale: 2, 
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        width: 700
+                    });
+                    
                     const imgData = canvas.toDataURL('image/png');
+                    
+                    // Get jsPDF
+                    let PDFLib = window.jspdf || jspdf;
+                    if (!PDFLib) {
+                        document.body.removeChild(container);
+                        resolve(null);
+                        return;
+                    }
+                    
+                    const { jsPDF } = PDFLib;
                     const pdf = new jsPDF('p', 'mm', 'a4');
                     const imgProps = pdf.getImageProperties(imgData);
                     const pdfWidth = pdf.internal.pageSize.getWidth();
                     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
                     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                     const pdfBlob = pdf.output('blob');
+                    
+                    document.body.removeChild(container);
                     resolve(pdfBlob);
+                    
                 } catch(e) { 
-                    console.error(e);
+                    console.error('html2canvas error:', e);
+                    document.body.removeChild(container);
+                    showToast('❌ PDF generation failed: ' + e.message);
                     resolve(null);
                 }
-                document.body.removeChild(tempDiv);
-            });
+            }, 200);
+            
+        } catch(e) {
+            console.error('generatePDFBlob error:', e);
+            showToast('❌ PDF generation failed');
+            resolve(null);
         }
-
+    });
+}
         async function shareInvoiceViaWhatsApp() {
     if(!lastSavedVoucher) { 
         showToast('No recent voucher to share. Save a transaction first.'); 
