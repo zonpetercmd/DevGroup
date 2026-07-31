@@ -94,10 +94,6 @@
         .type-badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; }
         .type-REC { background: #d1fae5; color: #065f46; }
         .type-EXP { background: #fee2e2; color: #991b1b; }
-        .type-SALE { background: #dbeafe; color: #1e40af; }
-        .type-PUR { background: #fef3c7; color: #92400e; }
-        .type-SR { background: #ffe4e6; color: #9f1239; }
-        .type-PR { background: #e0e7ff; color: #3730a3; }
 
         .stock-low { background: #fee2e2; border-left: 3px solid var(--danger); }
         .error { color: red; font-size: 12px; margin-top: 10px; display: none; }
@@ -227,6 +223,34 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* User Management Styles */
+        .user-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .user-card .user-info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .user-card .user-info span {
+            font-size: 13px;
+        }
+        .user-card .user-info .badge {
+            background: var(--primary);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -255,13 +279,13 @@
             </div>
             <div>
                 <span id="display_role" style="font-weight:700; color:#64748b; margin-right:15px; font-size:13px"></span>
+                <span id="display_user" style="font-weight:600; color:#2563eb; margin-right:15px; font-size:13px"></span>
                 <button id="admin_settings_btn" onclick="openSettings()" style="border:1px solid #64748b; background:none; padding:5px 12px; cursor:pointer; border-radius:5px; margin-right:10px; display:none;">⚙️ Settings</button>
                 <button onclick="logout()" style="border:1px solid red; color:red; background:none; padding:5px 12px; cursor:pointer; border-radius:5px;">Logout</button>
             </div>
         </header>
 
         <div class="container">
-            <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-box"><p>Total Receipts</p><h3 id="stat_receipt">₹ 0</h3></div>
                 <div class="stat-box"><p>Total Payments</p><h3 id="stat_expense">₹ 0</h3></div>
@@ -271,10 +295,8 @@
                 <div class="stat-box"><p>Total Balance</p><h3 id="stat_balance">₹ 0</h3></div>
             </div>
 
-            <!-- Module Tabs -->
             <div class="module-tabs" id="moduleTabsContainer"></div>
 
-            <!-- Transactions Module -->
             <div id="module-transactions" class="module-pane active">
                 <div class="form-card" id="transactionFormCard">
                     <h4 id="form-title">Add Transaction</h4>
@@ -353,7 +375,6 @@
                 </div>
             </div>
 
-            <!-- Stock Module -->
             <div id="module-stock" class="module-pane">
                 <div class="stock-card">
                     <h4>📦 Stock Inventory</h4>
@@ -374,7 +395,6 @@
                 </div>
             </div>
 
-            <!-- Bank Module -->
             <div id="module-bank" class="module-pane">
                 <div class="stock-card">
                     <h4>🏦 Bank & Cash Management</h4>
@@ -404,7 +424,6 @@
                 </div>
             </div>
 
-            <!-- Reports Module -->
             <div id="module-reports" class="module-pane">
                 <div class="stock-card">
                     <h4>📊 Business Reports</h4>
@@ -501,12 +520,21 @@
             <div><label>GST / Tax Info</label><input type="text" id="set_gst"></div>
             <div><label>Logo URL</label><input type="text" id="set_logo_url"></div>
             <hr>
-            <h4>👤 Staff Management</h4>
-            <div><label>Staff User ID</label><input type="text" id="set_staff_id" placeholder="Staff Login ID"></div>
-            <div><label>Staff Password</label><input type="text" id="set_staff_pass" placeholder="Password"></div>
-            <div><label>Admin Password</label><input type="text" id="set_admin_pass" placeholder="Admin Password"></div>
             
-            <h4>🔐 Module Permissions (Enable/Disable Modules)</h4>
+            <h4>👤 User Management (Login Users)</h4>
+            <div id="users_list"></div>
+            <div style="display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; align-items:center;">
+                <input type="text" id="new_user_id" placeholder="User ID" style="width:150px;">
+                <input type="text" id="new_user_pass" placeholder="Password" style="width:150px;">
+                <select id="new_user_role" style="width:120px;">
+                    <option value="Admin">Admin</option>
+                    <option value="Staff">Staff</option>
+                    <option value="Viewer">Viewer</option>
+                </select>
+                <button class="btn-action" style="background:var(--success); color:white; padding:8px 15px;" onclick="addUser()">+ Add User</button>
+            </div>
+            
+            <h4>🔐 Staff Permissions</h4>
             <div class="permission-grid">
                 <label><input type="checkbox" id="perm_receipt" checked> Receipt</label>
                 <label><input type="checkbox" id="perm_payment" checked> Payment</label>
@@ -522,6 +550,7 @@
                 <label><input type="checkbox" id="perm_stock" checked> Stock Access</label>
                 <label><input type="checkbox" id="perm_reports" checked> Reports Access</label>
                 <label><input type="checkbox" id="perm_bank" checked> Bank Management</label>
+                <label><input type="checkbox" id="perm_users" checked> User Management</label>
             </div>
             <div style="display:flex; gap:10px; margin-top:15px;">
                 <button class="btn-login" onclick="saveSettings()">Save All Settings</button>
@@ -542,14 +571,17 @@
             appId: "1:677011391483:web:f12522edb952292912815e"
         };
         
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const rtdb = firebase.database();
 
         // ============ GLOBAL VARIABLES ============
         let db = [], stockItems = [], currentFirmId = 'firm1', currentItems = [], lastSavedVoucher = null;
-        let currentRole = 'Staff', generatedPdfBlob = null;
+        let currentRole = 'Staff', currentUser = 'Admin', generatedPdfBlob = null;
         let parties = [], bankAccounts = [], chequeNumbers = [], usedCheques = [];
         let cashBalance = 0, bankBalance = 0;
+        let users = [];
         let isDataLoaded = false;
 
         // ============ CONFIGURATION ============
@@ -558,64 +590,70 @@
                 name: 'Dev Vidyalaya', 
                 addr: 'https://dev.edu.in/', 
                 gst: 'GST: 08AKIPB6843N1ZR | Mo: 9414037764', 
-                staffId: 'Staff', 
-                staffPass: '2026', 
                 adminPass: '1811', 
                 logo: 'logo.png',
                 firmType: 'school',
                 perms: { 
                     receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
                     contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true 
+                    reports:true, bank:true, users:true
                 },
                 cashBalance: 0,
                 bankBalance: 0,
                 bankAccounts: [],
                 chequeNumbers: [],
                 usedCheques: [],
-                parties: []
+                parties: [],
+                users: [
+                    { id: 'Admin', password: '1811', role: 'Admin' },
+                    { id: 'Staff', password: '2026', role: 'Staff' }
+                ]
             }, 
             firm2: { 
                 name: 'Dev Gas Agency', 
                 addr: 'Rani Satti Road, Sikar Rajasthan', 
                 gst: 'GST: 08AKIPB6843N1ZR | Mo: 9414037764', 
-                staffId: 'Staff2', 
-                staffPass: '2026', 
                 adminPass: '1811', 
                 logo: 'logo.png',
                 firmType: 'gas',
                 perms: { 
                     receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
                     contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true 
+                    reports:true, bank:true, users:true
                 },
                 cashBalance: 0,
                 bankBalance: 0,
                 bankAccounts: [],
                 chequeNumbers: [],
                 usedCheques: [],
-                parties: []
+                parties: [],
+                users: [
+                    { id: 'Admin', password: '1811', role: 'Admin' },
+                    { id: 'Staff2', password: '2026', role: 'Staff' }
+                ]
             }, 
             firm3: { 
                 name: 'Firm 3', 
                 addr: 'Firm 3 Address', 
                 gst: 'GST 3 Info', 
-                staffId: 'Staff3', 
-                staffPass: '2026', 
                 adminPass: '1811', 
                 logo: 'logo.png',
                 firmType: 'general',
                 perms: { 
                     receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
                     contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true 
+                    reports:true, bank:true, users:true
                 },
                 cashBalance: 0,
                 bankBalance: 0,
                 bankAccounts: [],
                 chequeNumbers: [],
                 usedCheques: [],
-                parties: []
+                parties: [],
+                users: [
+                    { id: 'Admin', password: '1811', role: 'Admin' },
+                    { id: 'Staff3', password: '2026', role: 'Staff' }
+                ]
             } 
         };
         let config = allConfigs['firm1'];
@@ -633,6 +671,59 @@
 
         function showLoading(show) {
             document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        // ============ USER MANAGEMENT ============
+        function loadUsers() {
+            users = config.users || [
+                { id: 'Admin', password: '1811', role: 'Admin' },
+                { id: 'Staff', password: '2026', role: 'Staff' }
+            ];
+            renderUsersList();
+        }
+
+        function renderUsersList() {
+            let container = document.getElementById('users_list');
+            if(!container) return;
+            if(users.length === 0) {
+                container.innerHTML = '<p style="color:#999;">No users added</p>';
+                return;
+            }
+            container.innerHTML = users.map((u, idx) => `
+                <div class="user-card">
+                    <div class="user-info">
+                        <span><strong>${u.id}</strong></span>
+                        <span>🔒 ${u.password}</span>
+                        <span><span class="badge">${u.role}</span></span>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-del" onclick="deleteUser('${u.id}')">✖</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addUser() {
+            let id = document.getElementById('new_user_id').value.trim();
+            let pass = document.getElementById('new_user_pass').value.trim();
+            let role = document.getElementById('new_user_role').value;
+            if(!id || !pass) { showToast('Enter User ID and Password'); return; }
+            if(users.find(u => u.id === id)) { showToast('User already exists'); return; }
+            users.push({ id, password: pass, role });
+            saveFirmData();
+            renderUsersList();
+            document.getElementById('new_user_id').value = '';
+            document.getElementById('new_user_pass').value = '';
+            showToast('User added successfully');
+        }
+
+        function deleteUser(id) {
+            if(id === 'Admin') { showToast('Cannot delete Admin'); return; }
+            if(!confirm(`Delete user: ${id}?`)) return;
+            users = users.filter(u => u.id !== id);
+            saveFirmData();
+            renderUsersList();
+            showToast('User deleted');
         }
 
         // ============ PERMISSIONS UI ============
@@ -682,8 +773,13 @@
             chequeNumbers = firmData.chequeNumbers || [];
             usedCheques = firmData.usedCheques || [];
             parties = firmData.parties || [];
+            users = firmData.users || [
+                { id: 'Admin', password: '1811', role: 'Admin' },
+                { id: 'Staff', password: '2026', role: 'Staff' }
+            ];
             updateBankUI();
             updateChequeDropdown();
+            renderUsersList();
         }
 
         function saveFirmData() {
@@ -693,6 +789,7 @@
             allConfigs[currentFirmId].chequeNumbers = chequeNumbers;
             allConfigs[currentFirmId].usedCheques = usedCheques;
             allConfigs[currentFirmId].parties = parties;
+            allConfigs[currentFirmId].users = users;
             rtdb.ref('app_settings_v2').set(allConfigs).catch(err => console.warn(err));
         }
 
@@ -1168,7 +1265,9 @@
                 chequeNo: chequeNo,
                 rem: document.getElementById('v_remark').value, 
                 items: (type==='SALE'||type==='PUR'||type==='SR'||type==='PR') ? currentItems.map(i=>({...i})) : [], 
-                timestamp: Date.now() 
+                timestamp: Date.now(),
+                createdBy: currentUser,
+                createdAt: new Date().toLocaleString()
             };
             
             showLoading(true);
@@ -1199,7 +1298,7 @@
             }); 
         }
 
-        // ============ PRINT FUNCTIONS ============
+        // ============ A4 HALF PAGE PRINT FORMAT ============
         function generateA4Print(v) {
             let printWindow = window.open('', '_blank', 'width=800,height=600');
             if(!printWindow) { 
@@ -1208,18 +1307,20 @@
             }
             
             let itemsHtml = (v.items || []).map((item,idx) => `
-                <tr style="border-bottom:1px solid #ddd;">
-                    <td style="padding:6px; text-align:center;">${idx+1}</td>
-                    <td style="padding:6px;">${item.name}</td>
-                    <td style="padding:6px; text-align:center;">${item.qty}</td>
-                    <td style="padding:6px; text-align:right;">₹${(item.rate||0).toFixed(2)}</td>
-                    <td style="padding:6px; text-align:right;">₹${(item.amount||0).toFixed(2)}</td>
+                <tr>
+                    <td style="padding:4px; text-align:center; font-size:9px; border:1px solid #000;">${idx+1}</td>
+                    <td style="padding:4px; font-size:9px; border:1px solid #000;">${item.name}</td>
+                    <td style="padding:4px; text-align:center; font-size:9px; border:1px solid #000;">${item.qty}</td>
+                    <td style="padding:4px; text-align:right; font-size:9px; border:1px solid #000;">₹${(item.rate||0).toFixed(2)}</td>
+                    <td style="padding:4px; text-align:right; font-size:9px; border:1px solid #000;">₹${(item.amount||0).toFixed(2)}</td>
                 </tr>
             `).join('');
             
             let total = v.amt;
             let title = v.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
+            let words = numberToWords(total);
             
+            // Half page format - 2 copies per page
             let pageHtml = `
             <!DOCTYPE html>
             <html>
@@ -1227,29 +1328,49 @@
             <style>
                 @media print { body { margin: 0; padding: 0; } .no-print { display: none; } }
                 * { font-family: Arial, sans-serif; }
-                body { background: #fff; margin: 0; padding: 0; }
-                .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 10mm; box-sizing: border-box; }
-                .copy-box { border: 1px solid #000; padding: 15px; margin-bottom: 20px; background: white; }
-                .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 12px; }
-                .logo { max-height: 50px; margin-bottom: 5px; }
-                .firm-name { font-size: 16px; font-weight: bold; }
-                .address { font-size: 9px; }
-                .gst { font-size: 9px; font-weight: bold; }
-                .bill-title { text-align: center; font-size: 14px; font-weight: bold; margin: 10px 0; text-decoration: underline; }
-                .info-row { display: flex; justify-content: space-between; font-size: 11px; margin: 5px 0; }
-                table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10px; }
-                th { background: #f2f2f2; padding: 8px; border: 1px solid #000; text-align: center; }
-                td { padding: 6px; border: 1px solid #000; }
-                .grand-total { font-size: 12px; font-weight: bold; text-align: right; border-top: 1px solid #000; padding-top: 5px; }
-                .sign { display: flex; justify-content: space-between; margin-top: 35px; font-size: 11px; }
-                .footer { text-align: center; font-size: 8px; margin-top: 15px; border-top: 1px dashed #000; padding-top: 8px; }
-                .copy-label { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 10px; background: #f8f8f8; padding: 4px; }
+                body { background: #fff; margin: 0; padding: 5mm; }
+                .voucher-container {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                    page-break-after: always;
+                }
+                .copy-box {
+                    border: 1px solid #000;
+                    padding: 8px;
+                    background: white;
+                    font-size: 9px;
+                    min-height: 140mm;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 6px; }
+                .logo { max-height: 30px; margin-bottom: 3px; }
+                .firm-name { font-size: 12px; font-weight: bold; }
+                .address { font-size: 7px; }
+                .gst { font-size: 7px; font-weight: bold; }
+                .bill-title { text-align: center; font-size: 11px; font-weight: bold; margin: 4px 0; text-decoration: underline; }
+                .info-row { display: flex; justify-content: space-between; font-size: 8px; margin: 2px 0; }
+                table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 8px; }
+                th { background: #f2f2f2; padding: 4px; border: 1px solid #000; text-align: center; font-size: 8px; }
+                td { padding: 4px; border: 1px solid #000; font-size: 8px; }
+                .grand-total { font-size: 10px; font-weight: bold; text-align: right; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px; }
+                .sign { display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; font-size: 8px; }
+                .sign-box { border-top: 1px solid #000; width: 100px; text-align: center; padding-top: 2px; }
+                .footer { text-align: center; font-size: 6px; margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; }
+                .copy-label { text-align: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; background: #f8f8f8; padding: 2px; }
+                .words { font-size: 7px; font-weight: bold; text-align: right; margin: 2px 0; }
+                @media print {
+                    .voucher-container { page-break-after: always; }
+                    .no-print { display: none !important; }
+                }
             </style>
             </head>
             <body>
-                <div class="page">
+                <div class="voucher-container">
+                    <!-- ORIGINAL COPY -->
                     <div class="copy-box">
-                        <div class="copy-label">ORIGINAL COPY</div>
+                        <div class="copy-label" style="background:#e8f5e9;">📄 ORIGINAL</div>
                         <div class="header">
                             <img src="${config.logo}" class="logo" onerror="this.style.display='none'">
                             <div class="firm-name">${config.name}</div>
@@ -1257,19 +1378,24 @@
                             <div class="gst">${config.gst}</div>
                         </div>
                         <div class="bill-title">${title}</div>
-                        <div class="info-row"><span><strong>Voucher No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
-                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Cheque: '+v.chequeNo : ''}</span></div>
+                        <div class="info-row"><span><strong>No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
+                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Chq:'+v.chequeNo : ''}</span></div>
                         ${v.items && v.items.length ? `
                         <table><thead><tr><th>#</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${itemsHtml}</tbody></table>
                         ` : ''}
-                        <div class="grand-total">Total Amount: ₹ ${total.toFixed(2)}</div>
-                        <div>Amount in words: ${numberToWords(total)} Rupees Only</div>
-                        <div class="sign"><span>For ${config.name}</span><span>Receiver Signature</span></div>
-                        <div class="footer">This is a computer generated document | No signature required</div>
+                        <div class="grand-total">Total: ₹ ${total.toFixed(2)}</div>
+                        <div class="words">₹ ${words} Only</div>
+                        <div class="sign">
+                            <div><span>Authorised Signatory</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                            <div><span>Receiver's Signature</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                            <div><span>Prepared By: ${v.createdBy || currentUser}</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                        </div>
+                        <div class="footer">Computer generated | ${v.createdAt || new Date().toLocaleString()}</div>
                     </div>
                     
-                    <div class="copy-box" style="margin-top: 15px;">
-                        <div class="copy-label">DUPLICATE COPY</div>
+                    <!-- DUPLICATE COPY -->
+                    <div class="copy-box">
+                        <div class="copy-label" style="background:#fff3e0;">📋 DUPLICATE</div>
                         <div class="header">
                             <img src="${config.logo}" class="logo" onerror="this.style.display='none'">
                             <div class="firm-name">${config.name}</div>
@@ -1277,18 +1403,24 @@
                             <div class="gst">${config.gst}</div>
                         </div>
                         <div class="bill-title">${title}</div>
-                        <div class="info-row"><span><strong>Voucher No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
-                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Cheque: '+v.chequeNo : ''}</span></div>
+                        <div class="info-row"><span><strong>No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
+                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Chq:'+v.chequeNo : ''}</span></div>
                         ${v.items && v.items.length ? `
                         <table><thead><tr><th>#</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${itemsHtml}</tbody></table>
                         ` : ''}
-                        <div class="grand-total">Total Amount: ₹ ${total.toFixed(2)}</div>
-                        <div class="sign"><span>For ${config.name}</span><span>Receiver Signature</span></div>
-                        <div class="footer">Computer generated voucher | E.& O.E.</div>
+                        <div class="grand-total">Total: ₹ ${total.toFixed(2)}</div>
+                        <div class="words">₹ ${words} Only</div>
+                        <div class="sign">
+                            <div><span>Authorised Signatory</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                            <div><span>Receiver's Signature</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                            <div><span>Prepared By: ${v.createdBy || currentUser}</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
+                        </div>
+                        <div class="footer">Computer generated | ${v.createdAt || new Date().toLocaleString()}</div>
                     </div>
                 </div>
+                
                 <div class="no-print" style="text-align:center; margin:15px;">
-                    <button onclick="window.print();setTimeout(()=>window.close(),1000)" style="padding:10px 20px; cursor:pointer; background:#2563eb; color:white; border:none; border-radius:5px;">🖨️ Print Both Copies</button>
+                    <button onclick="window.print();setTimeout(()=>window.close(),1000)" style="padding:10px 20px; cursor:pointer; background:#2563eb; color:white; border:none; border-radius:5px;">🖨️ Print</button>
                     <button onclick="window.close()" style="padding:10px 20px; cursor:pointer; background:#64748b; color:white; border:none; border-radius:5px;">✖ Close</button>
                 </div>
                 <script>window.onload = function() { setTimeout(window.print, 800); };<\/script>
@@ -1310,7 +1442,7 @@
                 let total = voucher.amt;
                 
                 tempDiv.innerHTML = `
-                    <div style="padding:20px; font-family:Arial; width:700px; background:white;">
+                    <div style="padding:20px; font-family:Arial; width:700px; background:white; border:1px solid #000;">
                         <div style="text-align:center; border-bottom:2px solid #000;">
                             <img src="${config.logo}" style="max-height:60px;" onerror="this.style.display='none'">
                             <h2>${config.name}</h2>
@@ -1321,6 +1453,11 @@
                         ${voucher.items && voucher.items.length ? `<table border="1" cellpadding="5" style="width:100%; border-collapse:collapse;"><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>${itemsHtml}</table>` : ''}
                         <h3>Total: ₹${total.toFixed(2)}</h3>
                         <p style="margin-top:20px;">Thank you for business!</p>
+                        <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:12px;">
+                            <div>Authorised Signatory</div>
+                            <div>Receiver's Signature</div>
+                            <div>Prepared By: ${voucher.createdBy || currentUser}</div>
+                        </div>
                     </div>`;
                 document.body.appendChild(tempDiv);
                 
@@ -1428,6 +1565,10 @@
         function editVoucher(id){ 
             let v = db.find(x=>x.id==id); 
             if(!v) { showToast('Voucher not found'); return; }
+            if(v.createdBy && v.createdBy !== currentUser && currentRole !== 'Admin') {
+                showToast('You can only edit your own vouchers');
+                return;
+            }
             document.getElementById('edit_id').value = v.id; 
             document.getElementById('v_type').value = v.type; 
             document.getElementById('v_no').value = v.vno; 
@@ -1447,9 +1588,13 @@
         }
         
         function deleteVoucher(id){ 
+            let v = db.find(x=>x.id==id);
+            if(v && v.createdBy && v.createdBy !== currentUser && currentRole !== 'Admin') {
+                showToast('You can only delete your own vouchers');
+                return;
+            }
             if(!confirm('Delete this voucher? Stock will be restored.')) return;
             
-            let v = db.find(x=>x.id==id);
             if(v && v.items) {
                 for(let item of v.items) {
                     if(v.type === 'SALE') updateStock(item.itemId, item.qty);
@@ -1777,6 +1922,7 @@
             if(activeBtn) activeBtn.classList.add('active'); 
             updateBankUI();
             applyPermissionsUI(); 
+            loadUsers();
         }
         
         // ============ LOGIN/LOGOUT ============
@@ -1786,27 +1932,37 @@
             if(!user||!pass){ 
                 document.getElementById('login_error').innerText = 'Enter credentials'; 
                 return; 
-            } 
-            if(user==='Admin' && pass===config.adminPass){ 
-                currentRole = 'Admin'; 
-                auth('Admin'); 
-            } else if(user===config.staffId && pass===config.staffPass){ 
-                currentRole = 'Staff'; 
-                auth('Staff'); 
-            } else { 
-                document.getElementById('login_error').innerText = 'Invalid login'; 
-            } 
+            }
+            
+            // Check users list
+            let foundUser = users.find(u => u.id === user && u.password === pass);
+            if(!foundUser) {
+                // Fallback to default admin
+                if(user === 'Admin' && pass === config.adminPass) {
+                    foundUser = { id: 'Admin', role: 'Admin' };
+                } else {
+                    document.getElementById('login_error').innerText = 'Invalid login'; 
+                    return;
+                }
+            }
+            
+            currentUser = user;
+            currentRole = foundUser.role || 'Staff';
+            auth(foundUser.role || 'Staff');
         }
         
         function auth(role){ 
             sessionStorage.setItem('auth','ok'); 
-            sessionStorage.setItem('role',role); 
+            sessionStorage.setItem('role',role);
+            sessionStorage.setItem('user', currentUser);
             sessionStorage.setItem('firm', currentFirmId);
-            currentRole = role;
+            
             document.getElementById('login-screen').style.display='none'; 
             document.getElementById('main-app').style.display='block'; 
-            document.getElementById('display_role').innerText = role; 
-            if(role==='Admin') document.getElementById('admin_settings_btn').style.display='inline-block';
+            document.getElementById('display_role').innerText = role;
+            document.getElementById('display_user').innerText = '👤 ' + currentUser;
+            
+            if(role==='Admin' || config.perms.users) document.getElementById('admin_settings_btn').style.display='inline-block';
             else document.getElementById('admin_settings_btn').style.display='none';
             
             let tabsContainer = document.getElementById('moduleTabsContainer');
@@ -1829,6 +1985,7 @@
             });
             applyPermissionsUI();
             updateBankUI();
+            loadUsers();
             
             setupRealtimeListener();
         }
@@ -1863,9 +2020,6 @@
             document.getElementById('set_addr').value = config.addr; 
             document.getElementById('set_gst').value = config.gst; 
             document.getElementById('set_logo_url').value = config.logo; 
-            document.getElementById('set_admin_pass').value = config.adminPass; 
-            document.getElementById('set_staff_id').value = config.staffId; 
-            document.getElementById('set_staff_pass').value = config.staffPass;
             
             document.getElementById('perm_receipt').checked = config.perms.receipt; 
             document.getElementById('perm_payment').checked = config.perms.payment; 
@@ -1881,6 +2035,9 @@
             document.getElementById('perm_stock').checked = config.perms.stock; 
             document.getElementById('perm_reports').checked = config.perms.reports;
             document.getElementById('perm_bank').checked = config.perms.bank;
+            document.getElementById('perm_users').checked = config.perms.users;
+            
+            renderUsersList();
             document.getElementById('settings-modal').style.display='flex'; 
         }
         
@@ -1891,9 +2048,7 @@
             config.addr = document.getElementById('set_addr').value; 
             config.gst = document.getElementById('set_gst').value; 
             config.logo = document.getElementById('set_logo_url').value;
-            config.adminPass = document.getElementById('set_admin_pass').value; 
-            config.staffId = document.getElementById('set_staff_id').value; 
-            config.staffPass = document.getElementById('set_staff_pass').value;
+            
             config.perms = { 
                 receipt: document.getElementById('perm_receipt').checked, 
                 payment: document.getElementById('perm_payment').checked, 
@@ -1908,21 +2063,23 @@
                 delete: document.getElementById('perm_delete').checked, 
                 stock: document.getElementById('perm_stock').checked, 
                 reports: document.getElementById('perm_reports').checked,
-                bank: document.getElementById('perm_bank').checked
+                bank: document.getElementById('perm_bank').checked,
+                users: document.getElementById('perm_users').checked
             };
+            
             allConfigs[currentFirmId] = config;
             saveFirmData();
             rtdb.ref('app_settings_v2').set(allConfigs).then(()=>{ 
                 showToast('✅ Settings Saved!'); 
                 closeSettings(); 
                 applyConfig(); 
-                if(currentRole !== 'Admin') auth('Staff'); 
                 let tabsContainer = document.getElementById('moduleTabsContainer');
                 tabsContainer.innerHTML = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
                 if(currentRole==='Admin' || config.perms.stock) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('stock')">🏷️ Stock Management</button>`;
                 if(currentRole==='Admin' || config.perms.bank) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('bank')">🏦 Bank & Cash</button>`;
                 if(currentRole==='Admin' || config.perms.reports) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
                 applyPermissionsUI();
+                loadUsers();
             }).catch(err => showToast('❌ Save error: '+err.message));
         }
 
@@ -1964,12 +2121,13 @@
         if(sessionStorage.getItem('auth')==='ok') {
             let savedFirm = sessionStorage.getItem('firm') || 'firm1';
             currentFirmId = savedFirm;
+            currentUser = sessionStorage.getItem('user') || 'Admin';
             auth(sessionStorage.getItem('role'));
         }
         
         console.log('✅ Dev Vidyalaya ERP System Loaded Successfully!');
-        console.log('📌 Features: Auto-refresh, Real-time updates, Print, PDF, WhatsApp');
-        console.log('🔑 Admin: Admin/1811 | Staff: Staff/2026');
+        console.log('📌 Features: Auto-refresh, Half page print, User Management');
+        console.log('👤 Users: Admin/1811, Staff/2026 (Add more in Settings)');
     </script>
 </body>
 </html>
