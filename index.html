@@ -1300,135 +1300,379 @@
 
         // ============ A4 HALF PAGE PRINT FORMAT ============
         function generateA4Print(v) {
-            let printWindow = window.open('', '_blank', 'width=800,height=600');
-            if(!printWindow) { 
-                showToast('Please allow popups'); 
-                return; 
+    let printWindow = window.open('', '_blank', 'width=800,height=600');
+    if(!printWindow) { 
+        showToast('Please allow popups'); 
+        return; 
+    }
+    
+    let itemsHtml = (v.items || []).map((item,idx) => `
+        <tr>
+            <td style="padding:3px 5px; text-align:center; font-size:9px; border:1px solid #000;">${idx+1}</td>
+            <td style="padding:3px 5px; font-size:9px; border:1px solid #000;">${item.name}</td>
+            <td style="padding:3px 5px; text-align:center; font-size:9px; border:1px solid #000;">${item.qty}</td>
+            <td style="padding:3px 5px; text-align:right; font-size:9px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
+            <td style="padding:3px 5px; text-align:right; font-size:9px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
+        </tr>
+    `).join('');
+    
+    let total = v.amt;
+    let title = v.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
+    let words = numberToWords(total);
+    let partyName = v.party || '';
+    let modeText = v.mode || 'Cash';
+    if(v.chequeNo) modeText += ' | Chq: '+v.chequeNo;
+    
+    let pageHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>${v.vno}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #fff; padding: 8mm; font-family: 'Courier New', monospace; }
+        
+        .page {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        
+        /* Each voucher takes exactly half page */
+        .voucher-half {
+            height: 48%;
+            min-height: 135mm;
+            border: 1.5px solid #000;
+            padding: 6mm 8mm;
+            margin-bottom: 4mm;
+            page-break-after: avoid;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+        
+        .voucher-half:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Header Section */
+        .header {
+            text-align: center;
+            border-bottom: 1.5px dashed #000;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+        .header .firm-name {
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .header .address {
+            font-size: 8px;
+            color: #333;
+        }
+        .header .gst {
+            font-size: 8px;
+            font-weight: bold;
+        }
+        
+        /* Title */
+        .bill-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-decoration: underline;
+            margin: 3px 0 6px 0;
+        }
+        
+        /* Info Rows - Tally Style */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 15px;
+            font-size: 9px;
+            margin-bottom: 4px;
+        }
+        .info-grid .label {
+            font-weight: bold;
+        }
+        .info-grid .value {
+            text-align: left;
+        }
+        .info-grid .value-right {
+            text-align: right;
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4px 0;
+            font-size: 9px;
+        }
+        table th {
+            background: #e8e8e8;
+            padding: 4px 5px;
+            border: 1px solid #000;
+            text-align: center;
+            font-weight: bold;
+            font-size: 8px;
+        }
+        table td {
+            padding: 3px 5px;
+            border: 1px solid #000;
+            font-size: 8.5px;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        /* Total Section */
+        .total-section {
+            margin-top: auto;
+            padding-top: 4px;
+            border-top: 1.5px double #000;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 0;
+        }
+        .amount-words {
+            font-size: 8px;
+            font-weight: bold;
+            text-align: right;
+            padding: 2px 0;
+        }
+        
+        /* Signature Section - Tally Style */
+        .sign-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px dashed #000;
+        }
+        .sign-box {
+            text-align: center;
+            font-size: 8px;
+        }
+        .sign-box .line {
+            border-top: 1px solid #000;
+            margin-top: 18px;
+            padding-top: 2px;
+        }
+        .sign-box .label-text {
+            font-size: 7px;
+            color: #555;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 6.5px;
+            color: #666;
+            border-top: 1px dashed #000;
+            padding-top: 3px;
+            margin-top: 4px;
+        }
+        
+        /* Copy Label */
+        .copy-label {
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            padding: 2px;
+        }
+        .copy-original { color: #1a5e1a; }
+        .copy-duplicate { color: #a8641a; }
+        
+        /* Print Button */
+        .no-print { text-align: center; margin: 15px; }
+        .no-print button {
+            padding: 10px 25px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 0 5px;
+            font-size: 14px;
+        }
+        .no-print button:hover { background: #1d4ed8; }
+        
+        @media print {
+            body { padding: 5mm; }
+            .no-print { display: none !important; }
+            .voucher-half {
+                height: 48%;
+                min-height: 135mm;
+                page-break-after: avoid;
+                border-color: #000;
             }
+            .voucher-half:last-child {
+                page-break-after: avoid;
+            }
+        }
+        
+        @page {
+            size: A4;
+            margin: 0;
+        }
+    </style>
+    </head>
+    <body>
+        <div class="page">
             
-            let itemsHtml = (v.items || []).map((item,idx) => `
-                <tr>
-                    <td style="padding:4px; text-align:center; font-size:9px; border:1px solid #000;">${idx+1}</td>
-                    <td style="padding:4px; font-size:9px; border:1px solid #000;">${item.name}</td>
-                    <td style="padding:4px; text-align:center; font-size:9px; border:1px solid #000;">${item.qty}</td>
-                    <td style="padding:4px; text-align:right; font-size:9px; border:1px solid #000;">₹${(item.rate||0).toFixed(2)}</td>
-                    <td style="padding:4px; text-align:right; font-size:9px; border:1px solid #000;">₹${(item.amount||0).toFixed(2)}</td>
-                </tr>
-            `).join('');
-            
-            let total = v.amt;
-            let title = v.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
-            let words = numberToWords(total);
-            
-            // Half page format - 2 copies per page
-            let pageHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"><title>${v.vno}</title>
-            <style>
-                @media print { body { margin: 0; padding: 0; } .no-print { display: none; } }
-                * { font-family: Arial, sans-serif; }
-                body { background: #fff; margin: 0; padding: 5mm; }
-                .voucher-container {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 10px;
-                    page-break-after: always;
-                }
-                .copy-box {
-                    border: 1px solid #000;
-                    padding: 8px;
-                    background: white;
-                    font-size: 9px;
-                    min-height: 140mm;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 6px; }
-                .logo { max-height: 30px; margin-bottom: 3px; }
-                .firm-name { font-size: 12px; font-weight: bold; }
-                .address { font-size: 7px; }
-                .gst { font-size: 7px; font-weight: bold; }
-                .bill-title { text-align: center; font-size: 11px; font-weight: bold; margin: 4px 0; text-decoration: underline; }
-                .info-row { display: flex; justify-content: space-between; font-size: 8px; margin: 2px 0; }
-                table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 8px; }
-                th { background: #f2f2f2; padding: 4px; border: 1px solid #000; text-align: center; font-size: 8px; }
-                td { padding: 4px; border: 1px solid #000; font-size: 8px; }
-                .grand-total { font-size: 10px; font-weight: bold; text-align: right; border-top: 1px solid #000; padding-top: 4px; margin-top: 4px; }
-                .sign { display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; font-size: 8px; }
-                .sign-box { border-top: 1px solid #000; width: 100px; text-align: center; padding-top: 2px; }
-                .footer { text-align: center; font-size: 6px; margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; }
-                .copy-label { text-align: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; background: #f8f8f8; padding: 2px; }
-                .words { font-size: 7px; font-weight: bold; text-align: right; margin: 2px 0; }
-                @media print {
-                    .voucher-container { page-break-after: always; }
-                    .no-print { display: none !important; }
-                }
-            </style>
-            </head>
-            <body>
-                <div class="voucher-container">
-                    <!-- ORIGINAL COPY -->
-                    <div class="copy-box">
-                        <div class="copy-label" style="background:#e8f5e9;">📄 ORIGINAL</div>
-                        <div class="header">
-                            <img src="${config.logo}" class="logo" onerror="this.style.display='none'">
-                            <div class="firm-name">${config.name}</div>
-                            <div class="address">${config.addr}</div>
-                            <div class="gst">${config.gst}</div>
-                        </div>
-                        <div class="bill-title">${title}</div>
-                        <div class="info-row"><span><strong>No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
-                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Chq:'+v.chequeNo : ''}</span></div>
-                        ${v.items && v.items.length ? `
-                        <table><thead><tr><th>#</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${itemsHtml}</tbody></table>
-                        ` : ''}
-                        <div class="grand-total">Total: ₹ ${total.toFixed(2)}</div>
-                        <div class="words">₹ ${words} Only</div>
-                        <div class="sign">
-                            <div><span>Authorised Signatory</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                            <div><span>Receiver's Signature</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                            <div><span>Prepared By: ${v.createdBy || currentUser}</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                        </div>
-                        <div class="footer">Computer generated | ${v.createdAt || new Date().toLocaleString()}</div>
+            <!-- ============ ORIGINAL COPY - TOP HALF ============ -->
+            <div class="voucher-half">
+                <div class="copy-label copy-original">◆◆◆ ORIGINAL COPY ◆◆◆</div>
+                
+                <div class="header">
+                    <div class="firm-name">${config.name}</div>
+                    <div class="address">${config.addr}</div>
+                    <div class="gst">${config.gst}</div>
+                </div>
+                
+                <div class="bill-title">${title}</div>
+                
+                <div class="info-grid">
+                    <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
+                    <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
+                    <div><span class="label">Party</span> <span class="value">${partyName}</span></div>
+                    <div><span class="label">Mode</span> <span class="value-right">${modeText}</span></div>
+                </div>
+                
+                ${v.items && v.items.length ? `
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:8%;">#</th>
+                            <th style="width:47%;">Particulars</th>
+                            <th style="width:15%;">Qty</th>
+                            <th style="width:15%;">Rate</th>
+                            <th style="width:15%;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                ` : ''}
+                
+                <div class="total-section">
+                    <div class="total-row">
+                        <span>Total Amount</span>
+                        <span>₹ ${total.toFixed(2)}</span>
                     </div>
-                    
-                    <!-- DUPLICATE COPY -->
-                    <div class="copy-box">
-                        <div class="copy-label" style="background:#fff3e0;">📋 DUPLICATE</div>
-                        <div class="header">
-                            <img src="${config.logo}" class="logo" onerror="this.style.display='none'">
-                            <div class="firm-name">${config.name}</div>
-                            <div class="address">${config.addr}</div>
-                            <div class="gst">${config.gst}</div>
-                        </div>
-                        <div class="bill-title">${title}</div>
-                        <div class="info-row"><span><strong>No:</strong> ${v.vno}</span><span><strong>Date:</strong> ${v.date}</span></div>
-                        <div class="info-row"><span><strong>Party:</strong> ${v.party || ''}</span><span><strong>Mode:</strong> ${v.mode} ${v.chequeNo ? '| Chq:'+v.chequeNo : ''}</span></div>
-                        ${v.items && v.items.length ? `
-                        <table><thead><tr><th>#</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${itemsHtml}</tbody></table>
-                        ` : ''}
-                        <div class="grand-total">Total: ₹ ${total.toFixed(2)}</div>
-                        <div class="words">₹ ${words} Only</div>
-                        <div class="sign">
-                            <div><span>Authorised Signatory</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                            <div><span>Receiver's Signature</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                            <div><span>Prepared By: ${v.createdBy || currentUser}</span><div class="sign-box" style="margin-top:15px;">(Signature)</div></div>
-                        </div>
-                        <div class="footer">Computer generated | ${v.createdAt || new Date().toLocaleString()}</div>
+                    <div class="amount-words">₹ ${words} Only</div>
+                </div>
+                
+                <div class="sign-section">
+                    <div class="sign-box">
+                        <div>Authorised</div>
+                        <div>Signatory</div>
+                        <div class="line">(Signature)</div>
+                    </div>
+                    <div class="sign-box">
+                        <div>Receiver's</div>
+                        <div>Signature</div>
+                        <div class="line">(Signature)</div>
+                    </div>
+                    <div class="sign-box">
+                        <div>Prepared By</div>
+                        <div>${v.createdBy || currentUser}</div>
+                        <div class="line">(Signature)</div>
                     </div>
                 </div>
                 
-                <div class="no-print" style="text-align:center; margin:15px;">
-                    <button onclick="window.print();setTimeout(()=>window.close(),1000)" style="padding:10px 20px; cursor:pointer; background:#2563eb; color:white; border:none; border-radius:5px;">🖨️ Print</button>
-                    <button onclick="window.close()" style="padding:10px 20px; cursor:pointer; background:#64748b; color:white; border:none; border-radius:5px;">✖ Close</button>
+                <div class="footer">Computer Generated | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
+            </div>
+            
+            <!-- ============ DUPLICATE COPY - BOTTOM HALF ============ -->
+            <div class="voucher-half">
+                <div class="copy-label copy-duplicate">◆◆◆ DUPLICATE COPY ◆◆◆</div>
+                
+                <div class="header">
+                    <div class="firm-name">${config.name}</div>
+                    <div class="address">${config.addr}</div>
+                    <div class="gst">${config.gst}</div>
                 </div>
-                <script>window.onload = function() { setTimeout(window.print, 800); };<\/script>
-            </body>
-            </html>`;
-            printWindow.document.write(pageHtml);
-            printWindow.document.close();
-        }
+                
+                <div class="bill-title">${title}</div>
+                
+                <div class="info-grid">
+                    <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
+                    <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
+                    <div><span class="label">Party</span> <span class="value">${partyName}</span></div>
+                    <div><span class="label">Mode</span> <span class="value-right">${modeText}</span></div>
+                </div>
+                
+                ${v.items && v.items.length ? `
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:8%;">#</th>
+                            <th style="width:47%;">Particulars</th>
+                            <th style="width:15%;">Qty</th>
+                            <th style="width:15%;">Rate</th>
+                            <th style="width:15%;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                ` : ''}
+                
+                <div class="total-section">
+                    <div class="total-row">
+                        <span>Total Amount</span>
+                        <span>₹ ${total.toFixed(2)}</span>
+                    </div>
+                    <div class="amount-words">₹ ${words} Only</div>
+                </div>
+                
+                <div class="sign-section">
+                    <div class="sign-box">
+                        <div>Authorised</div>
+                        <div>Signatory</div>
+                        <div class="line">(Signature)</div>
+                    </div>
+                    <div class="sign-box">
+                        <div>Receiver's</div>
+                        <div>Signature</div>
+                        <div class="line">(Signature)</div>
+                    </div>
+                    <div class="sign-box">
+                        <div>Prepared By</div>
+                        <div>${v.createdBy || currentUser}</div>
+                        <div class="line">(Signature)</div>
+                    </div>
+                </div>
+                
+                <div class="footer">Computer Generated | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
+            </div>
+            
+        </div>
+        
+        <!-- Print Buttons -->
+        <div class="no-print">
+            <button onclick="window.print();setTimeout(()=>window.close(),1000)">🖨️ Print</button>
+            <button onclick="window.close()" style="background:#64748b;">✖ Close</button>
+        </div>
+        
+        <script>
+            window.onload = function() { 
+                setTimeout(window.print, 600); 
+            };
+        <\/script>
+    </body>
+    </html>`;
+    
+    printWindow.document.write(pageHtml);
+    printWindow.document.close();
+}
 
         // ============ WHATSAPP SHARE ============
         async function generatePDFBlob(voucher) {
