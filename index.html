@@ -1626,7 +1626,7 @@
             showLoading(true);
             try {
                 const snapshot = await rtdb.ref('data_v2/'+currentFirmId).once('value');
-                db = snapshot.val() ? Object.values(snap.val()) : [];
+                db = snapshot.val() ? Object.values(snapshot.val()) : [];
                 renderAll();
                 generateVNo();
                 isDataLoaded = true;
