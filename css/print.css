@@ -1,0 +1,25 @@
+/* css/print.css - Print Style */
+
+@media print {
+    body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+    
+    .voucher-half {
+        page-break-after: avoid !important;
+        border: 2px solid #000 !important;
+        padding: 15mm !important;
+        min-height: 140mm !important;
+    }
+}
+
+/* Print Template के लिए Common Style */
+.voucher-half {
+    font-family: 'Courier New', monospace;
+}
