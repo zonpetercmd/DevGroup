@@ -1,0 +1,364 @@
+<!-- templates/print-template.html - Final Version with Perfect Signatures -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{vno}}</title>
+    <link rel="stylesheet" href="../css/print.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #e8e8e8; 
+            padding: 5mm; 
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .page { 
+            max-width: 210mm; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 0;
+            position: relative;
+        }
+        
+        /* ===== VOUCHER HALF ===== */
+        .voucher-half { 
+            border: 2px solid #000; 
+            padding: 5mm 8mm; 
+            margin-bottom: 3mm; 
+            min-height: 135mm;
+            max-height: 135mm;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+        .voucher-half:last-child { margin-bottom: 0; }
+        
+        /* ===== WATERMARK LOGO ===== */
+        .watermark-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.08;
+            max-width: 250px;
+            max-height: 250px;
+            width: auto;
+            height: auto;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* ===== FIRM HEADER ===== */
+        .firm-header-print {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .firm-header-print img {
+            max-height: 50px;
+            max-width: 80px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .firm-header-print .firm-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        .firm-header-print .firm-name {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        .firm-header-print .firm-addr { 
+            font-size: 10px;
+            color: #444; 
+        }
+
+        .firm-header-print .firm-contact { 
+            font-size: 9px;
+            color: #555; 
+        }
+        
+        .header-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            text-decoration: underline;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .voucher-details {
+            font-size: 13px;
+            line-height: 1.9;
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        .voucher-details .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1px 0;
+        }
+        .voucher-details .label { font-weight: bold; }
+        .voucher-details .divider {
+            border-top: 1px dashed #999;
+            margin: 2px 0;
+        }
+        
+        .party-row {
+            display: flex;
+            padding: 2px 0;
+        }
+        .party-row .party-label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .party-row .party-value {
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 4px 0;
+            border-top: 2px solid #000;
+            margin-top: 4px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .amount-words {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: right;
+            padding: 2px 0;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* ===== SIGNATURES - PERFECT ALIGNMENT ===== */
+        .sign-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+            margin-top: auto;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .sign-box {
+            text-align: center;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .sign-box .sign-label {
+            font-weight: bold;
+            font-size: 10px;
+            line-height: 1.2;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sign-box .sign-name {
+            font-weight: bold;
+            font-size: 12px;
+            min-height: 18px;
+            line-height: 1.2;
+        }
+        .sign-box .sign-line {
+            border-top: 1.5px solid #000;
+            margin-top: 4px;
+            padding-top: 2px;
+            min-height: 18px;
+        }
+        .sign-box .sign-hint {
+            font-size: 7px;
+            color: #666;
+            margin-top: 1px;
+        }
+        
+        .footer-text {
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px dashed #999;
+            padding-top: 3px;
+            margin-top: 4px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .copy-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin-bottom: 4px;
+            padding: 2px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .copy-original { color: #1a7a1a; border-bottom: 2px solid #1a7a1a; }
+        
+        .no-print { text-align: center; margin: 20px; }
+        .no-print button { 
+            padding: 12px 30px; cursor: pointer; background: #2563eb; color: white; 
+            border: none; border-radius: 6px; margin: 0 8px; font-size: 15px; font-weight: bold;
+        }
+        
+        /* ===== PRINT SETTINGS ===== */
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                background: #fff !important; 
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .page { 
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            .voucher-half { 
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                min-height: 135mm !important;
+                max-height: 135mm !important;
+                border: 2px solid #000 !important;
+                margin: 0 !important;
+                padding: 5mm 8mm !important;
+            }
+            .watermark-logo {
+                opacity: 0.08 !important;
+            }
+            .sign-box .sign-line {
+                min-height: 22px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    
+    <!-- ===== ONLY ORIGINAL COPY ===== -->
+    <div class="voucher-half">
+        
+        <!-- ===== WATERMARK LOGO ===== -->
+        <img src="{{logo}}" class="watermark-logo" onerror="this.style.display='none'">
+        
+        <div class="copy-label copy-original">◆◆ ORIGINAL COPY ◆◆</div>
+        
+        <div class="firm-header-print">
+            <img src="{{logo}}" onerror="this.style.display='none'">
+            <div class="firm-info">
+                <div class="firm-name">{{companyName}}</div>
+                <div class="firm-addr">{{address}}</div>
+                <div class="firm-contact">📞 {{phone}} | ✉ {{email}}</div>
+            </div>
+        </div>
+        
+        <div class="header-title">{{title}}</div>
+        
+        <div class="voucher-details">
+            <div class="row">
+                <span><span class="label">Voucher No:</span> {{vno}}</span>
+                <span><span class="label">Date:</span> {{date}}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+                <span><span class="label">Head:</span> {{head}}</span>
+            </div>
+            <div class="row">
+                <span><span class="label">Sub Head:</span> {{subHead}}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="party-row">
+                <span class="party-label">PARTY :</span>
+                <span class="party-value">{{party}}</span>
+            </div>
+            <div class="row">
+                <span><span class="label">Paid For:</span> {{narration}}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+                <span><span class="label">Mode:</span> {{mode}}</span>
+                <span><span class="label">Ref No.:</span> {{referenceNo}}</span>
+            </div>
+        </div>
+        
+        <div class="amount-row">
+            <span>TOTAL</span>
+            <span>{{amount}}</span>
+        </div>
+        <div class="amount-words">{{amountWords}}</div>
+        
+        <!-- ===== SIGNATURES - PERFECT ALIGNMENT ===== -->
+        <div class="sign-section">
+            <!-- Prepared By -->
+            <div class="sign-box">
+                <div class="sign-label">Prepared By</div>
+                <div class="sign-name">{{createdBy}}</div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- Authorised Signatory -->
+            <div class="sign-box">
+                <div class="sign-label">Authorised Signatory</div>
+                <div class="sign-name">{{signatory}}</div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- Receiver's Signature -->
+            <div class="sign-box">
+                <div class="sign-label">Receiver's Signature</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+        </div>
+        
+        <div class="footer-text">Computer Generated | {{currentTime}}</div>
+    </div>
+    
+</div>
+<div class="no-print">
+    <button onclick="window.print();setTimeout(()=>window.close(),1000)">🖨️ Print</button>
+    <button onclick="window.close()" style="background:#64748b;">✖ Close</button>
+</div>
+<script>window.onload=function(){setTimeout(window.print,700)};</script>
+</body>
+</html>
