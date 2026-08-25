@@ -1,0 +1,480 @@
+/* css/style.css - Main CSS */
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+}
+
+/* Login */
+#login-screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.login-card .login-logo {
+    max-width: 120px;
+    max-height: 80px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}
+
+.login-card h2 {
+    margin-bottom: 5px;
+    color: var(--dark);
+}
+
+.login-card p {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 25px;
+}
+
+.login-card input, .login-card select {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    background: white;
+}
+
+.btn-login {
+    background: var(--primary);
+    color: white;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-login:hover {
+    background: var(--primary-dark);
+}
+
+/* Main App */
+#main-app {
+    display: none;
+}
+
+header {
+    background: white;
+    padding: 12px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.container {
+    padding: 25px 5%;
+    max-width: 1400px;
+    margin: auto;
+}
+
+/* Stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-box {
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.stat-box h3 {
+    margin: 3px 0;
+    font-size: 16px;
+}
+
+.stat-box p {
+    margin: 0;
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* Cards */
+.form-card, .filter-card, .report-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+/* Tabs */
+.module-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.module-tab {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    background: none;
+    transition: 0.2s;
+    font-size: 13px;
+}
+
+.module-tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+.module-pane {
+    display: none;
+}
+
+.module-pane.active {
+    display: block;
+}
+
+/* Grids */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+/* Labels */
+label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #64748b;
+}
+
+select, input, textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+/* Search */
+.search-wrapper {
+    position: relative;
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding-right: 35px;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 200;
+    border-radius: 0 0 6px 6px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-list div {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+.dropdown-list div:hover {
+    background: #f1f5f9;
+}
+
+.dropdown-list .no-result {
+    color: #94a3b8;
+    text-align: center;
+    padding: 15px;
+}
+
+/* Table */
+.table-res {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+th {
+    background: #f8fafc;
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    border-bottom: 2px solid var(--border);
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+/* Buttons */
+.btn-action {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 11px;
+    margin: 2px;
+}
+
+.btn-print { background: #10b981; color: white; }
+.btn-edit { background: #f59e0b; color: white; }
+.btn-del { background: #ef4444; color: white; }
+.btn-whatsapp-small { background: #25D366; color: white; }
+
+.btn-xlsx {
+    background: #475569;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-add {
+    background: var(--success);
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    width: 95%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+/* Toast */
+.toast-msg {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    z-index: 3000;
+    display: none;
+}
+
+/* Firm Header */
+.firm-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 15px;
+}
+
+.firm-header img {
+    max-height: 50px;
+    max-width: 80px;
+    object-fit: contain;
+}
+
+.firm-header .firm-info {
+    flex: 1;
+}
+
+.firm-header .firm-info .name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.firm-header .firm-info .addr {
+    font-size: 11px;
+    color: #64748b;
+}
+
+/* Status */
+.status-active { color: var(--success); font-weight: bold; }
+.status-deleted { color: var(--danger); font-weight: bold; text-decoration: line-through; }
+.status-edited { color: var(--warning); font-weight: bold; }
+
+/* Cards */
+.user-card, .firm-card, .party-card, .signatory-card {
+    background: #f8fafc;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.user-card .user-info, .firm-card .firm-info,
+.party-card .party-info, .signatory-card .signatory-info {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.badge {
+    background: var(--primary);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.firm-badge {
+    background: var(--success);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.permission-grid label {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.permission-grid input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+#v_no { background: #f1f5f9; font-weight: 600; }
+#bank_account_field { display: none; }
+
+/* Loading */
+.loading-spinner { display: none; text-align: center; padding: 20px; }
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+    .login-card { padding: 25px; margin: 15px; }
+    .permission-grid { grid-template-columns: 1fr 1fr; }
+    .firm-header { flex-direction: column; text-align: center; }
+}
