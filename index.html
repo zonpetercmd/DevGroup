@@ -2,9 +2,10 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev Vidyalaya | Complete ERP System</title>
     
+    <!-- ⬇️ Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -12,2760 +13,429 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
+    <!-- ⬇️ Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <style>
-        :root { --primary: #2563eb; --dark: #1e293b; --bg: #f8fafc; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg); margin: 0; padding: 0; }
-
-        #login-screen {
-            height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
-        }
-        .login-card {
-            background: white; padding: 40px; border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center;
-        }
-        .login-card h2 { margin-bottom: 5px; color: var(--dark); }
-        .login-card p { font-size: 13px; color: #64748b; margin-bottom: 25px; }
-        .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; font-size: 14px; }
-        .btn-login { background: var(--primary); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px; }
-        .btn-login:hover { background: #1d4ed8; }
-
-        #main-app { display: none; }
-        header {
-            background: white; padding: 12px 5%; display: flex; justify-content: space-between;
-            align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px;
-            position: sticky; top: 0; z-index: 100;
-        }
-        .container { padding: 25px 5%; max-width: 1400px; margin: auto; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-box { background: white; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; }
-        .stat-box h3 { margin: 3px 0; font-size: 16px; }
-        .stat-box p { margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; }
-
-        .form-card, .filter-card, .stock-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        
-        .module-tabs { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .module-tab { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; background: none; transition: 0.2s; font-size: 13px; }
-        .module-tab.active { background: var(--primary); color: white; }
-        .module-pane { display: none; }
-        .module-pane.active { display: block; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-
-        label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 5px; color: #64748b; }
-        select, input, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
-
-        .table-res { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { background: #f8fafc; padding: 12px; text-align: left; font-size: 12px; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-
-        .btn-action { padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px; }
-        .btn-print { background: #10b981; color: white; }
-        .btn-edit { background: #f59e0b; color: white; }
-        .btn-del { background: #ef4444; color: white; }
-        .btn-pdf { background: #dc2626; color: white; }
-        .btn-whatsapp-small { background: #25D366; color: white; }
-        .btn-xlsx { background: #475569; color: white; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; margin-right: 10px; margin-top: 10px; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 95%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
-
-        .item-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-        .item-row .searchable-item { flex: 2; min-width: 180px; position: relative; }
-        .item-row .searchable-item input { width: 100%; }
-        .item-row .search-dropdown { position: absolute; background: white; border: 1px solid #ccc; max-height: 180px; overflow-y: auto; width: 100%; z-index: 200; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .item-row .search-dropdown div { padding: 8px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #eee; }
-        .item-row .search-dropdown div:hover { background: #e2e8f0; }
-        .item-row input[type="number"] { width: 100px; }
-        .remove-item { background: #ef4444; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; }
-
-        .firm-tabs { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 10px; flex-wrap: wrap; }
-        .tab-btn { padding: 8px 15px; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 13px; color: #64748b; background: none; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-        .type-badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; }
-        .type-REC { background: #d1fae5; color: #065f46; }
-        .type-EXP { background: #fee2e2; color: #991b1b; }
-
-        .stock-low { background: #fee2e2; border-left: 3px solid var(--danger); }
-        .error { color: red; font-size: 12px; margin-top: 10px; display: none; }
-        .permission-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 15px 0; }
-        
-        .whatsapp-share-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .whatsapp-share-content {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 350px;
-            width: 90%;
-        }
-        .whatsapp-share-content h3 {
-            margin: 0 0 15px 0;
-            color: #25D366;
-        }
-        .whatsapp-share-content button {
-            margin: 10px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-wa-send { background: #25D366; color: white; }
-        .btn-wa-cancel { background: #64748b; color: white; }
-        
-        .toast-msg {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 3000;
-            display: none;
-            white-space: nowrap;
-        }
-        
-        .bank-balance-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 15px 0;
-        }
-        .bank-balance-box {
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-        }
-        .party-select-container {
-            position: relative;
-        }
-        .party-select-container input {
-            width: 100%;
-        }
-        .party-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ccc;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 300;
-            border-radius: 6px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .party-dropdown div {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        .party-dropdown div:hover {
-            background: #e2e8f0;
-        }
-        .cheque-range {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .action-btns {
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-        }
-        .action-btns .btn-action {
-            font-size: 10px;
-            padding: 3px 7px;
-        }
-        
-        .loading-spinner {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* User Management Styles */
-        .user-card {
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .user-card .user-info {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .user-card .user-info span {
-            font-size: 13px;
-        }
-        .user-card .user-info .badge {
-            background: var(--primary);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-        }
-    </style>
+    <!-- ⬇️ CSS Files -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/print.css">
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <img src="logo.png" id="login_logo" width="100" onerror="this.style.display='none'">
-            <h2 id="login_title">Dev Vidyalaya</h2>
-            <p>Login to your account</p>
-            <input type="text" id="user_id" placeholder="User ID" autocomplete="off" value="Admin">
-            <input type="password" id="user_pass" placeholder="Password" autocomplete="off" value="1811">
-            <div id="login_error" class="error"></div>
-            <button class="btn-login" id="loginBtn">Login</button>
-        </div>
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+    <div class="login-card">
+        <img src="logo.jpeg" class="login-logo" id="login_logo" onerror="this.style.display='none'">
+        <h2 id="login_title">Dev Vidyalaya</h2>
+        <p>Login to your account</p>
+        <input type="text" id="user_id" placeholder="Enter User ID">
+        <input type="password" id="user_pass" placeholder="Enter Password">
+        <select id="login_role"><option value="">-- Select Role --</option></select>
+        <div id="login_error" style="color:red; display:none;"></div>
+        <button class="btn-login" id="loginBtn">Login</button>
     </div>
+</div>
 
-    <div id="main-app">
-        <header>
-            <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
-                <img src="logo.png" id="header_logo" height="35" onerror="this.style.display='none'">
-                <div class="firm-tabs" id="firm_tabs_container">
-                    <button class="tab-btn" id="btn_firm1" onclick="switchFirm('firm1')">Dev Vidyalaya</button>
-                    <button class="tab-btn" id="btn_firm2" onclick="switchFirm('firm2')">Dev Gas Agency</button>
-                    <button class="tab-btn" id="btn_firm3" onclick="switchFirm('firm3')">Firm 3</button>
-                </div>
-            </div>
-            <div>
-                <span id="display_role" style="font-weight:700; color:#64748b; margin-right:15px; font-size:13px"></span>
-                <span id="display_user" style="font-weight:600; color:#2563eb; margin-right:15px; font-size:13px"></span>
-                <button id="admin_settings_btn" onclick="openSettings()" style="border:1px solid #64748b; background:none; padding:5px 12px; cursor:pointer; border-radius:5px; margin-right:10px; display:none;">⚙️ Settings</button>
-                <button onclick="logout()" style="border:1px solid red; color:red; background:none; padding:5px 12px; cursor:pointer; border-radius:5px;">Logout</button>
-            </div>
-        </header>
-
-        <div class="container">
-            <div class="stats-grid">
-                <div class="stat-box"><p>Total Receipts</p><h3 id="stat_receipt">₹ 0</h3></div>
-                <div class="stat-box"><p>Total Payments</p><h3 id="stat_expense">₹ 0</h3></div>
-                <div class="stat-box"><p>Cash Balance</p><h3 id="stat_cash">₹ 0</h3></div>
-                <div class="stat-box"><p>Bank Balance</p><h3 id="stat_bank">₹ 0</h3></div>
-                <div class="stat-box"><p>Stock Value</p><h3 id="stat_stock_value">₹ 0</h3></div>
-                <div class="stat-box"><p>Total Balance</p><h3 id="stat_balance">₹ 0</h3></div>
-            </div>
-
-            <div class="module-tabs" id="moduleTabsContainer"></div>
-
-            <div id="module-transactions" class="module-pane active">
-                <div class="form-card" id="transactionFormCard">
-                    <h4 id="form-title">Add Transaction</h4>
-                    <input type="hidden" id="edit_id">
-                    <div class="grid">
-                        <div><label>Transaction Type</label>
-                            <select id="v_type" onchange="toggleItemFields()">
-                                <option value="REC">Receipt (Income)</option>
-                                <option value="EXP">Payment (Expense)</option>
-                            </select>
-                        </div>
-                        <div><label>Voucher No</label><input type="text" id="v_no" readonly style="background:#f1f5f9"></div>
-                        <div><label>Date</label><input type="date" id="v_date"></div>
-                        <div class="party-select-container">
-                            <label>Party/Customer Name</label>
-                            <input type="text" id="v_party" placeholder="Search or select party..." autocomplete="off" oninput="filterParties(this.value)">
-                            <div id="partyDropdown" class="party-dropdown"></div>
-                            <button type="button" class="btn-action" style="background:var(--success); margin-top:5px; color:white;" onclick="openNewPartyModal()">+ New Party</button>
-                        </div>
-                        <div id="manual_amt_div" style="display: block;"><label>Amount (₹)</label><input type="number" id="manual_amount" value="0" step="1" oninput="updateManualTotal()"></div>
-                        <div id="auto_amt_div" style="display: none;"><label>Total Amount (Auto)</label><input type="number" id="v_amt" readonly style="background:#f1f5f9"></div>
-                        <div><label>Payment Mode</label>
-                            <select id="v_mode" onchange="toggleChequeFields()">
-                                <option value="Cash">Cash</option>
-                                <option value="PhonePe/UPI">PhonePe/UPI</option>
-                                <option value="Bank">Bank Transfer</option>
-                                <option value="Cheque">Cheque</option>
-                            </select>
-                        </div>
-                        <div id="bank_account_div" style="display:none;">
-                            <label>Select Bank</label>
-                            <select id="bank_account"><option value="">Select Bank</option></select>
-                        </div>
-                        <div id="cheque_fields_div" style="display:none;">
-                            <label>Cheque Number</label>
-                            <select id="cheque_number"><option value="">Select Cheque Number</option></select>
-                            <button type="button" class="btn-action" style="background:var(--primary); margin-top:5px; color:white;" onclick="openChequeRangeModal()">📒 Add Cheque Range</button>
-                        </div>
-                        <div><label>Remark</label><input type="text" id="v_remark"></div>
-                    </div>
-
-                    <div id="items-section" style="display:none; margin-top:20px;">
-                        <h5>📦 Items Details 
-                            <button type="button" class="btn-action" style="background:var(--primary); color:white;" onclick="addItemRow()">+ Add Item</button>
-                            <button type="button" class="btn-action" style="background:var(--success); color:white;" onclick="openAddItemModal()">+ New Item</button>
-                        </h5>
-                        <div id="items-container"></div>
-                        <div style="text-align:right; margin-top:10px; padding:10px; background:#f8fafc; border-radius:8px;">
-                            <strong>Total: ₹ <span id="subtotal">0</span></strong>
-                        </div>
-                    </div>
-
-                    <div id="form-btns" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-                        <button class="btn-login" style="margin:0; width:auto; padding:10px 25px;" onclick="saveVoucher()">💾 Save & Print</button>
-                        <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">Reset</button>
-                        <button id="whatsappShareBtn" class="whatsapp-btn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share PDF Invoice</button>
-                    </div>
-                </div>
-
-                <div class="filter-card">
-                    <div class="grid-3">
-                        <div><label>Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Party, Remark..."></div>
-                        <div><label>Transaction Type</label><select id="f_type" onchange="renderAll()"><option value="ALL">All</option><option value="REC">Receipt</option><option value="EXP">Payment</option></select></div>
-                        <div><label>From Date</label><input type="date" id="f_start" onchange="renderAll()"></div>
-                        <div><label>To Date</label><input type="date" id="f_end" onchange="renderAll()"></div>
-                    </div>
-                </div>
-
-                <div class="loading-spinner" id="loadingSpinner">
-                    <div class="spinner"></div>
-                    <p>Loading...</p>
-                </div>
-
-                <div class="table-res">
-                    <table><thead><tr><th>Date</th><th>Voucher No</th><th>Type</th><th>Party</th><th>Amount</th><th>Mode</th><th>Bank/Cheque</th><th>Actions</th></tr></thead><tbody id="v_list"></tbody></table>
-                </div>
-            </div>
-
-            <div id="module-stock" class="module-pane">
-                <div class="stock-card">
-                    <h4>📦 Stock Inventory</h4>
-                    <div class="grid-3" style="margin-bottom:15px">
-                        <div><label>Search Item</label><input type="text" id="stock_search" oninput="renderStock()" placeholder="Search..."></div>
-                        <div><label>Category Filter</label><select id="stock_cat_filter" onchange="renderStock()"><option value="">All</option></select></div>
-                        <div><label><input type="checkbox" id="low_stock_only" onchange="renderStock()"> Show Low Stock Only</label></div>
-                    </div>
-                    <div style="margin-bottom:15px">
-                        <button class="btn-xlsx" onclick="exportStockToExcel()">📎 Export Stock</button>
-                        <button class="btn-xlsx" style="background:#10b981; color:white;" onclick="document.getElementById('excel-import').click()">📥 Import Stock</button>
-                        <input type="file" id="excel-import" accept=".xlsx, .xls" style="display:none" onchange="importStockFromExcel(this)">
-                        <button class="btn-xlsx" style="background:#f59e0b; color:white;" onclick="downloadStockTemplate()">📄 Download Template</button>
-                    </div>
-                    <div class="table-res">
-                        <table><thead><tr><th>#</th><th>Item Name</th><th>Category</th><th>Unit</th><th>Selling Price</th><th>Purchase Price</th><th>Stock</th><th>Action</th></tr></thead><tbody id="stock_list"></tbody></table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="module-bank" class="module-pane">
-                <div class="stock-card">
-                    <h4>🏦 Bank & Cash Management</h4>
-                    <div class="bank-balance-grid">
-                        <div class="bank-balance-box">
-                            <h5>Cash Balance</h5>
-                            <h3 id="cash_balance_display">₹ 0</h3>
-                            <input type="number" id="manual_cash_update" placeholder="Update Cash" style="width:80%; margin:5px 0;">
-                            <button class="btn-action" style="background:var(--primary); color:white;" onclick="updateCashBalance()">Update Cash</button>
-                        </div>
-                        <div class="bank-balance-box">
-                            <h5>Bank Balance</h5>
-                            <h3 id="bank_balance_display">₹ 0</h3>
-                            <input type="number" id="manual_bank_update" placeholder="Update Bank" style="width:80%; margin:5px 0;">
-                            <button class="btn-action" style="background:var(--primary); color:white;" onclick="updateBankBalance()">Update Bank</button>
-                        </div>
-                    </div>
-                    <div style="margin-top:15px;">
-                        <h5>Bank Accounts</h5>
-                        <div id="bank_accounts_list"></div>
-                        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; align-items:center;">
-                            <input type="text" id="new_bank_name" placeholder="Bank Name" style="width:200px;">
-                            <input type="number" id="new_bank_balance" placeholder="Opening Balance" style="width:150px;">
-                            <button class="btn-action" style="background:var(--success); color:white; padding:10px 20px;" onclick="addBankAccount()">+ Add Bank</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="module-reports" class="module-pane">
-                <div class="stock-card">
-                    <h4>📊 Business Reports</h4>
-                    <div class="grid-3">
-                        <div><label>Report Type</label>
-                            <select id="report_type" onchange="loadReport()">
-                                <option value="monthly">Monthly Profit/Loss</option>
-                                <option value="party">Party Ledger</option>
-                                <option value="stock_summary">Stock Summary</option>
-                                <option value="balance_sheet">Balance Sheet</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="report_content"></div>
-                </div>
-            </div>
+<!-- ===== MAIN APP ===== -->
+<div id="main-app">
+    <header>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <img src="logo.jpeg" id="header_logo" height="35" onerror="this.style.display='none'">
+            <div style="font-weight:600; font-size:14px;" id="header_firm_name">Dev Vidyalaya</div>
         </div>
-    </div>
-
-    <!-- Modals -->
-    <div id="whatsappShareModal" class="whatsapp-share-modal">
-        <div class="whatsapp-share-content">
-            <h3><i class="fab fa-whatsapp"></i> Share via WhatsApp</h3>
-            <p id="waShareMessage">Generating PDF...</p>
-            <button class="btn-wa-send" id="waSendBtn" onclick="sendWhatsAppMessage()">📤 Send to WhatsApp</button>
-            <button class="btn-wa-cancel" onclick="closeWhatsAppModal()">Cancel</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span id="display_role"></span>
+            <span id="display_user"></span>
+            <button id="admin_settings_btn" onclick="openSettings()" style="display:none;">⚙️ Settings</button>
+            <button onclick="logout()">Logout</button>
         </div>
-    </div>
-    
-    <div id="toastMsg" class="toast-msg"></div>
+    </header>
 
-    <div id="addItemModal" class="modal">
-        <div class="modal-content">
-            <h3>➕ Add New Item</h3>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <div><label>Item Name</label><input type="text" id="new_item_name"></div>
-                <div><label>Category</label><input type="text" id="new_item_category"></div>
-                <div><label>Unit</label>
-                    <select id="new_item_unit">
-                        <option>Piece</option><option>Coil</option><option>Meter</option>
-                        <option>Box</option><option>Cylinder</option><option>Kg</option>
-                    </select>
-                </div>
-                <div><label>Selling Price (₹)</label><input type="number" id="new_item_sell_price" value="0"></div>
-                <div><label>Purchase Price (₹)</label><input type="number" id="new_item_pur_price" value="0"></div>
-                <div><label>Initial Stock</label><input type="number" id="new_item_stock" value="0"></div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-login" style="width:auto" onclick="addNewItem()">Add Item</button>
-                    <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddItemModal()">Cancel</button>
-                </div>
-            </div>
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-box"><p>Today's Vouchers</p><h3 id="stat_today">0</h3></div>
+            <div class="stat-box"><p>Total Vouchers</p><h3 id="stat_total">0</h3></div>
+            <div class="stat-box"><p>Total Amount</p><h3 id="stat_amount">₹ 0</h3></div>
+            <div class="stat-box"><p>Active</p><h3 id="stat_active">0</h3></div>
+            <div class="stat-box"><p>Deleted</p><h3 id="stat_deleted">0</h3></div>
+            <div class="stat-box"><p>Edited</p><h3 id="stat_edited">0</h3></div>
         </div>
-    </div>
 
-    <div id="newPartyModal" class="modal">
-        <div class="modal-content">
-            <h3>➕ Add New Party</h3>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <div><label>Party Name</label><input type="text" id="new_party_name"></div>
-                <div><label>Phone</label><input type="text" id="new_party_phone"></div>
-                <div><label>Address</label><input type="text" id="new_party_address"></div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-login" style="width:auto" onclick="addNewParty()">Add Party</button>
-                    <button class="btn-action" style="background:#64748b; color:white;" onclick="closeNewPartyModal()">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Tabs -->
+        <div class="module-tabs" id="moduleTabsContainer"></div>
 
-    <div id="chequeRangeModal" class="modal">
-        <div class="modal-content">
-            <h3>📒 Add Cheque Range</h3>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <div><label>Bank Name</label>
-                    <select id="cheque_bank_select"><option value="">Select Bank</option></select>
-                </div>
-                <div class="cheque-range">
-                    <div><label>From Cheque No</label><input type="number" id="cheque_from"></div>
-                    <div><label>To Cheque No</label><input type="number" id="cheque_to"></div>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-login" style="width:auto" onclick="addChequeRange()">Add Range</button>
-                    <button class="btn-action" style="background:#64748b; color:white;" onclick="closeChequeRangeModal()">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <h3>⚙️ Admin Settings</h3>
-            <div><label>Business Name</label><input type="text" id="set_name"></div>
-            <div><label>Address</label><input type="text" id="set_addr"></div>
-            <div><label>GST / Tax Info</label><input type="text" id="set_gst"></div>
-            <div><label>Logo URL</label><input type="text" id="set_logo_url"></div>
-            <hr>
-            
-            <h4>👤 User Management (Login Users)</h4>
-            <div id="users_list"></div>
-            <div style="display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; align-items:center;">
-                <input type="text" id="new_user_id" placeholder="User ID" style="width:150px;">
-                <input type="text" id="new_user_pass" placeholder="Password" style="width:150px;">
-                <select id="new_user_role" style="width:120px;">
-                    <option value="Admin">Admin</option>
-                    <option value="Staff">Staff</option>
-                    <option value="Viewer">Viewer</option>
-                </select>
-                <button class="btn-action" style="background:var(--success); color:white; padding:8px 15px;" onclick="addUser()">+ Add User</button>
-            </div>
-            
-            <h4>🔐 Staff Permissions</h4>
-            <div class="permission-grid">
-                <label><input type="checkbox" id="perm_receipt" checked> Receipt</label>
-                <label><input type="checkbox" id="perm_payment" checked> Payment</label>
-                <label><input type="checkbox" id="perm_sale"> Sale</label>
-                <label><input type="checkbox" id="perm_purchase"> Purchase</label>
-                <label><input type="checkbox" id="perm_sr"> Sales Return</label>
-                <label><input type="checkbox" id="perm_pr"> Purchase Return</label>
-                <label><input type="checkbox" id="perm_contra"> Contra</label>
-                <label><input type="checkbox" id="perm_whatsapp" checked> WhatsApp Share</label>
-                <label><input type="checkbox" id="perm_print" checked> Print Voucher</label>
-                <label><input type="checkbox" id="perm_edit"> Edit Voucher</label>
-                <label><input type="checkbox" id="perm_delete"> Delete Voucher</label>
-                <label><input type="checkbox" id="perm_stock" checked> Stock Access</label>
-                <label><input type="checkbox" id="perm_reports" checked> Reports Access</label>
-                <label><input type="checkbox" id="perm_bank" checked> Bank Management</label>
-                <label><input type="checkbox" id="perm_users" checked> User Management</label>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn-login" onclick="saveSettings()">Save All Settings</button>
-                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeSettings()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // ============ FIREBASE CONFIG ============
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMwE-Vg6Q10VUQi41fQpW-fQGIwNidqqg",
-            authDomain: "dev-vidyalaya-erp.firebaseapp.com",
-            databaseURL: "https://dev-vidyalaya-erp-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "dev-vidyalaya-erp",
-            storageBucket: "dev-vidyalaya-erp.firebasestorage.app",
-            messagingSenderId: "677011391483",
-            appId: "1:677011391483:web:f12522edb952292912815e"
-        };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const rtdb = firebase.database();
-
-        // ============ GLOBAL VARIABLES ============
-        let db = [], stockItems = [], currentFirmId = 'firm1', currentItems = [], lastSavedVoucher = null;
-        let currentRole = 'Staff', currentUser = 'Admin', generatedPdfBlob = null;
-        let parties = [], bankAccounts = [], chequeNumbers = [], usedCheques = [];
-        let cashBalance = 0, bankBalance = 0;
-        let users = [];
-        let isDataLoaded = false;
-
-        // ============ CONFIGURATION ============
-        let allConfigs = { 
-            firm1: { 
-                name: 'Dev Vidyalaya', 
-                addr: 'https://dev.edu.in/', 
-                gst: 'GST: 08AKIPB6843N1ZR | Mo: 9414037764', 
-                adminPass: '1811', 
-                logo: 'logo.png',
-                firmType: 'school',
-                perms: { 
-                    receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
-                    contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true, users:true
-                },
-                cashBalance: 0,
-                bankBalance: 0,
-                bankAccounts: [],
-                chequeNumbers: [],
-                usedCheques: [],
-                parties: [],
-                users: [
-                    { id: 'Admin', password: '1811', role: 'Admin' },
-                    { id: 'Staff', password: '2026', role: 'Staff' }
-                ]
-            }, 
-            firm2: { 
-                name: 'Dev Gas Agency', 
-                addr: 'Rani Satti Road, Sikar Rajasthan', 
-                gst: 'GST: 08AKIPB6843N1ZR | Mo: 9414037764', 
-                adminPass: '1811', 
-                logo: 'logo.png',
-                firmType: 'gas',
-                perms: { 
-                    receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
-                    contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true, users:true
-                },
-                cashBalance: 0,
-                bankBalance: 0,
-                bankAccounts: [],
-                chequeNumbers: [],
-                usedCheques: [],
-                parties: [],
-                users: [
-                    { id: 'Admin', password: '1811', role: 'Admin' },
-                    { id: 'Staff2', password: '2026', role: 'Staff' }
-                ]
-            }, 
-            firm3: { 
-                name: 'Firm 3', 
-                addr: 'Firm 3 Address', 
-                gst: 'GST 3 Info', 
-                adminPass: '1811', 
-                logo: 'logo.png',
-                firmType: 'general',
-                perms: { 
-                    receipt:true, payment:true, sale:false, purchase:false, sr:false, pr:false, 
-                    contra:false, whatsapp:true, print:true, edit:false, delete:false, stock:true, 
-                    reports:true, bank:true, users:true
-                },
-                cashBalance: 0,
-                bankBalance: 0,
-                bankAccounts: [],
-                chequeNumbers: [],
-                usedCheques: [],
-                parties: [],
-                users: [
-                    { id: 'Admin', password: '1811', role: 'Admin' },
-                    { id: 'Staff3', password: '2026', role: 'Staff' }
-                ]
-            } 
-        };
-        let config = allConfigs['firm1'];
-
-        // ============ HELPER FUNCTIONS ============
-        function showToast(msg, duration=3000) {
-            let toast = document.getElementById('toastMsg');
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, duration);
-        }
-
-        function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
-
-        function showLoading(show) {
-            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
-        }
-
-        // ============ USER MANAGEMENT ============
-        function loadUsers() {
-            users = config.users || [
-                { id: 'Admin', password: '1811', role: 'Admin' },
-                { id: 'Staff', password: '2026', role: 'Staff' }
-            ];
-            renderUsersList();
-        }
-
-        function renderUsersList() {
-            let container = document.getElementById('users_list');
-            if(!container) return;
-            if(users.length === 0) {
-                container.innerHTML = '<p style="color:#999;">No users added</p>';
-                return;
-            }
-            container.innerHTML = users.map((u, idx) => `
-                <div class="user-card">
-                    <div class="user-info">
-                        <span><strong>${u.id}</strong></span>
-                        <span>🔒 ${u.password}</span>
-                        <span><span class="badge">${u.role}</span></span>
+        <!-- ===== TRANSACTIONS ===== -->
+        <div id="module-transactions" class="module-pane active">
+            <div class="form-card">
+                <div class="firm-header" id="firmHeader">
+                    <img src="logo.jpeg" id="form_logo" onerror="this.style.display='none'">
+                    <div class="firm-info">
+                        <div class="name" id="form_firm_name">Dev Vidyalaya</div>
+                        <div class="addr" id="form_firm_addr">📍 Dev Vidyalaya, Sikar Rajasthan</div>
                     </div>
+                </div>
+                
+                <h4 id="form-title">📝 Add Payment Voucher</h4>
+                <input type="hidden" id="edit_id">
+                
+                <div class="grid">
+                    <div><label>📅 Date</label><input type="date" id="v_date"></div>
+                    
                     <div>
-                        <button class="btn-action btn-del" onclick="deleteUser('${u.id}')">✖</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addUser() {
-            let id = document.getElementById('new_user_id').value.trim();
-            let pass = document.getElementById('new_user_pass').value.trim();
-            let role = document.getElementById('new_user_role').value;
-            if(!id || !pass) { showToast('Enter User ID and Password'); return; }
-            if(users.find(u => u.id === id)) { showToast('User already exists'); return; }
-            users.push({ id, password: pass, role });
-            saveFirmData();
-            renderUsersList();
-            document.getElementById('new_user_id').value = '';
-            document.getElementById('new_user_pass').value = '';
-            showToast('User added successfully');
-        }
-
-        function deleteUser(id) {
-            if(id === 'Admin') { showToast('Cannot delete Admin'); return; }
-            if(!confirm(`Delete user: ${id}?`)) return;
-            users = users.filter(u => u.id !== id);
-            saveFirmData();
-            renderUsersList();
-            showToast('User deleted');
-        }
-
-        // ============ PERMISSIONS UI ============
-        function applyPermissionsUI() {
-            if(currentRole === 'Admin') {
-                document.getElementById('v_type').disabled = false;
-                document.getElementById('form-btns').style.display = 'flex';
-                return;
-            }
-            const p = config.perms;
-            let typeSelect = document.getElementById('v_type');
-            let options = typeSelect.options;
-            let visibleTypes = [];
-            for(let i=0; i<options.length; i++) {
-                let val = options[i].value;
-                let show = false;
-                if(val === 'REC') show = p.receipt;
-                else if(val === 'EXP') show = p.payment;
-                else if(val === 'SALE') show = p.sale;
-                else if(val === 'PUR') show = p.purchase;
-                else if(val === 'SR') show = p.sr;
-                else if(val === 'PR') show = p.pr;
-                else if(val === 'CONTRA') show = p.contra;
-                options[i].style.display = show ? 'block' : 'none';
-                if(show) visibleTypes.push(val);
-            }
-            if(visibleTypes.length > 0) {
-                let currentVal = typeSelect.value;
-                if(!visibleTypes.includes(currentVal)) {
-                    typeSelect.value = visibleTypes[0];
-                }
-            }
-            toggleItemFields();
-            
-            let saveBtn = document.querySelector('#form-btns .btn-login');
-            if(saveBtn) saveBtn.style.display = p.print ? 'inline-flex' : 'none';
-            let whatsappBtn = document.getElementById('whatsappShareBtn');
-            if(whatsappBtn) whatsappBtn.style.display = p.whatsapp ? 'inline-flex' : 'none';
-        }
-
-        // ============ FIRM DATA LOADING ============
-        function loadFirmData() {
-            let firmData = allConfigs[currentFirmId];
-            cashBalance = firmData.cashBalance || 0;
-            bankBalance = firmData.bankBalance || 0;
-            bankAccounts = firmData.bankAccounts || [];
-            chequeNumbers = firmData.chequeNumbers || [];
-            usedCheques = firmData.usedCheques || [];
-            parties = firmData.parties || [];
-            users = firmData.users || [
-                { id: 'Admin', password: '1811', role: 'Admin' },
-                { id: 'Staff', password: '2026', role: 'Staff' }
-            ];
-            updateBankUI();
-            updateChequeDropdown();
-            renderUsersList();
-        }
-
-        function saveFirmData() {
-            allConfigs[currentFirmId].cashBalance = cashBalance;
-            allConfigs[currentFirmId].bankBalance = bankBalance;
-            allConfigs[currentFirmId].bankAccounts = bankAccounts;
-            allConfigs[currentFirmId].chequeNumbers = chequeNumbers;
-            allConfigs[currentFirmId].usedCheques = usedCheques;
-            allConfigs[currentFirmId].parties = parties;
-            allConfigs[currentFirmId].users = users;
-            rtdb.ref('app_settings_v2').set(allConfigs).catch(err => console.warn(err));
-        }
-
-        // ============ PARTY MANAGEMENT ============
-        function filterParties(search) {
-            let dropdown = document.getElementById('partyDropdown');
-            if(!search || search.length < 1) {
-                dropdown.style.display = 'none';
-                return;
-            }
-            let filtered = parties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-            if(filtered.length === 0) {
-                dropdown.innerHTML = `<div style="color:#999; padding:10px;">No party found. Click "New Party" to add.</div>`;
-                dropdown.style.display = 'block';
-                return;
-            }
-            dropdown.innerHTML = filtered.map(p => 
-                `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')">${p.name} ${p.phone ? '📞 '+p.phone : ''}</div>`
-            ).join('');
-            dropdown.style.display = 'block';
-        }
-
-        function selectParty(name) {
-            document.getElementById('v_party').value = name;
-            document.getElementById('partyDropdown').style.display = 'none';
-        }
-
-        function openNewPartyModal() {
-            document.getElementById('new_party_name').value = '';
-            document.getElementById('new_party_phone').value = '';
-            document.getElementById('new_party_address').value = '';
-            document.getElementById('newPartyModal').style.display = 'flex';
-        }
-
-        function closeNewPartyModal() {
-            document.getElementById('newPartyModal').style.display = 'none';
-        }
-
-        function addNewParty() {
-            let name = document.getElementById('new_party_name').value.trim();
-            if(!name) { showToast('Party name required'); return; }
-            let existing = parties.find(p => p.name.toLowerCase() === name.toLowerCase());
-            if(existing) { showToast('Party already exists'); return; }
-            parties.push({
-                id: generateId(),
-                name: name,
-                phone: document.getElementById('new_party_phone').value.trim(),
-                address: document.getElementById('new_party_address').value.trim()
-            });
-            document.getElementById('v_party').value = name;
-            saveFirmData();
-            closeNewPartyModal();
-            showToast('Party added successfully');
-        }
-
-        // ============ BANK & CHEQUE MANAGEMENT ============
-        function updateBankUI() {
-            document.getElementById('cash_balance_display').innerHTML = '₹ ' + cashBalance.toLocaleString();
-            document.getElementById('bank_balance_display').innerHTML = '₹ ' + bankBalance.toLocaleString();
-            document.getElementById('stat_cash').innerHTML = '₹ ' + cashBalance.toLocaleString();
-            document.getElementById('stat_bank').innerHTML = '₹ ' + bankBalance.toLocaleString();
-            calculateTotalBalance();
-            
-            let bankSelect = document.getElementById('bank_account');
-            let chequeBankSelect = document.getElementById('cheque_bank_select');
-            if(bankSelect) {
-                bankSelect.innerHTML = '<option value="">Select Bank</option>' + 
-                    bankAccounts.map(b => `<option value="${b.name}">${b.name} (₹${b.balance.toLocaleString()})</option>`).join('');
-            }
-            if(chequeBankSelect) {
-                chequeBankSelect.innerHTML = '<option value="">Select Bank</option>' + 
-                    bankAccounts.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
-            }
-            
-            let listDiv = document.getElementById('bank_accounts_list');
-            if(listDiv) {
-                if(bankAccounts.length === 0) {
-                    listDiv.innerHTML = '<p style="color:#999;">No bank accounts added. Add one below.</p>';
-                } else {
-                    listDiv.innerHTML = bankAccounts.map(b => 
-                        `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center;">
-                            <span><strong>${b.name}</strong></span>
-                            <span>₹${b.balance.toLocaleString()}</span>
-                            <button class="btn-action btn-del" onclick="deleteBankAccount('${b.name}')">✖</button>
-                        </div>`
-                    ).join('');
-                }
-            }
-        }
-
-        function updateChequeDropdown() {
-            let chequeSelect = document.getElementById('cheque_number');
-            if(!chequeSelect) return;
-            let availableCheques = chequeNumbers.filter(c => !usedCheques.includes(c));
-            if(availableCheques.length === 0) {
-                chequeSelect.innerHTML = '<option value="">No cheques available</option>';
-            } else {
-                chequeSelect.innerHTML = '<option value="">Select Cheque Number</option>' + 
-                    availableCheques.map(c => `<option value="${c}">${c}</option>`).join('');
-            }
-        }
-
-        function toggleChequeFields() {
-            let mode = document.getElementById('v_mode').value;
-            document.getElementById('bank_account_div').style.display = (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
-            document.getElementById('cheque_fields_div').style.display = mode === 'Cheque' ? 'block' : 'none';
-            if(mode === 'Cheque') updateChequeDropdown();
-        }
-
-        function updateCashBalance() {
-            let val = parseFloat(document.getElementById('manual_cash_update').value);
-            if(isNaN(val) || val < 0) { showToast('Enter valid amount'); return; }
-            cashBalance = val;
-            saveFirmData();
-            updateBankUI();
-            showToast('Cash balance updated');
-            document.getElementById('manual_cash_update').value = '';
-        }
-
-        function updateBankBalance() {
-            let val = parseFloat(document.getElementById('manual_bank_update').value);
-            if(isNaN(val) || val < 0) { showToast('Enter valid amount'); return; }
-            bankBalance = val;
-            saveFirmData();
-            updateBankUI();
-            showToast('Bank balance updated');
-            document.getElementById('manual_bank_update').value = '';
-        }
-
-        function addBankAccount() {
-            let name = document.getElementById('new_bank_name').value.trim();
-            let balance = parseFloat(document.getElementById('new_bank_balance').value) || 0;
-            if(!name) { showToast('Bank name required'); return; }
-            let existing = bankAccounts.find(b => b.name.toLowerCase() === name.toLowerCase());
-            if(existing) { showToast('Bank already exists'); return; }
-            bankAccounts.push({ name, balance });
-            saveFirmData();
-            updateBankUI();
-            showToast('Bank added successfully');
-            document.getElementById('new_bank_name').value = '';
-            document.getElementById('new_bank_balance').value = '';
-        }
-
-        function deleteBankAccount(name) {
-            if(!confirm(`Delete bank account: ${name}?`)) return;
-            bankAccounts = bankAccounts.filter(b => b.name !== name);
-            saveFirmData();
-            updateBankUI();
-            showToast('Bank deleted');
-        }
-
-        function openChequeRangeModal() {
-            let bankSelect = document.getElementById('cheque_bank_select');
-            bankSelect.innerHTML = '<option value="">Select Bank</option>' + 
-                bankAccounts.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
-            document.getElementById('cheque_from').value = '';
-            document.getElementById('cheque_to').value = '';
-            document.getElementById('chequeRangeModal').style.display = 'flex';
-        }
-
-        function closeChequeRangeModal() {
-            document.getElementById('chequeRangeModal').style.display = 'none';
-        }
-
-        function addChequeRange() {
-            let bank = document.getElementById('cheque_bank_select').value;
-            let from = parseInt(document.getElementById('cheque_from').value);
-            let to = parseInt(document.getElementById('cheque_to').value);
-            if(!bank) { showToast('Select bank'); return; }
-            if(!from || !to || from > to) { showToast('Enter valid range'); return; }
-            let newCheques = [];
-            for(let i = from; i <= to; i++) {
-                if(!chequeNumbers.includes(i) && !usedCheques.includes(i)) {
-                    newCheques.push(i);
-                }
-            }
-            if(newCheques.length === 0) { showToast('All cheques in this range are already used'); return; }
-            chequeNumbers.push(...newCheques);
-            saveFirmData();
-            updateChequeDropdown();
-            closeChequeRangeModal();
-            showToast(`Added ${newCheques.length} cheque numbers`);
-        }
-
-        function markChequeUsed(chequeNo) {
-            if(!chequeNo) return;
-            if(!usedCheques.includes(chequeNo)) {
-                usedCheques.push(chequeNo);
-                saveFirmData();
-                updateChequeDropdown();
-            }
-        }
-
-        // ============ STOCK MANAGEMENT ============
-        function initSampleStock() { 
-    if(stockItems.length) return; 
-    stockItems = [
-        { id: 1, name: '14.2 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 950, purchasePrice: 850, stock: 50 },
-        { id: 2, name: '5 Kg Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 350, purchasePrice: 300, stock: 30 },
-        { id: 3, name: '19 Kg Commercial Cylinder', category: 'HP Gas', unit: 'Cylinder', sellPrice: 1250, purchasePrice: 1100, stock: 20 }
-    ]; 
-    saveStockToFirebase(); 
-}
-        
-        function saveStockToFirebase() { 
-    const obj = {}; 
-    stockItems.forEach(i => {
-        let key = String(i.id).replace(/[.#$\/\[\]]/g, '_');
-        obj[key] = i;
-    }); 
-    rtdb.ref('stock_v2/'+currentFirmId).set(obj);
-}
-        
-        function updateStock(itemId, changeQty) { 
-            let i = stockItems.find(x=>x.id==itemId); 
-            if(i){ 
-                i.stock = Math.max(0, i.stock + changeQty); 
-                saveStockToFirebase(); 
-                renderStock(); 
-                calculateStockValue(); 
-            } 
-        }
-        
-        function calculateStockValue(){ 
-            let val = stockItems.reduce((s,i)=>s+(i.purchasePrice*i.stock),0); 
-            document.getElementById('stat_stock_value').innerHTML='₹ '+val.toLocaleString(); 
-            calculateTotalBalance();
-        }
-
-        function calculateTotalBalance() {
-            let stockVal = stockItems.reduce((s,i)=>s+(i.purchasePrice*i.stock),0);
-            let total = cashBalance + bankBalance + stockVal;
-            document.getElementById('stat_balance').innerHTML = '₹ ' + total.toLocaleString();
-        }
-        
-        function openAddItemModal() { 
-            document.getElementById('new_item_name').value = '';
-            document.getElementById('new_item_category').value = '';
-            document.getElementById('new_item_unit').value = 'Piece';
-            document.getElementById('new_item_sell_price').value = '0';
-            document.getElementById('new_item_pur_price').value = '0';
-            document.getElementById('new_item_stock').value = '0';
-            document.getElementById('addItemModal').style.display='flex'; 
-        }
-        
-        function closeAddItemModal() { document.getElementById('addItemModal').style.display='none'; }
-        
-        function addNewItem(){ 
-    let name = document.getElementById('new_item_name').value.trim(); 
-    if(!name){ showToast("Item name required"); return; }
-    let existing = stockItems.find(i => i.name.toLowerCase() === name.toLowerCase());
-    if(existing){ showToast("Item already exists!"); return; }
-    
-    // 🔥 FIX: Use Date.now() without decimal
-    let newId = Date.now() + Math.floor(Math.random() * 1000);
-    
-    stockItems.push({ 
-        id: newId, 
-        name, 
-        category: document.getElementById('new_item_category').value||'General', 
-        unit: document.getElementById('new_item_unit').value, 
-        sellPrice: parseFloat(document.getElementById('new_item_sell_price').value)||0, 
-        purchasePrice: parseFloat(document.getElementById('new_item_pur_price').value)||0, 
-        stock: parseFloat(document.getElementById('new_item_stock').value)||0 
-    }); 
-    saveStockToFirebase(); 
-    renderStock(); 
-    updateStockCategoryFilter(); 
-    calculateStockValue(); 
-    closeAddItemModal(); 
-    renderItemsList(); 
-    showToast("Item added successfully");
-}
-
-        // ============ ITEMS IN TRANSACTION ============
-        function addItemRow(){ 
-            currentItems.push({ itemId:'', name:'', qty:1, rate:0, amount:0 }); 
-            renderItemsList(); 
-        }
-        
-        function removeItemRow(idx){ 
-            currentItems.splice(idx,1); 
-            renderItemsList(); 
-            calculateTotal(); 
-        }
-        
-        function updateItemField(idx, field, val){ 
-            if(field==='itemId'){ 
-                let s = stockItems.find(i=>i.id==parseInt(val)); 
-                if(s){ 
-                    currentItems[idx].itemId = s.id; 
-                    currentItems[idx].name = s.name; 
-                    let type = document.getElementById('v_type').value; 
-                    currentItems[idx].rate = (type==='SR'||type==='PR') ? s.purchasePrice : s.sellPrice; 
-                    if(currentItems[idx].qty === 0) currentItems[idx].qty = 1;
-                    currentItems[idx].amount = currentItems[idx].qty * currentItems[idx].rate;
-                    calculateTotal(); 
-                    renderItemsList(); 
-                } 
-            } 
-            else if(field==='qty'){ 
-                currentItems[idx].qty = Math.max(0, parseFloat(val)||0); 
-                currentItems[idx].amount = currentItems[idx].qty * currentItems[idx].rate; 
-                calculateTotal(); 
-                renderItemsList(); 
-            } 
-            else if(field==='rate'){ 
-                currentItems[idx].rate = Math.max(0, parseFloat(val)||0); 
-                currentItems[idx].amount = currentItems[idx].qty * currentItems[idx].rate; 
-                calculateTotal(); 
-                renderItemsList(); 
-            } 
-        }
-        
-        function calculateTotal(){ 
-            let total = currentItems.reduce((s,i)=>s+(i.amount||0),0); 
-            document.getElementById('subtotal').innerText = total.toFixed(2); 
-            document.getElementById('v_amt').value = total; 
-            return total; 
-        }
-        
-        function updateManualTotal(){ 
-            let amt = parseFloat(document.getElementById('manual_amount').value)||0; 
-            document.getElementById('v_amt').value = amt; 
-        }
-        
-        function renderItemsList(){ 
-            let container = document.getElementById('items-container'); 
-            if(!container) return; 
-            if(currentItems.length===0){ 
-                container.innerHTML = '<p style="color:#999">No items added. Click "+ Add Item" to add.</p>'; 
-                return; 
-            } 
-            container.innerHTML = currentItems.map((item,idx)=>`<div class="item-row"><div class="searchable-item"><input type="text" placeholder="🔍 Search item..." id="search_input_${idx}" value="${item.name}" oninput="filterItemDropdown(${idx}, this.value)"><div id="dropdown_${idx}" class="search-dropdown" style="display:none;"></div></div><input type="number" placeholder="Qty" value="${item.qty}" onchange="updateItemField(${idx},'qty',this.value)"><input type="number" placeholder="Rate" value="${item.rate}" onchange="updateItemField(${idx},'rate',this.value)"><span>₹${(item.amount||0).toFixed(2)}</span><button class="remove-item" onclick="removeItemRow(${idx})">✖</button></div>`).join('');
-            currentItems.forEach((_,idx)=>{ attachDropdownEvents(idx); });
-        }
-        
-        function filterItemDropdown(idx, search){ 
-            let dropdown = document.getElementById(`dropdown_${idx}`); 
-            if(!dropdown) return; 
-            let filtered = stockItems.filter(s=>s.name.toLowerCase().includes(search.toLowerCase())); 
-            if(filtered.length===0 || search===''){ 
-                dropdown.style.display='none'; 
-                return; 
-            } 
-            dropdown.style.display='block'; 
-            dropdown.innerHTML = filtered.map(s=>`<div onclick="selectItem(${idx}, ${s.id}, '${s.name.replace(/'/g,"\\'")}', ${(document.getElementById('v_type').value==='SR'||document.getElementById('v_type').value==='PR')?s.purchasePrice:s.sellPrice})">${s.name} (${(document.getElementById('v_type').value==='SR'||document.getElementById('v_type').value==='PR')?'Pur ₹'+s.purchasePrice:'Sale ₹'+s.sellPrice}) | Stock: ${s.stock}</div>`).join(''); 
-        }
-        
-        function selectItem(idx, id, name, rate){ 
-            currentItems[idx].itemId = id; 
-            currentItems[idx].name = name; 
-            currentItems[idx].rate = rate; 
-            if(currentItems[idx].qty===0) currentItems[idx].qty = 1; 
-            currentItems[idx].amount = currentItems[idx].qty * rate; 
-            calculateTotal(); 
-            renderItemsList(); 
-        }
-        
-        function attachDropdownEvents(idx){ 
-            let inp = document.getElementById(`search_input_${idx}`); 
-            if(!inp) return; 
-            inp.addEventListener('blur',()=>{ 
-                setTimeout(()=>{ 
-                    let d = document.getElementById(`dropdown_${idx}`); 
-                    if(d) d.style.display='none'; 
-                }, 200); 
-            }); 
-        }
-
-        // ============ TRANSACTION FUNCTIONS ============
-        function toggleItemFields(){ 
-            let type = document.getElementById('v_type').value; 
-            let showItems = ['SALE','PUR','SR','PR'].includes(type);
-            document.getElementById('items-section').style.display = showItems?'block':'none';
-            if(showItems){ 
-                document.getElementById('manual_amt_div').style.display='none'; 
-                document.getElementById('auto_amt_div').style.display='block'; 
-                if(currentItems.length===0) document.getElementById('v_amt').value=0; 
-                else calculateTotal(); 
-            } else { 
-                document.getElementById('manual_amt_div').style.display='block'; 
-                document.getElementById('auto_amt_div').style.display='none'; 
-                let currAmt = parseFloat(document.getElementById('v_amt').value) || 0; 
-                document.getElementById('manual_amount').value = currAmt; 
-            }
-            if(!showItems) currentItems = []; 
-            renderItemsList(); 
-            generateVNo(); 
-        }
-        
-        function generateVNo(){ 
-            let type = document.getElementById('v_type').value; 
-            let count = db.filter(v=>v.type===type).length + 1; 
-            let prefix = {firm1:'DV', firm2:'DG', firm3:'F3'}[currentFirmId] || 'DV'; 
-            document.getElementById('v_no').value = `${prefix}/${type}/${String(count).padStart(4,'0')}`; 
-            document.getElementById('v_date').value = new Date().toISOString().split('T')[0]; 
-        }
-
-        function saveVoucher(){ 
-            let editId = document.getElementById('edit_id').value; 
-            let type = document.getElementById('v_type').value; 
-            let id = editId || Date.now().toString(); 
-            let totalAmt = 0;
-            let mode = document.getElementById('v_mode').value;
-            let bank = document.getElementById('bank_account').value;
-            let chequeNo = document.getElementById('cheque_number').value;
-            let party = document.getElementById('v_party').value.trim();
-            
-            if(!party && ['REC','EXP','SALE','PUR','SR','PR'].includes(type)){ 
-                showToast('Enter Party Name!'); 
-                return; 
-            }
-            
-            if(['SALE','PUR','SR','PR'].includes(type)){ 
-                if(currentItems.length > 0) {
-                    totalAmt = calculateTotal();
-                    if(type === 'SALE') {
-                        for(let item of currentItems) {
-                            let stockItem = stockItems.find(s=>s.id==item.itemId);
-                            if(stockItem && stockItem.stock < item.qty) {
-                                showToast(`Insufficient stock for ${item.name}. Available: ${stockItem.stock}`);
-                                return;
-                            }
-                        }
-                    }
-                } else { 
-                    showToast('Please add items first!'); 
-                    return; 
-                }
-            } else { 
-                totalAmt = parseFloat(document.getElementById('manual_amount').value) || 0;
-                if(totalAmt === 0) {
-                    showToast('Enter amount');
-                    return;
-                }
-            }
-            
-            // Update cash/bank balance
-            if(type === 'REC') {
-                if(mode === 'Cash') cashBalance += totalAmt;
-                else if(mode === 'Bank' || mode === 'Cheque') bankBalance += totalAmt;
-            } else if(type === 'EXP') {
-                if(mode === 'Cash') {
-                    if(cashBalance < totalAmt) { showToast('Insufficient cash balance'); return; }
-                    cashBalance -= totalAmt;
-                } else if(mode === 'Bank' || mode === 'Cheque') {
-                    if(bankBalance < totalAmt) { showToast('Insufficient bank balance'); return; }
-                    bankBalance -= totalAmt;
-                }
-            }
-            
-            // Mark cheque as used
-            if(mode === 'Cheque' && chequeNo) {
-                markChequeUsed(parseInt(chequeNo));
-            }
-            
-            for(let item of currentItems){ 
-                let stockItem = stockItems.find(s=>s.id==item.itemId); 
-                if(!stockItem) continue; 
-                if(type==='SALE'){ 
-                    updateStock(item.itemId, -item.qty); 
-                } else if(type==='PUR'){ 
-                    updateStock(item.itemId, item.qty); 
-                } else if(type==='SR'){ 
-                    updateStock(item.itemId, item.qty); 
-                } else if(type==='PR'){ 
-                    updateStock(item.itemId, -item.qty); 
-                }
-            }
-            
-            let v = { 
-                id, type, 
-                vno: document.getElementById('v_no').value, 
-                date: document.getElementById('v_date').value, 
-                party: party, 
-                amt: totalAmt, 
-                mode: mode, 
-                bank: bank,
-                chequeNo: chequeNo,
-                rem: document.getElementById('v_remark').value, 
-                items: (type==='SALE'||type==='PUR'||type==='SR'||type==='PR') ? currentItems.map(i=>({...i})) : [], 
-                timestamp: Date.now(),
-                createdBy: currentUser,
-                createdAt: new Date().toLocaleString()
-            };
-            
-            showLoading(true);
-            
-            rtdb.ref('data_v2/'+currentFirmId+'/'+id).set(v).then(()=>{ 
-                lastSavedVoucher = v; 
-                saveFirmData();
-                let existingIdx = db.findIndex(d => d.id === id);
-                if(existingIdx >= 0) {
-                    db[existingIdx] = v;
-                } else {
-                    db.push(v);
-                }
-                renderAll();
-                updateBankUI();
-                generateVNo();
-                resetForm();
-                showLoading(false);
-                showToast('✅ Saved successfully!');
-                
-                setTimeout(() => {
-                    generateA4Print(v);
-                }, 500);
-                
-            }).catch(err=>{
-                showLoading(false);
-                showToast('❌ Save error: '+err.message);
-            }); 
-        }
-
-        // ============ A4 HALF PAGE PRINT FORMAT ============
-        function generateA4Print(v) {
-    let printWindow = window.open('', '_blank', 'width=900,height=700');
-    if(!printWindow) { 
-        showToast('Please allow popups'); 
-        return; 
-    }
-    
-    let itemsHtml = (v.items || []).map((item,idx) => `
-        <tr>
-            <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${idx+1}</td>
-            <td style="padding:4px 6px; font-size:10px; border:1px solid #000;">${item.name}</td>
-            <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${item.qty}</td>
-            <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
-            <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
-        </tr>
-    `).join('');
-    
-    let total = v.amt;
-    let title = v.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
-    let words = numberToWords(total);
-    let partyName = v.party || '';
-    let modeText = v.mode || 'Cash';
-    if(v.chequeNo) modeText += ' | Chq: '+v.chequeNo;
-    
-    let pageHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="UTF-8"><title>${v.vno}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #f0f0f0; 
-            padding: 8mm; 
-            font-family: 'Courier New', Courier, monospace;
-        }
-        
-        .page {
-            width: 100%;
-            max-width: 210mm;
-            margin: 0 auto;
-            background: #fff;
-            padding: 0;
-        }
-        
-        /* Each voucher takes exactly half page */
-        .voucher-half {
-            height: 48%;
-            min-height: 140mm;
-            border: 2px solid #000;
-            padding: 8mm 10mm;
-            margin-bottom: 4mm;
-            page-break-after: avoid;
-            display: flex;
-            flex-direction: column;
-            background: #fff;
-            position: relative;
-        }
-        
-        .voucher-half:last-child {
-            margin-bottom: 0;
-        }
-        
-        /* Watermark Logo - Fade Effect */
-        .watermark-logo {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.08;
-            font-size: 80px;
-            font-weight: bold;
-            color: #000;
-            pointer-events: none;
-            letter-spacing: 5px;
-            white-space: nowrap;
-            z-index: 0;
-        }
-        .watermark-logo img {
-            opacity: 0.08;
-            max-width: 150px;
-            max-height: 150px;
-        }
-        
-        /* Header Section with Logo */
-        .header {
-            text-align: center;
-            border-bottom: 2px dashed #000;
-            padding-bottom: 6px;
-            margin-bottom: 6px;
-            position: relative;
-            z-index: 1;
-        }
-        .header-top {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 2px;
-        }
-        .header-logo {
-            max-height: 45px;
-            max-width: 80px;
-            object-fit: contain;
-        }
-        .header .firm-name {
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .header .address {
-            font-size: 9px;
-            color: #333;
-            letter-spacing: 0.5px;
-        }
-        .header .contact {
-            font-size: 8px;
-            color: #444;
-            font-weight: bold;
-            margin-top: 1px;
-        }
-        .header .gst {
-            font-size: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        /* Title */
-        .bill-title {
-            text-align: center;
-            font-size: 13px;
-            font-weight: bold;
-            letter-spacing: 3px;
-            text-decoration: underline;
-            margin: 4px 0 6px 0;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Info Rows - Tally Style */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px 20px;
-            font-size: 10px;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 1;
-        }
-        .info-grid .label {
-            font-weight: bold;
-        }
-        .info-grid .value {
-            text-align: left;
-        }
-        .info-grid .value-right {
-            text-align: right;
-        }
-        
-        /* Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 4px 0;
-            font-size: 10px;
-            position: relative;
-            z-index: 1;
-        }
-        table th {
-            background: #e8e8e8;
-            padding: 5px 6px;
-            border: 1px solid #000;
-            text-align: center;
-            font-weight: bold;
-            font-size: 9px;
-        }
-        table td {
-            padding: 4px 6px;
-            border: 1px solid #000;
-            font-size: 10px;
-        }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        
-        /* Total Section */
-        .total-section {
-            margin-top: auto;
-            padding-top: 5px;
-            border-top: 2px double #000;
-            position: relative;
-            z-index: 1;
-        }
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: bold;
-            padding: 3px 0;
-        }
-        .amount-words {
-            font-size: 12px;
-            font-weight: bold;
-            text-align: right;
-            padding: 2px 0;
-            color: #333;
-        }
-        
-        /* Signature Section - Tally Style */
-        .sign-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-            margin-top: 8px;
-            padding-top: 6px;
-            border-top: 1.5px dashed #000;
-            position: relative;
-            z-index: 1;
-        }
-        .sign-box {
-            text-align: center;
-            font-size: 12px;
-        }
-        .sign-box .line {
-            border-top: 1.5px solid #000;
-            margin-top: 20px;
-            padding-top: 3px;
-        }
-        .sign-box .label-text {
-            font-size: 8px;
-            color: #555;
-        }
-        .sign-box .user-name {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1a3a6e;
-        }
-        
-        /* Footer */
-        .footer {
-            text-align: center;
-            font-size: 8px;
-            color: #777;
-            border-top: 1px dashed #999;
-            padding-top: 4px;
-            margin-top: 5px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Copy Label */
-        .copy-label {
-            text-align: center;
-            font-size: 10px;
-            font-weight: bold;
-            letter-spacing: 3px;
-            margin-bottom: 5px;
-            padding: 3px;
-            position: relative;
-            z-index: 1;
-        }
-        .copy-original { 
-            color: #1a7a1a; 
-            border-bottom: 2px solid #1a7a1a;
-            padding-bottom: 2px;
-        }
-        .copy-duplicate { 
-            color: #b85a0a; 
-            border-bottom: 2px solid #b85a0a;
-            padding-bottom: 2px;
-        }
-        
-        /* Print Button */
-        .no-print { text-align: center; margin: 20px; }
-        .no-print button {
-            padding: 12px 30px;
-            cursor: pointer;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            margin: 0 8px;
-            font-size: 15px;
-            font-weight: bold;
-        }
-        .no-print button:hover { background: #1d4ed8; transform: scale(1.02); }
-        .no-print .btn-close { background: #64748b; }
-        .no-print .btn-close:hover { background: #475569; }
-        
-        @media print {
-            body { 
-                background: #fff; 
-                padding: 3mm; 
-                margin: 0;
-            }
-            .page {
-                background: #fff;
-                padding: 0;
-            }
-            .no-print { display: none !important; }
-            .voucher-half {
-                height: 48%;
-                min-height: 138mm;
-                page-break-after: avoid;
-                border-color: #000;
-                margin-bottom: 3mm;
-                padding: 6mm 8mm;
-            }
-            .voucher-half:last-child {
-                page-break-after: avoid;
-            }
-            .watermark-logo {
-                opacity: 0.06;
-            }
-            .watermark-logo img {
-                opacity: 0.06;
-            }
-            .header-logo {
-                max-height: 40px;
-            }
-            .header .firm-name {
-                font-size: 16px;
-            }
-        }
-        
-        @page {
-            size: A4;
-            margin: 3mm;
-        }
-    </style>
-    </head>
-    <body>
-        <div class="page">
-            
-            <!-- ============ ORIGINAL COPY - TOP HALF ============ -->
-            <div class="voucher-half">
-                <!-- Watermark Logo -->
-                <div class="watermark-logo">
-                    <img src="${config.logo}" onerror="this.style.display='none'">
-                </div>
-                
-                <div class="copy-label copy-original">◆◆◆ ORIGINAL COPY ◆◆◆</div>
-                
-                <div class="header">
-                    <div class="header-top">
-                        <img src="${config.logo}" class="header-logo" onerror="this.style.display='none'">
-                        <div>
-                            <div class="firm-name">${config.name}</div>
-                            <div class="address">${config.addr}</div>
-                            <div class="contact">📞 9414037764 | ✉ info@dev.edu.in</div>
-                            <div class="gst">${config.gst}</div>
+                        <label>📂 Expense Head</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="expense_head_input" placeholder="Search head..." oninput="filterExpenseHeads(this.value)">
+                            <div id="expenseHeadDropdown" class="dropdown-list"></div>
                         </div>
+                        <input type="hidden" id="expense_head_value">
+                    </div>
+                    
+                    <div>
+                        <label>📂 Sub Head</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="sub_head_input" placeholder="Search sub head..." oninput="filterSubHeads(this.value)">
+                            <div id="subHeadDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="sub_head_value">
+                    </div>
+                    
+                    <div>
+                        <label>🏢 Firm</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="firm_name_input" placeholder="Search firm..." oninput="filterFirms(this.value)">
+                            <div id="firmDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="firm_name_value">
+                    </div>
+                    
+                    <div>
+                        <label>👤 Party</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="party_input" placeholder="Search party..." oninput="filterParties(this.value)">
+                            <div id="partyDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="party_value">
+                        <button class="btn-add" onclick="openAddPartyModal()">+ New Party</button>
+                    </div>
+                    
+                    <div>
+                        <label>💳 Payment Mode</label>
+                        <select id="v_mode" onchange="toggleBankField()">
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    
+                    <div id="bank_account_field">
+                        <label>🏦 Bank Account</label>
+                        <select id="bank_account"><option value="">Select Bank</option></select>
+                    </div>
+                    
+                    <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
+                    
+                    <div>
+                        <label>✍️ Signatory</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="signatory_input" placeholder="Search signatory..." oninput="filterSignatories(this.value)">
+                            <div id="signatoryDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="signatory_value">
+                        <button class="btn-add" onclick="openAddSignatoryModal()">+ Add Signatory</button>
+                    </div>
+                    
+                    <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
+                    
+                    <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
+                    
+                    <div style="grid-column:1/-1;">
+                        <label>📝 Narration</label>
+                        <textarea id="v_narration" placeholder="Enter details..."></textarea>
                     </div>
                 </div>
                 
-                <div class="bill-title">${title}</div>
-                
-                <div class="info-grid">
-                    <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
-                    <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
-                    <div><span class="label">Party / Customer</span> <span class="value">${partyName}</span></div>
-                    <div><span class="label">Payment Mode</span> <span class="value-right">${modeText}</span></div>
-                    ${v.rem ? `<div style="grid-column: span 2;"><span class="label">Remark</span> <span class="value">${v.rem}</span></div>` : ''}
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">💾 Save</button>
+                    <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">🔄 Reset</button>
+                    <button id="whatsappShareBtn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
                 </div>
-                
-                ${v.items && v.items.length ? `
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width:8%;">#</th>
-                            <th style="width:47%;">Particulars</th>
-                            <th style="width:15%;">Qty</th>
-                            <th style="width:15%;">Rate (₹)</th>
-                            <th style="width:15%;">Amount (₹)</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                ` : ''}
-                
-                <div class="total-section">
-                    <div class="total-row">
-                        <span>TOTAL AMOUNT</span>
-                        <span>₹ ${total.toFixed(2)}</span>
-                    </div>
-                    <div class="amount-words">₹ ${words} Rupees Only</div>
-                </div>
-                
-                <div class="sign-section">
-                    <div class="sign-box">
-                        <div>Authorised</div>
-                        <div>Signatory</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                    <div class="sign-box">
-                        <div>Receiver's</div>
-                        <div>Signature</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                    <div class="sign-box">
-                        <div>Prepared By</div>
-                        <div class="user-name">${v.createdBy || currentUser}</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                </div>
-                
-                <div class="footer">This is a Computer Generated Document | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
             </div>
             
-            <!-- ============ DUPLICATE COPY - BOTTOM HALF ============ -->
-            <div class="voucher-half">
-                <!-- Watermark Logo -->
-                <div class="watermark-logo">
-                    <img src="${config.logo}" onerror="this.style.display='none'">
-                </div>
-                
-                <div class="copy-label copy-duplicate">◆◆◆ DUPLICATE COPY ◆◆◆</div>
-                
-                <div class="header">
-                    <div class="header-top">
-                        <img src="${config.logo}" class="header-logo" onerror="this.style.display='none'">
-                        <div>
-                            <div class="firm-name">${config.name}</div>
-                            <div class="address">${config.addr}</div>
-                            <div class="contact">📞 9414037764 | ✉ info@dev.edu.in</div>
-                            <div class="gst">${config.gst}</div>
-                        </div>
+            <!-- Filter -->
+            <div class="filter-card">
+                <div class="grid-3">
+                    <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()"></div>
+                    <div><label>📅 From</label><input type="date" id="f_start" onchange="renderAll()"></div>
+                    <div><label>📅 To</label><input type="date" id="f_end" onchange="renderAll()"></div>
+                    <div><label>Status</label>
+                        <select id="f_status" onchange="renderAll()">
+                            <option value="ALL">All</option>
+                            <option value="active">Active</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
                     </div>
                 </div>
-                
-                <div class="bill-title">${title}</div>
-                
-                <div class="info-grid">
-                    <div><span class="label">Voucher No.</span> <span class="value">${v.vno}</span></div>
-                    <div><span class="label">Date</span> <span class="value-right">${v.date}</span></div>
-                    <div><span class="label">Party / Customer</span> <span class="value">${partyName}</span></div>
-                    <div><span class="label">Payment Mode</span> <span class="value-right">${modeText}</span></div>
-                    ${v.rem ? `<div style="grid-column: span 2;"><span class="label">Remark</span> <span class="value">${v.rem}</span></div>` : ''}
-                </div>
-                
-                ${v.items && v.items.length ? `
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width:8%;">#</th>
-                            <th style="width:47%;">Particulars</th>
-                            <th style="width:15%;">Qty</th>
-                            <th style="width:15%;">Rate (₹)</th>
-                            <th style="width:15%;">Amount (₹)</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                ` : ''}
-                
-                <div class="total-section">
-                    <div class="total-row">
-                        <span>TOTAL AMOUNT</span>
-                        <span>₹ ${total.toFixed(2)}</span>
-                    </div>
-                    <div class="amount-words">₹ ${words} Rupees Only</div>
-                </div>
-                
-                <div class="sign-section">
-                    <div class="sign-box">
-                        <div>Authorised</div>
-                        <div>Signatory</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                    <div class="sign-box">
-                        <div>Receiver's</div>
-                        <div>Signature</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                    <div class="sign-box">
-                        <div>Prepared By</div>
-                        <div class="user-name">${v.createdBy || currentUser}</div>
-                        <div class="line"></div>
-                        <div class="label-text">(Signature & Date)</div>
-                    </div>
-                </div>
-                
-                <div class="footer">This is a Computer Generated Document | ${v.createdAt || new Date().toLocaleString()} | E.& O.E.</div>
             </div>
             
+            <!-- Table -->
+           <!-- Table - Updated with Created By Column -->
+<div class="table-res">
+    <table>
+        <thead><tr>
+            <th>Date</th>
+            <th>Voucher No</th>
+            <th>Head</th>
+            <th>Sub Head</th>
+            <th>Party</th>
+            <th>Amount</th>
+            <th>Mode</th>
+            <th>Created By</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr></thead>
+        <tbody id="v_list"></tbody>
+    </table>
+</div>
+        </div>
+
+        <!-- ===== REPORTS ===== -->
+        <div id="module-reports" class="module-pane">
+            <div class="report-card">
+                <h4>📊 Reports</h4>
+                <div class="grid-3">
+                    <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()"></div>
+                    <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
+                    <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
+                    <div><label>Status</label>
+                        <select id="r_status" onchange="renderReports()">
+                            <option value="ALL">All</option>
+                            <option value="active">Active</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                    </div>
+                    <div><label>Head</label><select id="r_head" onchange="renderReports()"><option value="">All Heads</option></select></div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
+                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
+                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
+                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
+                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
+                </div>
+                <div id="report_content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div id="addPartyModal" class="modal">
+    <div class="modal-content">
+        <h3 id="partyModalTitle">➕ Add Party</h3>
+        <input type="hidden" id="edit_party_id">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div><label>Party Name</label><input type="text" id="new_party_name"></div>
+            <div><label>Phone</label><input type="text" id="new_party_phone"></div>
+            <div><label>Address</label><input type="text" id="new_party_address"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-login" style="width:auto" onclick="saveParty()">💾 Save</button>
+                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddPartyModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="addSignatoryModal" class="modal">
+    <div class="modal-content">
+        <h3 id="signatoryModalTitle">✍️ Add Signatory</h3>
+        <input type="hidden" id="edit_signatory_id">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div><label>Signatory Name</label><input type="text" id="new_signatory_name"></div>
+            <div><label>Designation</label><input type="text" id="new_signatory_designation"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-login" style="width:auto" onclick="saveSignatory()">💾 Save</button>
+                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddSignatoryModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <h3>⚙️ Admin Settings</h3>
+        
+        <!-- ===== FIRMS ===== -->
+        <h4>🏢 Firms</h4>
+        <div id="firms_list"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="new_firm_name" placeholder="Firm Name">
+            <input type="text" id="new_firm_short" placeholder="Short Code">
+            <input type="text" id="new_firm_logo" placeholder="Logo URL" value="logo.jpeg">
+            <button class="btn-add" onclick="addFirm()">+ Add</button>
         </div>
         
-        <!-- Print Buttons -->
-        <div class="no-print">
-            <button onclick="window.print();setTimeout(()=>window.close(),1000)">🖨️ Print Both Copies</button>
-            <button class="btn-close" onclick="window.close()">✖ Close</button>
+        <!-- ===== USERS ===== -->
+        <h4>👤 Users</h4>
+        <div id="users_list"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="new_user_id" placeholder="User ID">
+            <input type="text" id="new_user_pass" placeholder="Password">
+            <select id="new_user_role"><option value="Admin">Admin</option></select>
+            <select id="new_user_firm"><option value="">Select Firm</option></select>
+            <button class="btn-add" onclick="addUser()">+ Add</button>
         </div>
         
-        <script>
-            window.onload = function() { 
-                setTimeout(window.print, 700); 
-            };
-        <\/script>
-    </body>
-    </html>`;
+        <!-- ===== PERMISSIONS - UPDATED ===== -->
+        <h4>🔐 Permissions</h4>
+        <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+            <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
+            <label><input type="checkbox" id="perm_edit" checked> ✏️ Edit</label>
+            <label><input type="checkbox" id="perm_delete" checked> 🗑️ Delete</label>
+            <label><input type="checkbox" id="perm_whatsapp" checked> 💬 WhatsApp</label>
+            <label><input type="checkbox" id="perm_reports" checked> 📊 Reports</label>
+            <label><input type="checkbox" id="perm_view_all" checked> 👁️ View All</label>
+            <label><input type="checkbox" id="perm_party_add" checked> 👤 Add Party</label>
+            <label><input type="checkbox" id="perm_signatory_add" checked> ✍️ Add Signatory</label>
+            <label><input type="checkbox" id="perm_bank_add" checked> 🏦 Add Bank</label>
+            <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
+        </div>
+        
+        <!-- ===== EXPENSE HEADS ===== -->
+        <h4>📂 Expense Heads</h4>
+        <div id="heads_list"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="new_head_name" placeholder="Expense Head">
+            <input type="text" id="new_subhead_name" placeholder="Sub Head">
+            <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
+        </div>
+        
+        <!-- ===== BANK MANAGEMENT - NEW ===== -->
+        <h4>🏦 Bank Management (Firm Wise)</h4>
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px;">Select Firm</label>
+            <select id="bank_firm_select" onchange="app.loadBankAccounts()" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1; width:200px;">
+                <option value="">-- Select Firm --</option>
+            </select>
+        </div>
+        <div id="bank_accounts_list" style="margin-bottom:10px;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <input type="text" id="new_bank_name" placeholder="Bank Name" style="width:150px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            <input type="text" id="new_bank_account" placeholder="Account No." style="width:150px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            <input type="text" id="new_bank_ifsc" placeholder="IFSC Code" style="width:120px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            <button class="btn-add" onclick="app.addBankAccount()">+ Add Bank</button>
+        </div>
+        <div style="font-size:11px; color:#64748b; margin-top:5px;">
+            📌 Select Firm first, then add bank details for that firm
+        </div>
+        
+        <!-- ===== PARTIES ===== -->
+        <h4>👤 Parties</h4>
+        <div id="parties_list"></div>
+        
+        <!-- ===== SIGNATORIES ===== -->
+        <h4>✍️ Signatories</h4>
+        <div id="signatories_list"></div>
+        
+        <!-- ===== BULK IMPORT ===== -->
+        <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
+            <h4>📥 Bulk Import</h4>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+                <div>
+                    <label style="font-size:11px;">Import Expense Heads</label>
+                    <input type="file" id="importHeadsFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
+                    <button class="btn-add" onclick="app.importExpenseHeads()" style="margin-top:5px;">📤 Import</button>
+                </div>
+                <div>
+                    <label style="font-size:11px;">Import Parties</label>
+                    <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
+                    <button class="btn-add" onclick="app.importParties()" style="margin-top:5px;">📤 Import</button>
+                </div>
+                <div>
+                    <label style="font-size:11px;">Import Vouchers</label>
+                    <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
+                    <button class="btn-add" onclick="app.importVouchers()" style="margin-top:5px;">📤 Import</button>
+                </div>
+            </div>
+            <div style="font-size:10px; color:#64748b; margin-top:8px;">
+                📌 CSV Format: Head,SubHead | PartyName,Phone,Address | Date,VoucherNo,Head,Party,Amount,Mode,Narration
+            </div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-login" onclick="saveAllSettings()">💾 Save All</button>
+            <button class="btn-action" style="background:#64748b; color:white;" onclick="closeSettings()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastMsg" class="toast-msg"></div>
+
+<!-- ===== MAIN SCRIPT ===== -->
+<script type="module">
+    import App from './js/app.js';
     
-    printWindow.document.write(pageHtml);
-    printWindow.document.close();
-}
+    console.log('🚀 Starting App...');
+    const app = new App();
+    window.app = app;
+    
+    // Expose functions to window
+    window.openSettings = () => app.openSettings();
+    window.logout = () => app.logout();
+    window.saveVoucher = () => app.saveVoucher();
+    window.editVoucher = (id) => app.editVoucher(id);
+    window.deleteVoucher = (id) => app.deleteVoucher(id);
+    window.generateA4Print = (v) => app.printVoucher(v);
+    window.shareVoucher = (id) => app.shareVoucher(id);
+    window.openAddPartyModal = () => app.openAddPartyModal();
+    window.openAddSignatoryModal = () => app.openAddSignatoryModal();
+    window.saveParty = () => app.saveParty();
+    window.saveSignatory = () => app.saveSignatory();
+    window.closeAddPartyModal = () => app.closeAddPartyModal();
+    window.closeAddSignatoryModal = () => app.closeAddSignatoryModal();
+    window.closeSettings = () => app.closeSettings();
+    window.resetForm = () => app.resetForm();
+    window.toggleBankField = () => app.toggleBankField();
+    window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
+    window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
+    window.filterSubHeads = (v) => app.filterSubHeads(v);
+    window.filterFirms = (v) => app.filterFirms(v);
+    window.filterParties = (v) => app.filterParties(v);
+    window.filterSignatories = (v) => app.filterSignatories(v);
+    window.selectExpenseHead = (h) => app.selectExpenseHead(h);
+    window.selectSubHead = (s) => app.selectSubHead(s);
+    window.selectFirm = (f) => app.selectFirm(f);
+    window.selectParty = (p) => app.selectParty(p);
+    window.selectSignatory = (s) => app.selectSignatory(s);
+    window.renderAll = () => app.renderAll();
+    window.renderReports = () => app.renderReports();
+    window.exportAllVouchers = () => app.exportAllVouchers();
+    window.exportActiveVouchers = () => app.exportActiveVouchers();
+    window.exportDeletedVouchers = () => app.exportDeletedVouchers();
+    window.exportEditedVouchers = () => app.exportEditedVouchers();
+    window.saveAllSettings = () => app.saveAllSettings();
+    window.addFirm = () => app.addFirm();
+    window.addUser = () => app.addUser();
+    window.addExpenseHead = () => app.addExpenseHead();
+    window.editParty = (id) => app.editParty(id);
+    window.deleteParty = (id) => app.deleteParty(id);
+    window.editSignatory = (id) => app.editSignatory(id);
+    window.deleteSignatory = (id) => app.deleteSignatory(id);
+    window.switchModule = (m) => app.switchModule(m);
+    window.editFirm = (k) => app.editFirm(k);
+    window.deleteFirm = (k) => app.deleteFirm(k);
+    window.deleteUser = (id) => app.deleteUser(id);
+    window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
 
-        // ============ WHATSAPP SHARE ============
-        async function generatePDFBlob(voucher) {
-    return new Promise((resolve) => {
-        try {
-            if (typeof html2canvas === 'undefined') {
-                console.error('html2canvas not loaded');
-                showToast('❌ PDF library not loaded');
-                resolve(null);
-                return;
-            }
-
-            let itemsHtml = (voucher.items || []).map((item, idx) => `
-                <tr>
-                    <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${idx+1}</td>
-                    <td style="padding:4px 6px; font-size:10px; border:1px solid #000;">${item.name}</td>
-                    <td style="padding:4px 6px; text-align:center; font-size:10px; border:1px solid #000;">${item.qty}</td>
-                    <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.rate||0).toFixed(2)}</td>
-                    <td style="padding:4px 6px; text-align:right; font-size:10px; border:1px solid #000;">${(item.amount||0).toFixed(2)}</td>
-                </tr>
-            `).join('');
-            
-            let total = voucher.amt;
-            let title = voucher.type==='REC' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER';
-            let words = numberToWords(total);
-            let partyName = voucher.party || '';
-            let modeText = voucher.mode || 'Cash';
-            if(voucher.chequeNo) modeText += ' | Chq: '+voucher.chequeNo;
-
-            // Create container
-            let container = document.createElement('div');
-            container.style.cssText = `
-                position: absolute;
-                left: -9999px;
-                top: -9999px;
-                width: 210mm;
-                background: white;
-                font-family: 'Courier New', monospace;
-                z-index: -1;
-                padding: 8mm;
-            `;
-
-            container.innerHTML = `
-            <div style="width:100%; max-width:210mm; margin:0 auto; background:#fff; padding:0;">
-                
-                <!-- ORIGINAL COPY - TOP HALF -->
-                <div style="height:48%; min-height:140mm; border:2px solid #000; padding:8mm 10mm; margin-bottom:4mm; display:flex; flex-direction:column; background:#fff; position:relative;">
-                    
-                    <!-- Watermark Logo -->
-                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:0.08; font-size:80px; font-weight:bold; color:#000; pointer-events:none; letter-spacing:5px; white-space:nowrap; z-index:0;">
-                        <img src="${config.logo}" style="opacity:0.08; max-width:150px; max-height:150px;" onerror="this.style.display='none'">
-                    </div>
-                    
-                    <div style="text-align:center; font-size:10px; font-weight:bold; letter-spacing:3px; margin-bottom:5px; padding:3px; position:relative; z-index:1; color:#1a7a1a; border-bottom:2px solid #1a7a1a; padding-bottom:2px;">◆◆◆ ORIGINAL COPY ◆◆◆</div>
-                    
-                    <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px; position:relative; z-index:1;">
-                        <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:2px;">
-                            <img src="${config.logo}" style="max-height:45px; max-width:80px; object-fit:contain;" onerror="this.style.display='none'">
-                            <div>
-                                <div style="font-size:18px; font-weight:bold; letter-spacing:1px;">${config.name}</div>
-                                <div style="font-size:9px; color:#333; letter-spacing:0.5px;">${config.addr}</div>
-                                <div style="font-size:8px; color:#444; font-weight:bold; margin-top:1px;">📞 9414037764 | ✉ info@dev.edu.in</div>
-                                <div style="font-size:8px; font-weight:bold; color:#555;">${config.gst}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:3px; text-decoration:underline; margin:4px 0 6px 0; position:relative; z-index:1;">${title}</div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; font-size:10px; margin-bottom:5px; position:relative; z-index:1;">
-                        <div><span style="font-weight:bold;">Voucher No.</span> <span>${voucher.vno}</span></div>
-                        <div><span style="font-weight:bold;">Date</span> <span style="text-align:right;">${voucher.date}</span></div>
-                        <div><span style="font-weight:bold;">Party / Customer</span> <span>${partyName}</span></div>
-                        <div><span style="font-weight:bold;">Payment Mode</span> <span style="text-align:right;">${modeText}</span></div>
-                        ${voucher.rem ? `<div style="grid-column: span 2;"><span style="font-weight:bold;">Remark</span> <span>${voucher.rem}</span></div>` : ''}
-                    </div>
-                    
-                    ${voucher.items && voucher.items.length ? `
-                    <table style="width:100%; border-collapse:collapse; margin:4px 0; font-size:10px; position:relative; z-index:1;">
-                        <thead>
-                            <tr>
-                                <th style="width:8%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">#</th>
-                                <th style="width:47%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Particulars</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Qty</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Rate (₹)</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Amount (₹)</th>
-                            </tr>
-                        </thead>
-                        <tbody>${itemsHtml}</tbody>
-                    </table>
-                    ` : ''}
-                    
-                    <div style="margin-top:auto; padding-top:5px; border-top:2px double #000; position:relative; z-index:1;">
-                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; padding:3px 0;">
-                            <span>TOTAL AMOUNT</span>
-                            <span>₹ ${total.toFixed(2)}</span>
-                        </div>
-                        <div style="font-size:12px; font-weight:bold; text-align:right; padding:3px 0; color:#000;">₹ ${words} Rupees Only</div>
-                    </div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-top:8px; padding-top:6px; border-top:1.5px dashed #000; position:relative; z-index:1;">
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Authorised</div>
-                            <div>Signatory</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Receiver's</div>
-                            <div>Signature</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Prepared By</div>
-                            <div style="font-size:9px; font-weight:bold; color:#1a3a6e;">${voucher.createdBy || currentUser}</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align:center; font-size:7px; color:#777; border-top:1px dashed #999; padding-top:4px; margin-top:5px; position:relative; z-index:1;">
-                        This is a Computer Generated Document | ${voucher.createdAt || new Date().toLocaleString()} | E.& O.E.
-                    </div>
-                </div>
-                
-                <!-- DUPLICATE COPY - BOTTOM HALF -->
-                <div style="height:48%; min-height:140mm; border:2px solid #000; padding:8mm 10mm; margin-bottom:0; display:flex; flex-direction:column; background:#fff; position:relative;">
-                    
-                    <!-- Watermark Logo -->
-                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:0.08; font-size:80px; font-weight:bold; color:#000; pointer-events:none; letter-spacing:5px; white-space:nowrap; z-index:0;">
-                        <img src="${config.logo}" style="opacity:0.08; max-width:150px; max-height:150px;" onerror="this.style.display='none'">
-                    </div>
-                    
-                    <div style="text-align:center; font-size:10px; font-weight:bold; letter-spacing:3px; margin-bottom:5px; padding:3px; position:relative; z-index:1; color:#b85a0a; border-bottom:2px solid #b85a0a; padding-bottom:2px;">◆◆◆ DUPLICATE COPY ◆◆◆</div>
-                    
-                    <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px; position:relative; z-index:1;">
-                        <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:2px;">
-                            <img src="${config.logo}" style="max-height:45px; max-width:80px; object-fit:contain;" onerror="this.style.display='none'">
-                            <div>
-                                <div style="font-size:18px; font-weight:bold; letter-spacing:1px;">${config.name}</div>
-                                <div style="font-size:9px; color:#333; letter-spacing:0.5px;">${config.addr}</div>
-                                <div style="font-size:8px; color:#444; font-weight:bold; margin-top:1px;">📞 9414037764 | ✉ info@dev.edu.in</div>
-                                <div style="font-size:8px; font-weight:bold; color:#555;">${config.gst}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:3px; text-decoration:underline; margin:4px 0 6px 0; position:relative; z-index:1;">${title}</div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; font-size:10px; margin-bottom:5px; position:relative; z-index:1;">
-                        <div><span style="font-weight:bold;">Voucher No.</span> <span>${voucher.vno}</span></div>
-                        <div><span style="font-weight:bold;">Date</span> <span style="text-align:right;">${voucher.date}</span></div>
-                        <div><span style="font-weight:bold;">Party / Customer</span> <span>${partyName}</span></div>
-                        <div><span style="font-weight:bold;">Payment Mode</span> <span style="text-align:right;">${modeText}</span></div>
-                        ${voucher.rem ? `<div style="grid-column: span 2;"><span style="font-weight:bold;">Remark</span> <span>${voucher.rem}</span></div>` : ''}
-                    </div>
-                    
-                    ${voucher.items && voucher.items.length ? `
-                    <table style="width:100%; border-collapse:collapse; margin:4px 0; font-size:10px; position:relative; z-index:1;">
-                        <thead>
-                            <tr>
-                                <th style="width:8%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">#</th>
-                                <th style="width:47%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Particulars</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Qty</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Rate (₹)</th>
-                                <th style="width:15%; padding:5px 6px; border:1px solid #000; text-align:center; font-weight:bold; font-size:9px; background:#e8e8e8;">Amount (₹)</th>
-                            </tr>
-                        </thead>
-                        <tbody>${itemsHtml}</tbody>
-                    </table>
-                    ` : ''}
-                    
-                    <div style="margin-top:auto; padding-top:5px; border-top:2px double #000; position:relative; z-index:1;">
-                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; padding:3px 0;">
-                            <span>TOTAL AMOUNT</span>
-                            <span>₹ ${total.toFixed(2)}</span>
-                        </div>
-                        <div style="font-size:12px; font-weight:bold; text-align:right; padding:3px 0; color:#000;">₹ ${words} Rupees Only</div>
-                    </div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin-top:8px; padding-top:6px; border-top:1.5px dashed #000; position:relative; z-index:1;">
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Authorised</div>
-                            <div>Signatory</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Receiver's</div>
-                            <div>Signature</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                        <div style="text-align:center; font-size:9px;">
-                            <div>Prepared By</div>
-                            <div style="font-size:9px; font-weight:bold; color:#1a3a6e;">${voucher.createdBy || currentUser}</div>
-                            <div style="border-top:1.5px solid #000; margin-top:20px; padding-top:3px;"></div>
-                            <div style="font-size:8px; color:#555;">(Signature & Date)</div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align:center; font-size:7px; color:#777; border-top:1px dashed #999; padding-top:4px; margin-top:5px; position:relative; z-index:1;">
-                        This is a Computer Generated Document | ${voucher.createdAt || new Date().toLocaleString()} | E.& O.E.
-                    </div>
-                </div>
-                
-            </div>`;
-
-            document.body.appendChild(container);
-            
-            setTimeout(async () => {
-                try {
-                    const canvas = await html2canvas(container, { 
-                        scale: 2, 
-                        useCORS: true,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        width: container.scrollWidth
-                    });
-                    
-                    const imgData = canvas.toDataURL('image/png');
-                    
-                    let PDFLib = window.jspdf || jspdf;
-                    if (!PDFLib) {
-                        document.body.removeChild(container);
-                        resolve(null);
-                        return;
-                    }
-                    
-                    const { jsPDF } = PDFLib;
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    const pdfBlob = pdf.output('blob');
-                    
-                    document.body.removeChild(container);
-                    resolve(pdfBlob);
-                    
-                } catch(e) { 
-                    console.error('html2canvas error:', e);
-                    document.body.removeChild(container);
-                    showToast('❌ PDF generation failed');
-                    resolve(null);
-                }
-            }, 300);
-            
-        } catch(e) {
-            console.error('generatePDFBlob error:', e);
-            showToast('❌ PDF generation failed');
-            resolve(null);
-        }
+    // Start App
+    app.init().then(() => {
+        console.log('✅ App Ready!');
+    }).catch(err => {
+        console.error('❌ App Error:', err);
     });
-}
-        async function shareInvoiceViaWhatsApp() {
-    if(!lastSavedVoucher) { 
-        showToast('No recent voucher to share. Save a transaction first.'); 
-        return; 
-    }
-    if(!config.perms.whatsapp && currentRole !== 'Admin') { 
-        showToast('No permission'); 
-        return; 
-    }
-    
-    showToast('📄 Generating PDF...');
-    
-    let pdfBlob = await generatePDFBlob(lastSavedVoucher);
-    if(pdfBlob) {
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        const message = `*${config.name}*\nVoucher: ${lastSavedVoucher.vno}\nDate: ${lastSavedVoucher.date}\nParty: ${lastSavedVoucher.party}\nAmount: ₹${lastSavedVoucher.amt.toFixed(2)}\n\nThank you for business!`;
-        
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pdfUrl;
-        downloadLink.download = `Voucher_${lastSavedVoucher.vno}.pdf`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-        
-        showToast('📥 PDF downloaded. Attach it in WhatsApp chat.', 4000);
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
-    } else {
-        showToast('❌ PDF generation failed. Please try again.');
-    }
-        }
-        
-        function closeWhatsAppModal() {
-            document.getElementById('whatsappShareModal').style.display = 'none';
-            generatedPdfBlob = null;
-        }
-        
-        function sendWhatsAppMessage() {
-            if(!generatedPdfBlob) {
-                showToast('PDF not ready. Please wait or try again.');
-                return;
-            }
-            
-            const pdfUrl = URL.createObjectURL(generatedPdfBlob);
-            const message = `*${config.name}*\nVoucher: ${lastSavedVoucher.vno}\nDate: ${lastSavedVoucher.date}\nParty: ${lastSavedVoucher.party}\nAmount: ₹${lastSavedVoucher.amt.toFixed(2)}\n\nThank you for business!`;
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = pdfUrl;
-            downloadLink.download = `Voucher_${lastSavedVoucher.vno}.pdf`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            
-            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-            
-            showToast('📥 PDF downloaded. Please attach it in WhatsApp chat.', 4000);
-            closeWhatsAppModal();
-            setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
-        }
-
-        function numberToWords(num){ 
-            if(num===0) return 'Zero'; 
-            const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen']; 
-            const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety']; 
-            function convert(n){ 
-                if(n<20) return ones[n]; 
-                if(n<100) return tens[Math.floor(n/10)]+(n%10?' '+ones[n%10]:''); 
-                if(n<1000) return ones[Math.floor(n/100)]+' Hundred'+(n%100?' '+convert(n%100):''); 
-                if(n<100000) return convert(Math.floor(n/1000))+' Thousand'+(n%1000?' '+convert(n%1000):''); 
-                return convert(Math.floor(n/100000))+' Lakh'+(n%100000?' '+convert(n%100000):''); 
-            } 
-            return convert(Math.floor(num)); 
-        }
-        
-        function resetForm(){ 
-            document.getElementById('edit_id').value = ''; 
-            document.getElementById('v_party').value = ''; 
-            document.getElementById('v_amt').value = ''; 
-            document.getElementById('manual_amount').value = '0'; 
-            document.getElementById('v_remark').value = ''; 
-            document.getElementById('cheque_number').value = '';
-            document.getElementById('bank_account').value = '';
-            currentItems = []; 
-            renderItemsList(); 
-            document.getElementById('form-title').innerHTML = "Add Transaction"; 
-            generateVNo(); 
-            toggleItemFields(); 
-        }
-        
-        function editVoucher(id){ 
-            let v = db.find(x=>x.id==id); 
-            if(!v) { showToast('Voucher not found'); return; }
-            if(v.createdBy && v.createdBy !== currentUser && currentRole !== 'Admin') {
-                showToast('You can only edit your own vouchers');
-                return;
-            }
-            document.getElementById('edit_id').value = v.id; 
-            document.getElementById('v_type').value = v.type; 
-            document.getElementById('v_no').value = v.vno; 
-            document.getElementById('v_date').value = v.date; 
-            document.getElementById('v_party').value = v.party || ''; 
-            document.getElementById('v_amt').value = v.amt; 
-            document.getElementById('manual_amount').value = v.amt; 
-            document.getElementById('v_mode').value = v.mode || 'Cash'; 
-            document.getElementById('v_remark').value = v.rem || ''; 
-            if(v.bank) document.getElementById('bank_account').value = v.bank;
-            if(v.chequeNo) document.getElementById('cheque_number').value = v.chequeNo;
-            currentItems = v.items ? v.items.map(i => ({...i})) : []; 
-            toggleItemFields(); 
-            renderItemsList(); 
-            document.getElementById('form-title').innerHTML = "✏️ Edit Transaction"; 
-            window.scrollTo({top:0}); 
-        }
-        
-        function deleteVoucher(id){ 
-            let v = db.find(x=>x.id==id);
-            if(v && v.createdBy && v.createdBy !== currentUser && currentRole !== 'Admin') {
-                showToast('You can only delete your own vouchers');
-                return;
-            }
-            if(!confirm('Delete this voucher? Stock will be restored.')) return;
-            
-            if(v && v.items) {
-                for(let item of v.items) {
-                    if(v.type === 'SALE') updateStock(item.itemId, item.qty);
-                    else if(v.type === 'PUR') updateStock(item.itemId, -item.qty);
-                    else if(v.type === 'SR') updateStock(item.itemId, -item.qty);
-                    else if(v.type === 'PR') updateStock(item.itemId, item.qty);
-                }
-            }
-            if(v) {
-                if(v.type === 'REC') {
-                    if(v.mode === 'Cash') cashBalance -= v.amt;
-                    else if(v.mode === 'Bank' || v.mode === 'Cheque') bankBalance -= v.amt;
-                } else if(v.type === 'EXP') {
-                    if(v.mode === 'Cash') cashBalance += v.amt;
-                    else if(v.mode === 'Bank' || v.mode === 'Cheque') bankBalance += v.amt;
-                }
-                saveFirmData();
-            }
-            
-            rtdb.ref('data_v2/'+currentFirmId+'/'+id).remove().then(() => {
-                db = db.filter(d => d.id !== id);
-                renderAll();
-                updateBankUI();
-                showToast('✅ Deleted successfully');
-            }).catch(err => showToast('❌ Delete error: '+err.message));
-        }
-        
-        async function loadData() {
-            showLoading(true);
-            try {
-                const snapshot = await rtdb.ref('data_v2/'+currentFirmId).once('value');
-                db = snapshot.val() ? Object.values(snapshot.val()) : [];
-                renderAll();
-                generateVNo();
-                isDataLoaded = true;
-            } catch(e) {
-                console.warn(e);
-                db = [];
-                renderAll();
-            }
-            showLoading(false);
-        }
-        
-        function setupRealtimeListener() {
-            rtdb.ref('data_v2/'+currentFirmId).on('value', (snapshot) => {
-                if(snapshot.val()) {
-                    let newData = Object.values(snapshot.val());
-                    if(JSON.stringify(newData) !== JSON.stringify(db)) {
-                        db = newData;
-                        renderAll();
-                        generateVNo();
-                        updateBankUI();
-                        showToast('🔄 Data updated automatically');
-                    }
-                }
-            });
-        }
-        
-        function renderAll(){ 
-            renderTable(); 
-            calculateStats(); 
-        }
-        
-        function renderTable(){ 
-            let s = document.getElementById('f_search')?.value.toLowerCase()||''; 
-            let t = document.getElementById('f_type')?.value||'ALL'; 
-            let start = document.getElementById('f_start')?.value||''; 
-            let end = document.getElementById('f_end')?.value||''; 
-            let filtered = db.filter(v=>(!s||(v.party||'').toLowerCase().includes(s)||(v.rem||'').toLowerCase().includes(s))&&(t==='ALL'||v.type===t)&&(!start||v.date>=start)&&(!end||v.date<=end)); 
-            let canEdit = (currentRole==='Admin'||config.perms.edit); 
-            let canDel = (currentRole==='Admin'||config.perms.delete); 
-            let canPrint = (currentRole==='Admin'||config.perms.print); 
-            
-            if(filtered.length === 0) {
-                document.getElementById('v_list').innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999; padding:20px;">No transactions found</td></tr>';
-                return;
-            }
-            
-            document.getElementById('v_list').innerHTML = filtered.slice().reverse().map(v=>`<tr>
-                <td>${v.date}</td>
-                <td><b>${v.vno}</b></td>
-                <td><span class="type-badge type-${v.type}">${v.type}</span></td>
-                <td>${v.party||'-'}</td>
-                <td>₹${v.amt.toLocaleString()}</td>
-                <td>${v.mode||'-'}</td>
-                <td>${v.chequeNo ? 'Cheque: '+v.chequeNo : (v.bank||'-')}</td>
-                <td>
-                    <div class="action-btns">
-                        ${canPrint?`<button class="btn-action btn-print" onclick="generateA4Print(db.find(x=>x.id=='${v.id}'))" title="Print"><i class="fas fa-print"></i></button>`:''}
-                        ${canPrint?`<button class="btn-action btn-pdf" onclick="downloadPDF('${v.id}')" title="PDF"><i class="fas fa-file-pdf"></i></button>`:''}
-                        ${canPrint?`<button class="btn-action btn-whatsapp-small" onclick="shareSpecificVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`:''}
-                        ${canEdit?`<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`:''}
-                        ${canDel?`<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`:''}
-                    </div>
-                </td>
-            </tr>`).join(''); 
-        }
-        
-        async function downloadPDF(id) {
-            let v = db.find(x=>x.id==id);
-            if(!v) { showToast('Voucher not found'); return; }
-            let pdfBlob = await generatePDFBlob(v);
-            if(pdfBlob) {
-                let url = URL.createObjectURL(pdfBlob);
-                let a = document.createElement('a');
-                a.href = url;
-                a.download = `Voucher_${v.vno}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
-                showToast('📄 PDF downloaded');
-            } else {
-                showToast('❌ PDF generation failed');
-            }
-        }
-        
-        async function shareSpecificVoucher(id) {
-            let v = db.find(x=>x.id==id);
-            if(!v) { showToast('Voucher not found'); return; }
-            lastSavedVoucher = v;
-            await shareInvoiceViaWhatsApp();
-        }
-        
-        function calculateStats(){ 
-            let rec = 0, exp = 0; 
-            db.forEach(v=>{ 
-                if(v.type==='REC') rec += v.amt; 
-                else if(v.type==='EXP') exp += v.amt; 
-            }); 
-            document.getElementById('stat_receipt').innerHTML = '₹ '+rec.toLocaleString(); 
-            document.getElementById('stat_expense').innerHTML = '₹ '+exp.toLocaleString(); 
-            updateBankUI();
-            calculateStockValue();
-        }
-
-        // ============ STOCK RENDER ============
-        function renderStock(){ 
-            let search = document.getElementById('stock_search')?.value.toLowerCase()||''; 
-            let cat = document.getElementById('stock_cat_filter')?.value||''; 
-            let lowOnly = document.getElementById('low_stock_only')?.checked||false; 
-            let filtered = stockItems.filter(s=>s.name.toLowerCase().includes(search)&&(!cat||s.category===cat)&&(!lowOnly||s.stock<10)); 
-            document.getElementById('stock_list').innerHTML = filtered.map((s,idx)=>`<tr class="${s.stock<10?'stock-low':''}"><td>${idx+1}</td><td>${s.name}</td><td>${s.category}</td><td>${s.unit}</td><td>₹${s.sellPrice}</td><td>₹${s.purchasePrice}</td><td><b>${s.stock}</b>${s.stock<10?' ⚠️':''}</td><td><button class="btn-action btn-edit" onclick="editStockItem(${s.id})">Edit</button><button class="btn-action btn-del" onclick="deleteStockItem(${s.id})">Del</button></td></tr>`).join(''); 
-        }
-        
-        function updateStockCategoryFilter(){ 
-            let cats = [...new Set(stockItems.map(s=>s.category))]; 
-            let sel = document.getElementById('stock_cat_filter'); 
-            if(sel) sel.innerHTML = '<option value="">All Categories</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join(''); 
-        }
-        
-        function editStockItem(id){ 
-            let item = stockItems.find(i=>i.id==id); 
-            if(item){ 
-                let ns = prompt(`Update stock for ${item.name}:`, item.stock); 
-                if(ns !== null && !isNaN(parseInt(ns))){ 
-                    item.stock = Math.max(0, parseInt(ns)) || 0; 
-                    saveStockToFirebase(); 
-                    renderStock(); 
-                    calculateStockValue(); 
-                    showToast('✅ Stock updated');
-                } 
-            } 
-        }
-        
-        function deleteStockItem(id){ 
-            if(confirm('Delete item permanently?')){ 
-                let isUsed = db.some(v => v.items && v.items.some(i => i.itemId == id));
-                if(isUsed) {
-                    showToast('Cannot delete: Item used in transactions');
-                    return;
-                }
-                stockItems = stockItems.filter(i=>i.id!=id); 
-                saveStockToFirebase(); 
-                renderStock(); 
-                calculateStockValue(); 
-                updateStockCategoryFilter();
-                showToast('✅ Item deleted');
-            } 
-        }
-        
-        function exportStockToExcel(){ 
-            let ws = XLSX.utils.json_to_sheet(stockItems.map(i=>({'Item Name':i.name,'Category':i.category,'Unit':i.unit,'Selling Price':i.sellPrice,'Purchase Price':i.purchasePrice,'Current Stock':i.stock}))); 
-            let wb = XLSX.utils.book_new(); 
-            XLSX.utils.book_append_sheet(wb,ws,'Stock'); 
-            XLSX.writeFile(wb,`${config.name}_Stock.xlsx`); 
-            showToast('📎 Stock exported');
-        }
-        
-        function downloadStockTemplate(){ 
-            let ws = XLSX.utils.json_to_sheet([{'Item Name':'Example','Category':'Wire','Unit':'Coil','Selling Price':1000,'Purchase Price':800,'Current Stock':100}]); 
-            let wb = XLSX.utils.book_new(); 
-            XLSX.utils.book_append_sheet(wb,ws,'Template'); 
-            XLSX.writeFile(wb,'Stock_Template.xlsx'); 
-            showToast('📄 Template downloaded');
-        }
-        
-        function importStockFromExcel(input) { 
-    let file = input.files[0]; 
-    if(!file) { 
-        showToast('No file selected'); 
-        return; 
-    }
-    
-    showToast('📥 Reading file...');
-    
-    let reader = new FileReader(); 
-    reader.onload = function(e){ 
-        try {
-            let data = new Uint8Array(e.target.result); 
-            let wb = XLSX.read(data, {type:'array'}); 
-            let sheet = wb.Sheets[wb.SheetNames[0]]; 
-            let rows = XLSX.utils.sheet_to_json(sheet); 
-            
-            if(rows.length === 0) {
-                showToast('❌ No data found in file');
-                return;
-            }
-            
-            let added = 0;
-            let skipped = 0;
-            
-            rows.forEach((row, i) => { 
-                let name = row['Item Name'] || row['item_name'] || row['ItemName'] || 'Unknown';
-                
-                if(!name || name === 'Unknown') {
-                    skipped++;
-                    return;
-                }
-                
-                let existing = stockItems.find(item => 
-                    item.name.toLowerCase() === name.toLowerCase()
-                );
-                
-                if(!existing) {
-                    // 🔥 FIX: Use integer ID without decimal
-                    let newId = Date.now() + i + Math.floor(Math.random() * 1000);
-                    
-                    stockItems.push({ 
-                        id: newId, 
-                        name: name, 
-                        category: row['Category'] || row['category'] || 'General', 
-                        unit: row['Unit'] || row['unit'] || 'Piece', 
-                        sellPrice: parseFloat(row['Selling Price'] || row['selling_price'] || row['SellingPrice'] || 0), 
-                        purchasePrice: parseFloat(row['Purchase Price'] || row['purchase_price'] || row['PurchasePrice'] || 0), 
-                        stock: parseFloat(row['Current Stock'] || row['stock'] || row['CurrentStock'] || 0) 
-                    }); 
-                    added++;
-                } else {
-                    skipped++;
-                }
-            }); 
-            
-            saveStockToFirebase();
-            renderStock(); 
-            updateStockCategoryFilter(); 
-            calculateStockValue();
-            
-            showToast(`✅ Imported ${added} new items. ${skipped} skipped.`);
-            
-        } catch(err) {
-            console.error('Import error:', err);
-            showToast('❌ Import failed: ' + err.message);
-        }
-    }; 
-    
-    reader.onerror = function() {
-        showToast('❌ Error reading file');
-    };
-    
-    reader.readAsArrayBuffer(file); 
-    input.value = ''; 
-}
-        // ============ REPORTS ============
-        function loadReport(){ 
-            let type = document.getElementById('report_type')?.value; 
-            let div = document.getElementById('report_content'); 
-            if(!div) return; 
-            
-            if(type==='monthly'){ 
-                let monthly = {}; 
-                db.forEach(v=>{ 
-                    let m = v.date.substring(0,7); 
-                    if(!monthly[m]) monthly[m] = {rec:0, exp:0}; 
-                    if(v.type==='REC') monthly[m].rec += v.amt; 
-                    else if(v.type==='EXP') monthly[m].exp += v.amt; 
-                }); 
-                let sortedMonths = Object.keys(monthly).sort((a,b) => a.localeCompare(b)).reverse();
-                if(sortedMonths.length === 0) {
-                    div.innerHTML = '<p style="color:#999;">No data available</p>';
-                    return;
-                }
-                div.innerHTML = `<table class="table-res"><thead><tr><th>Month</th><th>Receipts</th><th>Payments</th><th>Net Profit</th></tr></thead><tbody>${sortedMonths.map(m=>{ 
-                    let profit = monthly[m].rec - monthly[m].exp; 
-                    return `<tr><td>${m}</td><td>₹${monthly[m].rec.toLocaleString()}</td><td>₹${monthly[m].exp.toLocaleString()}</td><td style="color:${profit>=0?'green':'red'}">₹${profit.toLocaleString()}</td></tr>`; 
-                }).join('')}</tbody></table>`; 
-            } else if(type==='party'){ 
-                let map = new Map(); 
-                db.forEach(v=>{ 
-                    if(!v.party) return; 
-                    if(!map.has(v.party)) map.set(v.party,{rec:0, exp:0}); 
-                    let p = map.get(v.party); 
-                    if(v.type==='REC') p.rec += v.amt; 
-                    else if(v.type==='EXP') p.exp += v.amt; 
-                }); 
-                if(map.size === 0) {
-                    div.innerHTML = '<p style="color:#999;">No party data available</p>';
-                    return;
-                }
-                div.innerHTML = `<table class="table-res"><thead><tr><th>Party</th><th>Received</th><th>Paid</th><th>Balance</th></tr></thead><tbody>${Array.from(map.entries()).map(([name,p])=>{ 
-                    let bal = p.rec - p.exp; 
-                    return `<tr><td>${name}</td><td>₹${p.rec.toLocaleString()}</td><td>₹${p.exp.toLocaleString()}</td><td style="color:${bal>=0?'green':'red'}">₹${bal.toLocaleString()}</td></tr>`; 
-                }).join('')}</tbody></table>`; 
-            } else if(type==='stock_summary'){ 
-                if(stockItems.length === 0) {
-                    div.innerHTML = '<p style="color:#999;">No stock items available</p>';
-                    return;
-                }
-                div.innerHTML = `<table class="table-res"><thead><tr><th>Item</th><th>Stock</th><th>Value</th></tr></thead><tbody>${stockItems.map(i=>`<tr><td>${i.name}</td><td>${i.stock}</td><td>₹${(i.stock*i.purchasePrice).toLocaleString()}</td></tr>`).join('')}</tbody></table>`; 
-            } else if(type==='balance_sheet'){ 
-                let stockVal = stockItems.reduce((s,i)=>s+(i.purchasePrice*i.stock),0);
-                div.innerHTML = `
-                    <h4>📊 Balance Sheet</h4>
-                    <table class="table-res">
-                        <tr><td><strong>Cash Balance</strong></td><td>₹${cashBalance.toLocaleString()}</td></tr>
-                        <tr><td><strong>Bank Balance</strong></td><td>₹${bankBalance.toLocaleString()}</td></tr>
-                        <tr><td><strong>Stock Value</strong></td><td>₹${stockVal.toLocaleString()}</td></tr>
-                        <tr style="border-top:2px solid #000;"><td><strong>Total Assets</strong></td><td><strong>₹${(cashBalance + bankBalance + stockVal).toLocaleString()}</strong></td></tr>
-                    </table>
-                `;
-            } 
-        }
-
-        // ============ SWITCH FIRM ============
-        function switchFirm(id){ 
-            rtdb.ref('data_v2/'+currentFirmId).off();
-            
-            currentFirmId = id; 
-            localStorage.setItem('active_firm_id', id); 
-            config = allConfigs[currentFirmId]; 
-            loadFirmData();
-            applyConfig(); 
-            applyPermissionsUI();
-            
-            loadData();
-            rtdb.ref('stock_v2/'+currentFirmId).once('value',(snap)=>{ 
-                if(snap.val()) stockItems = Object.values(snap.val()); 
-                else initSampleStock(); 
-                renderStock(); 
-                calculateStockValue(); 
-                updateStockCategoryFilter(); 
-            });
-            
-            setupRealtimeListener();
-        }
-        
-        function applyConfig(){ 
-            document.getElementById('login_title').innerText = config.name; 
-            document.getElementById('login_logo').src = config.logo; 
-            document.getElementById('header_logo').src = config.logo; 
-            document.getElementById('btn_firm1').innerText = allConfigs.firm1.name; 
-            document.getElementById('btn_firm2').innerText = allConfigs.firm2.name; 
-            document.getElementById('btn_firm3').innerText = allConfigs.firm3.name; 
-            document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active')); 
-            let activeBtn = document.getElementById('btn_'+currentFirmId); 
-            if(activeBtn) activeBtn.classList.add('active'); 
-            updateBankUI();
-            applyPermissionsUI(); 
-            loadUsers();
-        }
-        
-        // ============ LOGIN/LOGOUT ============
-        function doLogin(){ 
-            let user = document.getElementById('user_id').value.trim(); 
-            let pass = document.getElementById('user_pass').value.trim(); 
-            if(!user||!pass){ 
-                document.getElementById('login_error').innerText = 'Enter credentials'; 
-                return; 
-            }
-            
-            // Check users list
-            let foundUser = users.find(u => u.id === user && u.password === pass);
-            if(!foundUser) {
-                // Fallback to default admin
-                if(user === 'Admin' && pass === config.adminPass) {
-                    foundUser = { id: 'Admin', role: 'Admin' };
-                } else {
-                    document.getElementById('login_error').innerText = 'Invalid login'; 
-                    return;
-                }
-            }
-            
-            currentUser = user;
-            currentRole = foundUser.role || 'Staff';
-            auth(foundUser.role || 'Staff');
-        }
-        
-        function auth(role){ 
-            sessionStorage.setItem('auth','ok'); 
-            sessionStorage.setItem('role',role);
-            sessionStorage.setItem('user', currentUser);
-            sessionStorage.setItem('firm', currentFirmId);
-            
-            document.getElementById('login-screen').style.display='none'; 
-            document.getElementById('main-app').style.display='block'; 
-            document.getElementById('display_role').innerText = role;
-            document.getElementById('display_user').innerText = '👤 ' + currentUser;
-            
-            if(role==='Admin' || config.perms.users) document.getElementById('admin_settings_btn').style.display='inline-block';
-            else document.getElementById('admin_settings_btn').style.display='none';
-            
-            let tabsContainer = document.getElementById('moduleTabsContainer');
-            tabsContainer.innerHTML = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
-            if(role==='Admin' || config.perms.stock) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('stock')">🏷️ Stock Management</button>`;
-            if(role==='Admin' || config.perms.bank) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('bank')">🏦 Bank & Cash</button>`;
-            if(role==='Admin' || config.perms.reports) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
-            
-            document.querySelectorAll('.module-tab')[0]?.classList.add('active');
-            
-            loadFirmData();
-            initSampleStock(); 
-            loadData();
-            rtdb.ref('stock_v2/'+currentFirmId).once('value',(snap)=>{ 
-                if(snap.val()) stockItems = Object.values(snap.val()); 
-                else initSampleStock(); 
-                renderStock(); 
-                calculateStockValue(); 
-                updateStockCategoryFilter();
-            });
-            applyPermissionsUI();
-            updateBankUI();
-            loadUsers();
-            
-            setupRealtimeListener();
-        }
-        
-        function logout(){ 
-            rtdb.ref('data_v2/'+currentFirmId).off();
-            sessionStorage.clear(); 
-            document.getElementById('login-screen').style.display='flex'; 
-            document.getElementById('main-app').style.display='none'; 
-        }
-        
-        function switchModule(m){ 
-            document.querySelectorAll('.module-pane').forEach(p=>p.classList.remove('active')); 
-            document.querySelectorAll('.module-tab').forEach(t=>t.classList.remove('active')); 
-            let pane = document.getElementById(`module-${m}`);
-            if(pane) pane.classList.add('active'); 
-            document.querySelectorAll('.module-tab').forEach(t => {
-                if(t.textContent.includes(m === 'transactions' ? 'Transactions' : 
-                    m === 'stock' ? 'Stock' : 
-                    m === 'bank' ? 'Bank' : 'Reports')) {
-                    t.classList.add('active');
-                }
-            });
-            if(m==='reports') loadReport(); 
-            if(m==='stock') renderStock(); 
-            if(m==='bank') updateBankUI();
-        }
-
-        // ============ SETTINGS ============
-        function openSettings(){ 
-            document.getElementById('set_name').value = config.name; 
-            document.getElementById('set_addr').value = config.addr; 
-            document.getElementById('set_gst').value = config.gst; 
-            document.getElementById('set_logo_url').value = config.logo; 
-            
-            document.getElementById('perm_receipt').checked = config.perms.receipt; 
-            document.getElementById('perm_payment').checked = config.perms.payment; 
-            document.getElementById('perm_sale').checked = config.perms.sale; 
-            document.getElementById('perm_purchase').checked = config.perms.purchase;
-            document.getElementById('perm_sr').checked = config.perms.sr; 
-            document.getElementById('perm_pr').checked = config.perms.pr; 
-            document.getElementById('perm_contra').checked = config.perms.contra; 
-            document.getElementById('perm_whatsapp').checked = config.perms.whatsapp;
-            document.getElementById('perm_print').checked = config.perms.print; 
-            document.getElementById('perm_edit').checked = config.perms.edit; 
-            document.getElementById('perm_delete').checked = config.perms.delete; 
-            document.getElementById('perm_stock').checked = config.perms.stock; 
-            document.getElementById('perm_reports').checked = config.perms.reports;
-            document.getElementById('perm_bank').checked = config.perms.bank;
-            document.getElementById('perm_users').checked = config.perms.users;
-            
-            renderUsersList();
-            document.getElementById('settings-modal').style.display='flex'; 
-        }
-        
-        function closeSettings(){ document.getElementById('settings-modal').style.display='none'; }
-        
-        function saveSettings(){ 
-            config.name = document.getElementById('set_name').value; 
-            config.addr = document.getElementById('set_addr').value; 
-            config.gst = document.getElementById('set_gst').value; 
-            config.logo = document.getElementById('set_logo_url').value;
-            
-            config.perms = { 
-                receipt: document.getElementById('perm_receipt').checked, 
-                payment: document.getElementById('perm_payment').checked, 
-                sale: document.getElementById('perm_sale').checked, 
-                purchase: document.getElementById('perm_purchase').checked, 
-                sr: document.getElementById('perm_sr').checked, 
-                pr: document.getElementById('perm_pr').checked, 
-                contra: document.getElementById('perm_contra').checked, 
-                whatsapp: document.getElementById('perm_whatsapp').checked, 
-                print: document.getElementById('perm_print').checked, 
-                edit: document.getElementById('perm_edit').checked, 
-                delete: document.getElementById('perm_delete').checked, 
-                stock: document.getElementById('perm_stock').checked, 
-                reports: document.getElementById('perm_reports').checked,
-                bank: document.getElementById('perm_bank').checked,
-                users: document.getElementById('perm_users').checked
-            };
-            
-            allConfigs[currentFirmId] = config;
-            saveFirmData();
-            rtdb.ref('app_settings_v2').set(allConfigs).then(()=>{ 
-                showToast('✅ Settings Saved!'); 
-                closeSettings(); 
-                applyConfig(); 
-                let tabsContainer = document.getElementById('moduleTabsContainer');
-                tabsContainer.innerHTML = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
-                if(currentRole==='Admin' || config.perms.stock) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('stock')">🏷️ Stock Management</button>`;
-                if(currentRole==='Admin' || config.perms.bank) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('bank')">🏦 Bank & Cash</button>`;
-                if(currentRole==='Admin' || config.perms.reports) tabsContainer.innerHTML += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
-                applyPermissionsUI();
-                loadUsers();
-            }).catch(err => showToast('❌ Save error: '+err.message));
-        }
-
-        // ============ CLOSE MODALS ON OUTSIDE CLICK ============
-        document.querySelectorAll('.modal, .whatsapp-share-modal').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if(e.target === this) {
-                    this.style.display = 'none';
-                }
-            });
-        });
-
-        // ============ KEYBOARD SHORTCUTS ============
-        document.addEventListener('keydown', function(e) {
-            if(e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveVoucher();
-            }
-            if(e.key === 'Escape') {
-                document.querySelectorAll('.modal, .whatsapp-share-modal').forEach(m => {
-                    if(m.style.display === 'flex') m.style.display = 'none';
-                });
-            }
-        });
-
-        // ============ INITIALIZATION ============
-        rtdb.ref('app_settings_v2').once('value',(snap)=>{ 
-            if(snap.val()){ 
-                allConfigs = snap.val(); 
-                config = allConfigs[currentFirmId]; 
-                loadFirmData();
-                applyConfig(); 
-            } 
-        });
-        
-        document.getElementById('loginBtn').onclick = doLogin;
-        document.getElementById('user_pass').addEventListener('keypress', (e) => { if(e.key === 'Enter') doLogin(); });
-        
-        if(sessionStorage.getItem('auth')==='ok') {
-            let savedFirm = sessionStorage.getItem('firm') || 'firm1';
-            currentFirmId = savedFirm;
-            currentUser = sessionStorage.getItem('user') || 'Admin';
-            auth(sessionStorage.getItem('role'));
-        }
-        
-        console.log('✅ Dev Vidyalaya ERP System Loaded Successfully!');
-        console.log('📌 Features: Auto-refresh, Half page print, User Management');
-        console.log('👤 Users: Admin/1811, Staff/2026 (Add more in Settings)');
-    </script>
+</script>
 </body>
 </html>
