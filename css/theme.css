@@ -1,0 +1,19 @@
+/* css/theme.css - Theme Colors */
+
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --dark: #1e293b;
+    --bg: #f8fafc;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --border: #e2e8f0;
+}
+
+/* Dark Theme - बाद में Enable कर सकते हैं */
+[data-theme="dark"] {
+    --bg: #0f172a;
+    --dark: #f8fafc;
+    --border: #334155;
+}
