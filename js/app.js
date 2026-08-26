@@ -65,6 +65,13 @@ class App {
 
     // ===== SESSION =====
     checkSession() {
+        // ✅ Ensure data is loaded first
+        if (!this.loaded) {
+            console.log('⏳ Data loading in progress, retrying...');
+            setTimeout(() => this.checkSession(), 300);
+            return;
+        }
+        
         this.updateLoginRoleDropdown();
         
         if (sessionStorage.getItem('auth') === 'ok') {
@@ -186,20 +193,45 @@ class App {
     // ===== UPDATE DROPDOWNS =====
     updateLoginRoleDropdown() {
         const select = document.getElementById('login_role');
-        if (!select) return;
+        if (!select) {
+            console.warn('⚠️ login_role element not found');
+            return;
+        }
+        
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Role --</option>';
         select.innerHTML += '<option value="Admin">Admin (Full Access)</option>';
         
-        const firms = Object.keys(this.allFirms);
+        // ✅ Ensure allFirms is loaded
+        const firms = Object.keys(this.allFirms || {});
+        console.log('🏢 Updating login roles, firms found:', firms.length);
+        
         if (firms.length > 0) {
             firms.forEach(f => {
-                if (this.allFirms[f]) {
-                    select.innerHTML += `<option value="Staff_${f}">Staff - ${this.allFirms[f].name}</option>`;
+                const firm = this.allFirms[f];
+                if (firm) {
+                    select.innerHTML += `<option value="Staff_${f}">Staff - ${firm.name || f}</option>`;
                 }
             });
+        } else {
+            // 🔥 Fallback - Default firms if data not loaded
+            console.warn('⚠️ No firms found, using fallback');
+            const fallbackFirms = {
+                'DevVidyalaya': 'Dev Vidyalaya',
+                'DevGas': 'Dev Gas Agency',
+                'Rama': 'Rama Enterprises'
+            };
+            Object.keys(fallbackFirms).forEach(f => {
+                select.innerHTML += `<option value="Staff_${f}">Staff - ${fallbackFirms[f]}</option>`;
+            });
         }
-        if (currentVal) select.value = currentVal;
+        
+        // ✅ Restore previous value if it exists
+        if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+            select.value = currentVal;
+        }
+        
+        console.log('✅ Login role dropdown updated. Total options:', select.options.length);
     }
 
     updateSettingsRoleDropdown() {
@@ -943,7 +975,7 @@ class App {
     populateSubHeads(head) {
         const dropdown = document.getElementById('subHeadDropdown');
         if (!dropdown) return;
-        const subHeads = this.expenseHeads[head] || [];
+        const subHeads = this.expenseHeads[head]?.subHeads || [];
         if (subHeads.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No sub heads available</div>';
             dropdown.style.display = 'block';
@@ -1044,7 +1076,7 @@ class App {
             dropdown.style.display = 'block';
             return;
         }
-        const subHeads = this.expenseHeads[head] || [];
+        const subHeads = this.expenseHeads[head]?.subHeads || [];
         if (!search || search.length < 1) {
             this.populateSubHeads(head);
             return;
