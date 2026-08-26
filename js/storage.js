@@ -5,7 +5,6 @@ import { DEFAULT_FIRMS, STORAGE_KEYS } from '../config/constants.js';
 
 class Storage {
     constructor() {
-        // ✅ Firebase Config से Mode लें
         this.mode = STORAGE_MODE.current || 'local';
         this.rtdb = null;
         this._initFirebase();
@@ -22,7 +21,6 @@ class Storage {
         }
     }
 
-    // ===== LOCAL STORAGE =====
     _getLocal(key) {
         try {
             return JSON.parse(localStorage.getItem(key)) || {};
@@ -41,7 +39,6 @@ class Storage {
         return true;
     }
 
-    // ===== FIREBASE =====
     async _getFirebase(key) {
         if (!this.rtdb) return {};
         try {
@@ -75,7 +72,6 @@ class Storage {
         }
     }
 
-    // ===== MAIN METHODS =====
     async load(key) {
         if (this.mode === 'firebase') {
             return await this._getFirebase(key);
@@ -97,7 +93,6 @@ class Storage {
         return this._removeLocal(key);
     }
 
-    // ===== LOAD ALL DATA =====
     async loadAllData() {
         const keys = [
             STORAGE_KEYS.FIRMS,
@@ -134,7 +129,6 @@ class Storage {
         };
     }
 
-    // ===== SAVE VOUCHER =====
     async saveVoucher(voucher) {
         const key = STORAGE_KEYS.VOUCHERS;
         const data = await this.load(key);
@@ -151,7 +145,6 @@ class Storage {
         return true;
     }
 
-    // ===== REAL-TIME LISTENER =====
     onVoucherChange(callback) {
         if (this.mode === 'firebase' && this.rtdb) {
             console.log('🔥 Firebase Realtime Listener started');
