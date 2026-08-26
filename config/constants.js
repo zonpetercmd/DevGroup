@@ -38,10 +38,12 @@ export const DEFAULT_PERMISSIONS = {
     party_add: true,        // 👤 Add Party
     signatory_add: true,    // ✍️ Add Signatory
     bank_add: true,         // 🏦 Add Bank
-    expense_add: true       // 📂 Add Expense Head
+    expense_add: true,      // 📂 Add Expense Head
+    multi_firm: false       // 🏢 Multiple Firms Access
 };
 
 export const STORAGE_KEYS = {
+    // Main Data
     FIRMS: 'firms',
     VOUCHERS: 'vouchers',
     DELETED: 'deletedVouchers',
@@ -52,5 +54,15 @@ export const STORAGE_KEYS = {
     USERS: 'users',
     VOUCHER_COUNTER: 'voucherCounter',
     BANK_ACCOUNTS: 'bankAccounts',
-    PERMISSIONS: 'userPermissions'
+    PERMISSIONS: 'userPermissions',
+    
+    // ✅ Receipts Data
+    RECEIPTS: 'receipts',
+    RECEIPT_COUNTER: 'receiptCounter',
+    DELETED_RECEIPTS: 'deletedReceipts',
+    
+    // ✅ Receipts Settings (अलग से)
+    RECEIPT_HEADS: 'receiptHeads',
+    RECEIPT_PARTIES: 'receiptParties',
+    RECEIPT_SIGNATORIES: 'receiptSignatories'
 };
