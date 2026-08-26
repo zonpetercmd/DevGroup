@@ -82,8 +82,8 @@
                 <input type="hidden" id="edit_id">
                 
                 <!-- ✅ Fixed Grid - Same Level for Party & Signatory -->
-                <div class="grid">
-                    <!-- Row 1 -->
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
+                    <!-- Row 1: Date, Expense Head, Sub Head -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
                     <div>
@@ -104,6 +104,7 @@
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
+                    <!-- Row 2: Firm, Party, Payment Mode -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
@@ -113,7 +114,6 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
-                    <!-- Row 2: Party + Payment Mode + Bank + Reference -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
@@ -135,6 +135,7 @@
                         </select>
                     </div>
                     
+                    <!-- Row 3: Bank Account, Reference No, Signatory -->
                     <div id="bank_account_field">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
@@ -142,7 +143,6 @@
                     
                     <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
                     
-                    <!-- Row 3: Signatory + Amount + Voucher No -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
@@ -153,11 +153,12 @@
                         <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
+                    <!-- Row 4: Amount, Voucher No (2 Columns) -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
                     
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <!-- Row 4: Narration (Full Width) -->
+                    <!-- Narration - Full Width -->
                     <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
@@ -171,13 +172,31 @@
                 </div>
             </div>
             
-            <!-- Filter -->
+            <!-- ===== FILTER - ENHANCED ===== -->
             <div class="filter-card">
-                <div class="grid-3">
-                    <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()"></div>
+                <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
+                    <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Search..."></div>
                     <div><label>📅 From</label><input type="date" id="f_start" onchange="renderAll()"></div>
                     <div><label>📅 To</label><input type="date" id="f_end" onchange="renderAll()"></div>
-                    <div><label>Status</label>
+                    <div><label>💰 Amount Min</label><input type="number" id="f_amount_min" onchange="renderAll()" placeholder="Min"></div>
+                    <div><label>💰 Amount Max</label><input type="number" id="f_amount_max" onchange="renderAll()" placeholder="Max"></div>
+                    <div><label>📂 Head</label>
+                        <select id="f_head_filter" onchange="renderAll()">
+                            <option value="">All Heads</option>
+                        </select>
+                    </div>
+                    <div><label>👤 Party</label><input type="text" id="f_party_filter" oninput="renderAll()" placeholder="Party name..."></div>
+                    <div><label>💳 Mode</label>
+                        <select id="f_mode_filter" onchange="renderAll()">
+                            <option value="">All Modes</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    <div><label>📌 Status</label>
                         <select id="f_status" onchange="renderAll()">
                             <option value="ALL">All</option>
                             <option value="active">Active</option>
