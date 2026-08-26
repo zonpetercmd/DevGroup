@@ -10,13 +10,16 @@ class ReceiptsModule {
         this.db = [];
         this.deletedReceipts = [];
         this.receiptCounter = {};
+        
+        // ✅ Receipts के अपने Data
+        this.receiptHeads = {};
+        this.receiptParties = [];
+        this.receiptSignatories = [];
+        
         this.loaded = false;
         
-        // References from app
+        // ✅ App से नहीं, अपने Data use करेंगे
         this.allFirms = app.allFirms;
-        this.parties = app.parties;
-        this.signatories = app.signatories;
-        this.expenseHeads = app.expenseHeads;
         this.bankAccounts = app.bankAccounts;
         this.currentUser = app.currentUser;
         this.currentRole = app.currentRole;
@@ -28,8 +31,14 @@ class ReceiptsModule {
         this.db = data.receipts || [];
         this.deletedReceipts = data.deletedReceipts || [];
         this.receiptCounter = data.receiptCounter || {};
+        this.receiptHeads = data.receiptHeads || {};
+        this.receiptParties = data.receiptParties || [];
+        this.receiptSignatories = data.receiptSignatories || [];
         this.loaded = true;
         console.log('📋 Receipts loaded:', this.db.length);
+        console.log('📋 Receipt Heads:', Object.keys(this.receiptHeads).length);
+        console.log('📋 Receipt Parties:', this.receiptParties.length);
+        console.log('📋 Receipt Signatories:', this.receiptSignatories.length);
         this.renderTable();
         this.updateStats();
         return this;
@@ -48,7 +57,7 @@ class ReceiptsModule {
         document.getElementById('r_no').value = `${firm.short}/RC/${fy}/${String(count).padStart(3, '0')}`;
     }
 
-    // ===== SAVE =====
+    // ===== SAVE RECEIPT =====
     async save() {
         const firmKey = document.getElementById('r_firm_name_value').value;
         const head = document.getElementById('r_head_value').value;
@@ -311,7 +320,225 @@ class ReceiptsModule {
         this.generateReceiptNo();
     }
 
-    // ===== DROPDOWNS =====
+    // ============================================================
+    // ✅ RECEIPTS HEADS - Settings Functions
+    // ============================================================
+
+    renderHeadsList() {
+        const container = document.getElementById('r_heads_list');
+        if (!container) return;
+        const heads = Object.keys(this.receiptHeads);
+        if (heads.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No receipt heads added</p>';
+            return;
+        }
+        container.innerHTML = heads.map(h => `
+            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
+                <span><strong>${h}</strong></span>
+                <button class="btn-action btn-del" onclick="window.receipts.deleteReceiptHead('${h.replace(/'/g, "\\'")}')">✖</button>
+            </div>
+        `).join('');
+    }
+
+    async addReceiptHead() {
+        const head = document.getElementById('r_new_head_name').value.trim();
+        if (!head) { showToast('Enter receipt head name'); return; }
+        if (this.receiptHeads[head]) { showToast('Head already exists'); return; }
+        this.receiptHeads[head] = [];
+        await this.storage.saveReceiptHeads(this.receiptHeads);
+        this.renderHeadsList();
+        this.populateHeads();
+        document.getElementById('r_new_head_name').value = '';
+        showToast('✅ Receipt head added');
+    }
+
+    async deleteReceiptHead(head) {
+        if (!confirm('Delete head: ' + head + '?')) return;
+        delete this.receiptHeads[head];
+        await this.storage.saveReceiptHeads(this.receiptHeads);
+        this.renderHeadsList();
+        this.populateHeads();
+        showToast('✅ Deleted');
+    }
+
+    // ============================================================
+    // ✅ RECEIPTS PARTIES - Settings Functions
+    // ============================================================
+
+    renderPartiesList() {
+        const container = document.getElementById('r_parties_list');
+        if (!container) return;
+        if (this.receiptParties.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No receipt parties added</p>';
+            return;
+        }
+        container.innerHTML = this.receiptParties.map(p => `
+            <div class="party-card">
+                <div class="party-info">
+                    <span><strong>${p.name}</strong></span>
+                    ${p.phone ? `<span>📞 ${p.phone}</span>` : ''}
+                    ${p.address ? `<span>📍 ${p.address}</span>` : ''}
+                </div>
+                <div>
+                    <button class="btn-action btn-edit" onclick="window.receipts.editReceiptParty('${p.id}')">✏️</button>
+                    <button class="btn-action btn-del" onclick="window.receipts.deleteReceiptParty('${p.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openAddReceiptPartyModal() {
+        document.getElementById('r_edit_party_id').value = '';
+        document.getElementById('r_new_party_name').value = '';
+        document.getElementById('r_new_party_phone').value = '';
+        document.getElementById('r_new_party_address').value = '';
+        document.getElementById('r_party_modal_title').innerHTML = '➕ Add Receipt Party';
+        document.getElementById('r_addPartyModal').style.display = 'flex';
+    }
+
+    closeAddReceiptPartyModal() {
+        document.getElementById('r_addPartyModal').style.display = 'none';
+    }
+
+    async saveReceiptParty() {
+        const id = document.getElementById('r_edit_party_id').value;
+        const name = document.getElementById('r_new_party_name').value.trim();
+        if (!name) { showToast('Party name required'); return; }
+        
+        const party = { 
+            id: id || generateId(), 
+            name: name, 
+            phone: document.getElementById('r_new_party_phone').value.trim(),
+            address: document.getElementById('r_new_party_address').value.trim() 
+        };
+        
+        if (id) {
+            const idx = this.receiptParties.findIndex(p => p.id === id);
+            if (idx !== -1) this.receiptParties[idx] = party;
+        } else {
+            if (this.receiptParties.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+                showToast('Party already exists');
+                return;
+            }
+            this.receiptParties.push(party);
+        }
+        
+        await this.storage.saveReceiptParties(this.receiptParties);
+        this.populateParties();
+        this.renderPartiesList();
+        this.closeAddReceiptPartyModal();
+        showToast(id ? '✅ Receipt party updated' : '✅ Receipt party added');
+    }
+
+    editReceiptParty(id) {
+        const party = this.receiptParties.find(p => p.id === id);
+        if (!party) return;
+        document.getElementById('r_edit_party_id').value = party.id;
+        document.getElementById('r_new_party_name').value = party.name;
+        document.getElementById('r_new_party_phone').value = party.phone || '';
+        document.getElementById('r_new_party_address').value = party.address || '';
+        document.getElementById('r_party_modal_title').innerHTML = '✏️ Edit Receipt Party';
+        document.getElementById('r_addPartyModal').style.display = 'flex';
+    }
+
+    async deleteReceiptParty(id) {
+        if (!confirm('Delete this party?')) return;
+        this.receiptParties = this.receiptParties.filter(p => p.id !== id);
+        await this.storage.saveReceiptParties(this.receiptParties);
+        this.populateParties();
+        this.renderPartiesList();
+        showToast('✅ Receipt party deleted');
+    }
+
+    // ============================================================
+    // ✅ RECEIPTS SIGNATORIES - Settings Functions
+    // ============================================================
+
+    renderSignatoriesList() {
+        const container = document.getElementById('r_signatories_list');
+        if (!container) return;
+        if (this.receiptSignatories.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No receipt signatories added</p>';
+            return;
+        }
+        container.innerHTML = this.receiptSignatories.map(s => `
+            <div class="signatory-card">
+                <div class="signatory-info">
+                    <span><strong>${s.name}</strong></span>
+                    ${s.designation ? `<span>📌 ${s.designation}</span>` : ''}
+                </div>
+                <div>
+                    <button class="btn-action btn-edit" onclick="window.receipts.editReceiptSignatory('${s.id}')">✏️</button>
+                    <button class="btn-action btn-del" onclick="window.receipts.deleteReceiptSignatory('${s.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openAddReceiptSignatoryModal() {
+        document.getElementById('r_edit_signatory_id').value = '';
+        document.getElementById('r_new_signatory_name').value = '';
+        document.getElementById('r_new_signatory_designation').value = '';
+        document.getElementById('r_signatory_modal_title').innerHTML = '✍️ Add Receipt Signatory';
+        document.getElementById('r_addSignatoryModal').style.display = 'flex';
+    }
+
+    closeAddReceiptSignatoryModal() {
+        document.getElementById('r_addSignatoryModal').style.display = 'none';
+    }
+
+    async saveReceiptSignatory() {
+        const id = document.getElementById('r_edit_signatory_id').value;
+        const name = document.getElementById('r_new_signatory_name').value.trim();
+        if (!name) { showToast('Signatory name required'); return; }
+        
+        const signatory = {
+            id: id || generateId(),
+            name: name,
+            designation: document.getElementById('r_new_signatory_designation').value.trim()
+        };
+        
+        if (id) {
+            const idx = this.receiptSignatories.findIndex(s => s.id === id);
+            if (idx !== -1) this.receiptSignatories[idx] = signatory;
+        } else {
+            if (this.receiptSignatories.find(s => s.name.toLowerCase() === name.toLowerCase())) {
+                showToast('Signatory already exists');
+                return;
+            }
+            this.receiptSignatories.push(signatory);
+        }
+        
+        await this.storage.saveReceiptSignatories(this.receiptSignatories);
+        this.populateSignatories();
+        this.renderSignatoriesList();
+        this.closeAddReceiptSignatoryModal();
+        showToast(id ? '✅ Receipt signatory updated' : '✅ Receipt signatory added');
+    }
+
+    editReceiptSignatory(id) {
+        const sig = this.receiptSignatories.find(s => s.id === id);
+        if (!sig) return;
+        document.getElementById('r_edit_signatory_id').value = sig.id;
+        document.getElementById('r_new_signatory_name').value = sig.name;
+        document.getElementById('r_new_signatory_designation').value = sig.designation || '';
+        document.getElementById('r_signatory_modal_title').innerHTML = '✏️ Edit Receipt Signatory';
+        document.getElementById('r_addSignatoryModal').style.display = 'flex';
+    }
+
+    async deleteReceiptSignatory(id) {
+        if (!confirm('Delete this signatory?')) return;
+        this.receiptSignatories = this.receiptSignatories.filter(s => s.id !== id);
+        await this.storage.saveReceiptSignatories(this.receiptSignatories);
+        this.populateSignatories();
+        this.renderSignatoriesList();
+        showToast('✅ Receipt signatory deleted');
+    }
+
+    // ============================================================
+    // DROPDOWNS - Receipts अपने Data से
+    // ============================================================
+
     populateFirms() {
         const dropdown = document.getElementById('r_firmDropdown');
         const firms = Object.keys(this.allFirms);
@@ -340,19 +567,22 @@ class ReceiptsModule {
         this.generateReceiptNo();
     }
 
+    // ✅ Receipts Heads - अपने Data से
     populateHeads() {
         const dropdown = document.getElementById('r_headDropdown');
-        const heads = Object.keys(this.expenseHeads);
+        const heads = Object.keys(this.receiptHeads);
         dropdown.innerHTML = heads.length ? heads.map(h => 
             `<div onclick="window.receipts.selectHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
-        ).join('') : '<div class="no-result">No heads</div>';
+        ).join('') : '<div class="no-result">No receipt heads. Add in Settings.</div>';
         dropdown.style.display = 'block';
     }
 
     filterHeads(search) {
         const dropdown = document.getElementById('r_headDropdown');
         if (!search || search.length < 1) { this.populateHeads(); return; }
-        const heads = Object.keys(this.expenseHeads).filter(h => h.toLowerCase().includes(search.toLowerCase()));
+        const heads = Object.keys(this.receiptHeads).filter(h => 
+            h.toLowerCase().includes(search.toLowerCase())
+        );
         dropdown.innerHTML = heads.length ? heads.map(h => 
             `<div onclick="window.receipts.selectHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
         ).join('') : '<div class="no-result">No head found</div>';
@@ -365,18 +595,19 @@ class ReceiptsModule {
         document.getElementById('r_headDropdown').style.display = 'none';
     }
 
+    // ✅ Receipts Parties - अपने Data से
     populateParties() {
         const dropdown = document.getElementById('r_partyDropdown');
-        dropdown.innerHTML = this.parties.length ? this.parties.map(p => 
+        dropdown.innerHTML = this.receiptParties.length ? this.receiptParties.map(p => 
             `<div onclick="window.receipts.selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
-        ).join('') : '<div class="no-result">No parties</div>';
+        ).join('') : '<div class="no-result">No receipt parties. Add in Settings.</div>';
         dropdown.style.display = 'block';
     }
 
     filterParties(search) {
         const dropdown = document.getElementById('r_partyDropdown');
         if (!search || search.length < 1) { this.populateParties(); return; }
-        const filtered = this.parties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+        const filtered = this.receiptParties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
         dropdown.innerHTML = filtered.length ? filtered.map(p => 
             `<div onclick="window.receipts.selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
         ).join('') : '<div class="no-result">No party found</div>';
@@ -389,18 +620,19 @@ class ReceiptsModule {
         document.getElementById('r_partyDropdown').style.display = 'none';
     }
 
+    // ✅ Receipts Signatories - अपने Data से
     populateSignatories() {
         const dropdown = document.getElementById('r_signatoryDropdown');
-        dropdown.innerHTML = this.signatories.length ? this.signatories.map(s => 
+        dropdown.innerHTML = this.receiptSignatories.length ? this.receiptSignatories.map(s => 
             `<div onclick="window.receipts.selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
-        ).join('') : '<div class="no-result">No signatories</div>';
+        ).join('') : '<div class="no-result">No receipt signatories. Add in Settings.</div>';
         dropdown.style.display = 'block';
     }
 
     filterSignatories(search) {
         const dropdown = document.getElementById('r_signatoryDropdown');
         if (!search || search.length < 1) { this.populateSignatories(); return; }
-        const filtered = this.signatories.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+        const filtered = this.receiptSignatories.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
         dropdown.innerHTML = filtered.length ? filtered.map(s => 
             `<div onclick="window.receipts.selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
         ).join('') : '<div class="no-result">No signatory found</div>';
@@ -413,6 +645,7 @@ class ReceiptsModule {
         document.getElementById('r_signatoryDropdown').style.display = 'none';
     }
 
+    // ✅ Modes
     populateModes() {
         const dropdown = document.getElementById('r_modeDropdown');
         ['Cash', 'Bank', 'Paytm', 'UPI', 'Cheque'].forEach(m => {
