@@ -17,66 +17,769 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- ⬇️ CSS Files -->
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/theme.css">
-    <link rel="stylesheet" href="css/print.css">
+    <style>
+        /* ===== GLOBAL RESET ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background:#f1f5f9; 
+            color:#1e293b;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background:#0f172a;
+            color:#e2e8f0;
+        }
+        
+        /* ===== LOGIN SCREEN ===== */
+        #login-screen {
+            position:fixed; top:0; left:0; right:0; bottom:0;
+            display:flex; justify-content:center; align-items:center;
+            background:linear-gradient(135deg, #1e293b, #0f172a);
+            z-index:9999;
+        }
+        .login-card {
+            background:white;
+            padding:40px 35px;
+            border-radius:16px;
+            width:380px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.4);
+        }
+        body.dark-mode .login-card {
+            background:#1e293b;
+            border:1px solid #334155;
+        }
+        .login-card .login-logo {
+            display:block;
+            margin:0 auto 15px;
+            height:70px;
+            border-radius:50%;
+        }
+        .login-card h2 {
+            text-align:center;
+            color:#1e293b;
+            font-size:24px;
+        }
+        body.dark-mode .login-card h2 { color:#e2e8f0; }
+        .login-card p {
+            text-align:center;
+            color:#64748b;
+            margin-bottom:25px;
+            font-size:14px;
+        }
+        body.dark-mode .login-card p { color:#94a3b8; }
+        .login-card input,
+        .login-card select {
+            width:100%;
+            padding:12px 14px;
+            border:2px solid #e2e8f0;
+            border-radius:8px;
+            font-size:14px;
+            margin-bottom:12px;
+            background:white;
+            transition:border-color 0.2s;
+        }
+        body.dark-mode .login-card input,
+        body.dark-mode .login-card select {
+            background:#0f172a;
+            border-color:#334155;
+            color:#e2e8f0;
+        }
+        .login-card input:focus,
+        .login-card select:focus {
+            outline:none;
+            border-color:#2563eb;
+        }
+        .login-card .btn-login {
+            width:100%;
+            padding:14px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            border-radius:8px;
+            font-size:16px;
+            font-weight:600;
+            cursor:pointer;
+            transition:background 0.2s;
+        }
+        .login-card .btn-login:hover { background:#1d4ed8; }
+        .login-card .login-hint {
+            text-align:center;
+            margin-top:15px;
+            font-size:12px;
+            color:#94a3b8;
+        }
+        .login-card .login-hint strong { color:#2563eb; }
+        #login_error {
+            color:#dc2626;
+            font-size:13px;
+            text-align:center;
+            margin-bottom:10px;
+            display:none;
+        }
+        
+        /* ===== MAIN APP ===== */
+        #main-app { display:none; }
+        
+        /* ===== HEADER ===== */
+        header {
+            background:white;
+            padding:12px 25px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            border-bottom:1px solid #e2e8f0;
+            position:sticky;
+            top:0;
+            z-index:100;
+        }
+        body.dark-mode header {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        header .header-left {
+            display:flex;
+            align-items:center;
+            gap:15px;
+        }
+        header .header-left img { height:35px; }
+        header .header-left .firm-name {
+            font-weight:600;
+            font-size:14px;
+        }
+        header .header-right {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+        header .header-right .user-badge {
+            padding:4px 12px;
+            border-radius:20px;
+            font-size:12px;
+            font-weight:600;
+        }
+        header .header-right .user-badge.admin {
+            background:#dbeafe;
+            color:#1d4ed8;
+        }
+        header .header-right .user-badge.staff {
+            background:#d1fae5;
+            color:#065f46;
+        }
+        body.dark-mode header .header-right .user-badge.admin {
+            background:#1e3a5f;
+            color:#60a5fa;
+        }
+        body.dark-mode header .header-right .user-badge.staff {
+            background:#064e3b;
+            color:#34d399;
+        }
+        header .header-right .btn-logout {
+            border:1px solid #ef4444;
+            color:#ef4444;
+            background:none;
+            padding:5px 14px;
+            border-radius:6px;
+            cursor:pointer;
+            font-weight:500;
+            font-size:13px;
+            transition:all 0.2s;
+        }
+        header .header-right .btn-logout:hover {
+            background:#ef4444;
+            color:white;
+        }
+        header .header-right .btn-settings {
+            background:none;
+            border:none;
+            font-size:20px;
+            cursor:pointer;
+            padding:4px 8px;
+            border-radius:6px;
+        }
+        header .header-right .btn-settings:hover { background:#f1f5f9; }
+        body.dark-mode header .header-right .btn-settings:hover { background:#334155; }
+        header .header-right .theme-toggle {
+            background:none;
+            border:none;
+            font-size:20px;
+            cursor:pointer;
+            padding:4px 8px;
+            border-radius:6px;
+        }
+        header .header-right .theme-toggle:hover { background:#f1f5f9; }
+        body.dark-mode header .header-right .theme-toggle:hover { background:#334155; }
+        
+        /* ===== CONTAINER ===== */
+        .container { padding:20px; max-width:1400px; margin:0 auto; }
+        
+        /* ===== STATS ===== */
+        .stats-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+            gap:12px;
+            margin-bottom:20px;
+        }
+        .stat-box {
+            background:white;
+            padding:15px 18px;
+            border-radius:10px;
+            border:1px solid #e2e8f0;
+            text-align:center;
+        }
+        body.dark-mode .stat-box {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .stat-box p {
+            font-size:12px;
+            color:#64748b;
+            margin-bottom:4px;
+        }
+        body.dark-mode .stat-box p { color:#94a3b8; }
+        .stat-box h3 {
+            font-size:22px;
+            font-weight:700;
+            color:#1e293b;
+        }
+        body.dark-mode .stat-box h3 { color:#e2e8f0; }
+        
+        /* ===== TABS ===== */
+        .module-tabs {
+            display:flex;
+            gap:6px;
+            margin-bottom:20px;
+            flex-wrap:wrap;
+            background:white;
+            padding:6px;
+            border-radius:10px;
+            border:1px solid #e2e8f0;
+        }
+        body.dark-mode .module-tabs {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .module-tab {
+            padding:10px 20px;
+            border:none;
+            border-radius:8px;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+            background:transparent;
+            color:#64748b;
+            transition:all 0.2s;
+        }
+        body.dark-mode .module-tab { color:#94a3b8; }
+        .module-tab:hover { background:#f1f5f9; }
+        body.dark-mode .module-tab:hover { background:#334155; }
+        .module-tab.active {
+            background:#2563eb;
+            color:white;
+        }
+        .module-tab.active:hover { background:#1d4ed8; }
+        
+        /* ===== MODULE PANES ===== */
+        .module-pane { display:none; }
+        .module-pane.active { display:block; }
+        
+        /* ===== FORM CARD ===== */
+        .form-card {
+            background:white;
+            padding:20px 25px;
+            border-radius:12px;
+            border:1px solid #e2e8f0;
+            margin-bottom:20px;
+        }
+        body.dark-mode .form-card {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .form-card .firm-header {
+            display:flex;
+            align-items:center;
+            gap:15px;
+            padding-bottom:15px;
+            border-bottom:1px solid #e2e8f0;
+            margin-bottom:18px;
+        }
+        body.dark-mode .form-card .firm-header { border-color:#334155; }
+        .form-card .firm-header img { height:50px; }
+        .form-card .firm-header .firm-info .name {
+            font-size:18px;
+            font-weight:700;
+        }
+        .form-card .firm-header .firm-info .addr {
+            font-size:12px;
+            color:#64748b;
+        }
+        body.dark-mode .form-card .firm-header .firm-info .addr { color:#94a3b8; }
+        .form-card h4 {
+            font-size:16px;
+            margin-bottom:15px;
+            color:#1e293b;
+        }
+        body.dark-mode .form-card h4 { color:#e2e8f0; }
+        .form-card .grid {
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:14px;
+        }
+        @media(max-width:768px){
+            .form-card .grid { grid-template-columns:1fr; }
+        }
+        .form-card label {
+            display:block;
+            font-size:12px;
+            font-weight:600;
+            color:#475569;
+            margin-bottom:4px;
+        }
+        body.dark-mode .form-card label { color:#94a3b8; }
+        .form-card input,
+        .form-card select,
+        .form-card textarea {
+            width:100%;
+            padding:10px 12px;
+            border:2px solid #e2e8f0;
+            border-radius:8px;
+            font-size:13px;
+            background:white;
+            transition:border-color 0.2s;
+        }
+        body.dark-mode .form-card input,
+        body.dark-mode .form-card select,
+        body.dark-mode .form-card textarea {
+            background:#0f172a;
+            border-color:#334155;
+            color:#e2e8f0;
+        }
+        .form-card input:focus,
+        .form-card select:focus,
+        .form-card textarea:focus {
+            outline:none;
+            border-color:#2563eb;
+        }
+        .form-card textarea {
+            resize:vertical;
+            min-height:60px;
+        }
+        .form-card .search-wrapper {
+            position:relative;
+        }
+        .form-card .dropdown-list {
+            position:absolute;
+            top:100%;
+            left:0;
+            right:0;
+            background:white;
+            border:2px solid #e2e8f0;
+            border-top:none;
+            border-radius:0 0 8px 8px;
+            max-height:200px;
+            overflow-y:auto;
+            z-index:50;
+            display:none;
+        }
+        body.dark-mode .form-card .dropdown-list {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .form-card .dropdown-list .no-result {
+            padding:12px;
+            text-align:center;
+            color:#94a3b8;
+            font-size:13px;
+        }
+        .form-card .btn-add {
+            padding:5px 14px;
+            background:#10b981;
+            color:white;
+            border:none;
+            border-radius:6px;
+            font-size:12px;
+            cursor:pointer;
+            font-weight:600;
+            transition:background 0.2s;
+        }
+        .form-card .btn-add:hover { background:#059669; }
+        .form-card .btn-login {
+            padding:10px 25px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            border-radius:8px;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+            transition:background 0.2s;
+        }
+        .form-card .btn-login:hover { background:#1d4ed8; }
+        .form-card .btn-action {
+            padding:10px 20px;
+            background:#64748b;
+            color:white;
+            border:none;
+            border-radius:8px;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+            transition:background 0.2s;
+        }
+        .form-card .btn-action:hover { background:#475569; }
+        .form-card .btn-sm {
+            padding:4px 10px;
+            border:none;
+            border-radius:4px;
+            font-size:12px;
+            cursor:pointer;
+            transition:opacity 0.2s;
+        }
+        .form-card .btn-sm:hover { opacity:0.8; }
+        .form-card .btn-sm.btn-edit { background:#dbeafe; color:#1d4ed8; }
+        .form-card .btn-sm.btn-del { background:#fee2e2; color:#dc2626; }
+        .form-card .btn-sm.btn-print { background:#d1fae5; color:#065f46; }
+        .form-card .btn-sm.btn-whatsapp { background:#d1fae5; color:#065f46; }
+        body.dark-mode .form-card .btn-sm.btn-edit { background:#1e3a5f; color:#60a5fa; }
+        body.dark-mode .form-card .btn-sm.btn-del { background:#7f1d1d; color:#f87171; }
+        body.dark-mode .form-card .btn-sm.btn-print { background:#064e3b; color:#34d399; }
+        body.dark-mode .form-card .btn-sm.btn-whatsapp { background:#064e3b; color:#34d399; }
+        
+        /* ===== FILTER CARD ===== */
+        .filter-card {
+            background:white;
+            padding:15px 20px;
+            border-radius:12px;
+            border:1px solid #e2e8f0;
+            margin-bottom:20px;
+        }
+        body.dark-mode .filter-card {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .filter-card .grid-3 {
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+            gap:12px;
+        }
+        .filter-card label {
+            display:block;
+            font-size:11px;
+            font-weight:600;
+            color:#475569;
+            margin-bottom:3px;
+        }
+        body.dark-mode .filter-card label { color:#94a3b8; }
+        .filter-card input,
+        .filter-card select {
+            width:100%;
+            padding:8px 10px;
+            border:2px solid #e2e8f0;
+            border-radius:6px;
+            font-size:13px;
+            background:white;
+        }
+        body.dark-mode .filter-card input,
+        body.dark-mode .filter-card select {
+            background:#0f172a;
+            border-color:#334155;
+            color:#e2e8f0;
+        }
+        .filter-card input:focus,
+        .filter-card select:focus {
+            outline:none;
+            border-color:#2563eb;
+        }
+        
+        /* ===== TABLE ===== */
+        .table-res {
+            background:white;
+            border-radius:12px;
+            border:1px solid #e2e8f0;
+            overflow-x:auto;
+        }
+        body.dark-mode .table-res {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .table-res table {
+            width:100%;
+            border-collapse:collapse;
+            font-size:13px;
+        }
+        .table-res th {
+            background:#f8fafc;
+            padding:12px 14px;
+            text-align:left;
+            font-weight:600;
+            color:#475569;
+            border-bottom:2px solid #e2e8f0;
+            position:sticky;
+            top:0;
+            z-index:10;
+        }
+        body.dark-mode .table-res th {
+            background:#0f172a;
+            color:#94a3b8;
+            border-color:#334155;
+        }
+        .table-res td {
+            padding:10px 14px;
+            border-bottom:1px solid #f1f5f9;
+        }
+        body.dark-mode .table-res td { border-color:#334155; }
+        .table-res tr:hover { background:#f8fafc; }
+        body.dark-mode .table-res tr:hover { background:#0f172a; }
+        .table-res .mode-badge {
+            padding:2px 10px;
+            border-radius:12px;
+            font-size:11px;
+            font-weight:600;
+            background:#e2e8f0;
+            color:#475569;
+        }
+        body.dark-mode .table-res .mode-badge {
+            background:#334155;
+            color:#94a3b8;
+        }
+        .table-res .action-buttons {
+            display:flex;
+            gap:4px;
+            flex-wrap:wrap;
+        }
+        .table-res .action-buttons .btn-sm {
+            padding:3px 8px;
+            border:none;
+            border-radius:4px;
+            font-size:12px;
+            cursor:pointer;
+        }
+        .table-res .action-buttons .btn-sm.btn-edit { background:#dbeafe; color:#1d4ed8; }
+        .table-res .action-buttons .btn-sm.btn-del { background:#fee2e2; color:#dc2626; }
+        .table-res .action-buttons .btn-sm.btn-print { background:#d1fae5; color:#065f46; }
+        .table-res .action-buttons .btn-sm.btn-whatsapp { background:#d1fae5; color:#065f46; }
+        body.dark-mode .table-res .action-buttons .btn-sm.btn-edit { background:#1e3a5f; color:#60a5fa; }
+        body.dark-mode .table-res .action-buttons .btn-sm.btn-del { background:#7f1d1d; color:#f87171; }
+        body.dark-mode .table-res .action-buttons .btn-sm.btn-print { background:#064e3b; color:#34d399; }
+        body.dark-mode .table-res .action-buttons .btn-sm.btn-whatsapp { background:#064e3b; color:#34d399; }
+        .table-res .selected-row { background:#dbeafe; }
+        body.dark-mode .table-res .selected-row { background:#1e3a5f; }
+        
+        /* ===== MODALS ===== */
+        .modal {
+            display:none;
+            position:fixed;
+            top:0; left:0; right:0; bottom:0;
+            background:rgba(0,0,0,0.5);
+            z-index:1000;
+            justify-content:center;
+            align-items:center;
+            padding:20px;
+        }
+        .modal .modal-content {
+            background:white;
+            padding:30px;
+            border-radius:12px;
+            max-width:600px;
+            width:100%;
+            max-height:90vh;
+            overflow-y:auto;
+        }
+        body.dark-mode .modal .modal-content {
+            background:#1e293b;
+            border:1px solid #334155;
+        }
+        .modal .modal-content h3 {
+            font-size:18px;
+            margin-bottom:15px;
+            color:#1e293b;
+        }
+        body.dark-mode .modal .modal-content h3 { color:#e2e8f0; }
+        .modal .modal-content h4 {
+            font-size:14px;
+            margin:15px 0 10px;
+            color:#475569;
+        }
+        body.dark-mode .modal .modal-content h4 { color:#94a3b8; }
+        .modal .modal-content input,
+        .modal .modal-content select,
+        .modal .modal-content textarea {
+            width:100%;
+            padding:10px 12px;
+            border:2px solid #e2e8f0;
+            border-radius:6px;
+            font-size:13px;
+            background:white;
+            margin-bottom:8px;
+        }
+        body.dark-mode .modal .modal-content input,
+        body.dark-mode .modal .modal-content select,
+        body.dark-mode .modal .modal-content textarea {
+            background:#0f172a;
+            border-color:#334155;
+            color:#e2e8f0;
+        }
+        .modal .modal-content input:focus,
+        .modal .modal-content select:focus,
+        .modal .modal-content textarea:focus {
+            outline:none;
+            border-color:#2563eb;
+        }
+        
+        /* ===== TOAST ===== */
+        #toast {
+            position:fixed;
+            bottom:25px;
+            right:25px;
+            background:#1e293b;
+            color:white;
+            padding:14px 28px;
+            border-radius:10px;
+            font-size:14px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);
+            z-index:9999;
+            max-width:400px;
+            opacity:0;
+            transform:translateY(20px);
+            transition:all 0.3s ease;
+        }
+        body.dark-mode #toast {
+            background:#0f172a;
+            border:1px solid #334155;
+        }
+        #toast.show {
+            opacity:1;
+            transform:translateY(0);
+        }
+        
+        /* ===== BULK ACTIONS ===== */
+        .bulk-actions {
+            padding:12px 20px;
+            background:#f8fafc;
+            border-top:1px solid #e2e8f0;
+            display:flex;
+            gap:12px;
+            align-items:center;
+            flex-wrap:wrap;
+        }
+        body.dark-mode .bulk-actions {
+            background:#0f172a;
+            border-color:#334155;
+        }
+        .bulk-actions span {
+            font-weight:600;
+            font-size:13px;
+        }
+        .bulk-actions .btn-sm {
+            padding:5px 14px;
+            border:none;
+            border-radius:6px;
+            font-size:12px;
+            font-weight:600;
+            cursor:pointer;
+            transition:opacity 0.2s;
+        }
+        .bulk-actions .btn-sm:hover { opacity:0.8; }
+        .bulk-actions .btn-sm.btn-del { background:#fee2e2; color:#dc2626; }
+        .bulk-actions .btn-sm.btn-export { background:#dbeafe; color:#1d4ed8; }
+        body.dark-mode .bulk-actions .btn-sm.btn-del { background:#7f1d1d; color:#f87171; }
+        body.dark-mode .bulk-actions .btn-sm.btn-export { background:#1e3a5f; color:#60a5fa; }
+        
+        /* ===== DASHBOARD ===== */
+        .report-card {
+            background:white;
+            padding:20px;
+            border-radius:12px;
+            border:1px solid #e2e8f0;
+        }
+        body.dark-mode .report-card {
+            background:#1e293b;
+            border-color:#334155;
+        }
+        .report-card h4 {
+            font-size:16px;
+            margin-bottom:15px;
+            color:#1e293b;
+        }
+        body.dark-mode .report-card h4 { color:#e2e8f0; }
+        
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:600px){
+            header { flex-wrap:wrap; gap:10px; }
+            .login-card { width:100%; margin:15px; }
+            .container { padding:12px; }
+            .form-card { padding:15px; }
+            .stats-grid { grid-template-columns:repeat(2, 1fr); }
+            .module-tab { padding:8px 14px; font-size:12px; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- ===== LOGIN ===== -->
+<!-- ===== LOGIN SCREEN ===== -->
 <div id="login-screen">
     <div class="login-card">
         <img src="logo.jpeg" class="login-logo" id="login_logo" onerror="this.style.display='none'">
         <h2 id="login_title">Dev Vidyalaya</h2>
         <p>Login to your account</p>
-        <input type="text" id="user_id" placeholder="Enter User ID">
-        <input type="password" id="user_pass" placeholder="Enter Password">
-        <select id="login_role"><option value="">-- Select Role --</option></select>
-        <div id="login_error" style="color:red; display:none;"></div>
-        <button class="btn-login" id="loginBtn">Login</button>
+        
+        <!-- ⚠️ FIXED: IDs match app.js -->
+        <input type="text" id="loginId" placeholder="Enter User ID" autofocus>
+        <input type="password" id="loginPass" placeholder="Enter Password">
+        <select id="loginRole">
+            <option value="">-- Select Role --</option>
+            <option value="Admin">Admin</option>
+            <option value="Staff">Staff</option>
+        </select>
+        
+        <div id="login_error"></div>
+        <button class="btn-login" id="loginBtn">🔐 Login</button>
+        
+        <div class="login-hint">
+            Default: <strong>Admin</strong> / <strong>admin123</strong>
+        </div>
     </div>
 </div>
 
 <!-- ===== MAIN APP ===== -->
 <div id="main-app">
     <header>
-        <div style="display:flex; align-items:center; gap:15px;">
-            <img src="logo.jpeg" id="header_logo" height="35" onerror="this.style.display='none'">
-            <div style="font-weight:600; font-size:14px;" id="header_firm_name">Dev Vidyalaya</div>
+        <div class="header-left">
+            <img src="logo.jpeg" id="header_logo" onerror="this.style.display='none'">
+            <span class="firm-name" id="header_firm_name">Dev Vidyalaya</span>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <!-- Dark Mode Toggle -->
-            <button onclick="toggleTheme()" id="themeToggle" style="background:none; border:none; font-size:20px; cursor:pointer; padding:4px 8px; border-radius:6px;" title="Toggle Theme">🌙</button>
-            <span id="display_role"></span>
-            <span id="display_user"></span>
-            <button id="admin_settings_btn" onclick="openSettings()" style="display:none;">⚙️ Settings</button>
-            <button onclick="logout()" style="border:1px solid red; color:red; background:none; padding:5px 12px; cursor:pointer; border-radius:5px;">Logout</button>
+        <div class="header-right">
+            <button class="theme-toggle" onclick="app.toggleTheme()" title="Toggle Theme">🌙</button>
+            <span class="user-badge" id="display_role">Staff</span>
+            <span id="display_user">Guest</span>
+            <button class="btn-settings" id="admin_settings_btn" onclick="app.openSettings()" style="display:none;">⚙️</button>
+            <button class="btn-logout" onclick="app.logout()">Logout</button>
         </div>
     </header>
 
     <div class="container">
         <!-- Stats -->
         <div class="stats-grid">
-            <div class="stat-box"><p>Today's Vouchers</p><h3 id="stat_today">0</h3></div>
-            <div class="stat-box"><p>Total Vouchers</p><h3 id="stat_total">0</h3></div>
-            <div class="stat-box"><p>Total Amount</p><h3 id="stat_amount">₹ 0</h3></div>
-            <div class="stat-box"><p>Active</p><h3 id="stat_active">0</h3></div>
-            <div class="stat-box"><p>Deleted</p><h3 id="stat_deleted">0</h3></div>
-            <div class="stat-box"><p>Edited</p><h3 id="stat_edited">0</h3></div>
+            <div class="stat-box"><p>📋 Total Vouchers</p><h3 id="stat_total">0</h3></div>
+            <div class="stat-box"><p>💰 Total Amount</p><h3 id="stat_amount">₹ 0</h3></div>
+            <div class="stat-box"><p>📅 This Month</p><h3 id="stat_month">0</h3></div>
+            <div class="stat-box"><p>🏷️ Active</p><h3 id="stat_active">0</h3></div>
+            <div class="stat-box"><p>🗑️ Deleted</p><h3 id="stat_deleted">0</h3></div>
+            <div class="stat-box"><p>✏️ Edited</p><h3 id="stat_edited">0</h3></div>
         </div>
 
         <!-- Tabs -->
-        <div class="module-tabs" id="moduleTabsContainer">
-            <button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>
-            <button class="module-tab" onclick="switchModule('dashboard')">📊 Dashboard</button>
-            <button class="module-tab" onclick="switchModule('reports')">📈 Reports</button>
+        <div class="module-tabs">
+            <button class="module-tab active" onclick="app.switchModule('transactions')">📋 Transactions</button>
+            <button class="module-tab" onclick="app.switchModule('dashboard')">📊 Dashboard</button>
+            <button class="module-tab" onclick="app.switchModule('reports')">📈 Reports</button>
         </div>
 
         <!-- ===== TRANSACTIONS MODULE ===== -->
         <div id="module-transactions" class="module-pane active">
             <div class="form-card">
-                <div class="firm-header" id="firmHeader">
+                <div class="firm-header">
                     <img src="logo.jpeg" id="form_logo" onerror="this.style.display='none'">
                     <div class="firm-info">
                         <div class="name" id="form_firm_name">Dev Vidyalaya</div>
@@ -84,16 +787,19 @@
                     </div>
                 </div>
                 
-                <h4 id="form-title">📝 Add Payment Voucher</h4>
+                <h4>📝 Add Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
-                <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
-                    <div><label>📅 Date</label><input type="date" id="v_date"></div>
+                <div class="grid">
+                    <div>
+                        <label>📅 Date</label>
+                        <input type="date" id="v_date">
+                    </div>
                     
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="filterExpenseHeads(this.value)" onfocus="populateExpenseHeads();" autocomplete="off">
+                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="app.filterExpenseHeads(this.value)" onfocus="app.populateExpenseHeads()" autocomplete="off">
                             <div id="expenseHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="expense_head_value">
@@ -102,7 +808,7 @@
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="filterSubHeads(this.value)" onfocus="populateSubHeads(document.getElementById('expense_head_value').value);" autocomplete="off">
+                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="app.filterSubHeads(this.value)" onfocus="app.populateSubHeads(document.getElementById('expense_head_value').value)" autocomplete="off">
                             <div id="subHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="sub_head_value">
@@ -111,7 +817,7 @@
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
-                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="filterFirms(this.value)" onfocus="populateFirmDropdown();" autocomplete="off">
+                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="app.filterFirms(this.value)" onfocus="app.populateFirmDropdown()" autocomplete="off">
                             <div id="firmDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="firm_name_value">
@@ -120,54 +826,67 @@
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
-                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)" onfocus="populatePartyDropdown();" autocomplete="off">
+                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="app.filterParties(this.value)" onfocus="app.populatePartyDropdown()" autocomplete="off">
                             <div id="partyDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="party_value">
-                        <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
+                        <button class="btn-add" onclick="app.openAddPartyModal()" style="margin-top:5px;">+ New Party</button>
                     </div>
                     
                     <div>
                         <label>💳 Payment Mode</label>
-                        <div class="search-wrapper">
-                            <input type="text" id="v_mode_input" placeholder="Search or select mode..." oninput="filterModes(this.value)" onfocus="populateModes();" autocomplete="off">
-                            <div id="modeDropdown" class="dropdown-list"></div>
-                        </div>
-                        <input type="hidden" id="v_mode_value">
+                        <select id="v_mode" onchange="app.toggleBankField()">
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="NEFT">NEFT</option>
+                            <option value="RTGS">RTGS</option>
+                            <option value="IMPS">IMPS</option>
+                        </select>
                     </div>
                     
-                    <div id="bank_account_field">
+                    <div id="bank_account_field" style="display:none;">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
+                    <div>
+                        <label>🔢 Reference No.</label>
+                        <input type="text" id="reference_no" placeholder="Optional">
+                    </div>
                     
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)" onfocus="populateSignatoryDropdown();" autocomplete="off">
+                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="app.filterSignatories(this.value)" onfocus="app.populateSignatoryDropdown()" autocomplete="off">
                             <div id="signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="signatory_value">
-                        <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
+                        <button class="btn-add" onclick="app.openAddSignatoryModal()" style="margin-top:5px;">+ Add Signatory</button>
                     </div>
                     
-                    <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
+                    <div>
+                        <label>💰 Amount (₹)</label>
+                        <input type="number" id="v_amt" value="0" step="1">
+                    </div>
                     
-                    <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
+                    <div>
+                        <label>📋 Voucher No.</label>
+                        <input type="text" id="v_no" readonly>
+                    </div>
                     
-                    <div style="grid-column: 1 / -1;">
+                    <div style="grid-column:1/-1;">
                         <label>📝 Narration</label>
-                        <textarea id="v_narration" placeholder="Enter details..."></textarea>
+                        <textarea id="v_narration" placeholder="Enter details..." rows="2"></textarea>
                     </div>
                 </div>
                 
-                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">💾 Save</button>
-                    <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">🔄 Reset</button>
-                    <button id="whatsappShareBtn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
-                    <span style="font-size:11px; color:#64748b; margin-left:auto; display:flex; gap:10px; align-items:center;">
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <button class="btn-login" onclick="app.saveVoucher()">💾 Save</button>
+                    <button class="btn-action" onclick="app.resetForm()">🔄 Reset</button>
+                    <button id="whatsappShareBtn" class="btn-login" style="background:#25D366; display:none;" onclick="app.shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
+                    <span style="font-size:11px; color:#64748b; margin-left:auto; display:flex; gap:10px;">
                         <kbd style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:11px;">Ctrl+N</kbd> New
                         <kbd style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:11px;">Ctrl+S</kbd> Save
                     </span>
@@ -175,30 +894,53 @@
             </div>
             
             <div class="filter-card">
-                <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
-                    <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Search..."></div>
-                    <div><label>📅 From</label><input type="date" id="f_start" onchange="renderAll()"></div>
-                    <div><label>📅 To</label><input type="date" id="f_end" onchange="renderAll()"></div>
-                    <div><label>💰 Amount Min</label><input type="number" id="f_amount_min" onchange="renderAll()" placeholder="Min"></div>
-                    <div><label>💰 Amount Max</label><input type="number" id="f_amount_max" onchange="renderAll()" placeholder="Max"></div>
-                    <div><label>📂 Head</label>
-                        <select id="f_head_filter" onchange="renderAll()">
+                <div class="grid-3">
+                    <div>
+                        <label>🔍 Search</label>
+                        <input type="text" id="f_search" placeholder="Search..." oninput="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>📅 From</label>
+                        <input type="date" id="f_start" onchange="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>📅 To</label>
+                        <input type="date" id="f_end" onchange="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>💰 Amount Min</label>
+                        <input type="number" id="f_amount_min" placeholder="Min" onchange="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>💰 Amount Max</label>
+                        <input type="number" id="f_amount_max" placeholder="Max" onchange="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>📂 Head</label>
+                        <select id="f_head_filter" onchange="app.renderAll()">
                             <option value="">All Heads</option>
                         </select>
                     </div>
-                    <div><label>👤 Party</label><input type="text" id="f_party_filter" oninput="renderAll()" placeholder="Party name..."></div>
-                    <div><label>💳 Mode</label>
-                        <select id="f_mode_filter" onchange="renderAll()">
+                    <div>
+                        <label>👤 Party</label>
+                        <input type="text" id="f_party_filter" placeholder="Party name..." oninput="app.renderAll()">
+                    </div>
+                    <div>
+                        <label>💳 Mode</label>
+                        <select id="f_mode_filter" onchange="app.renderAll()">
                             <option value="">All Modes</option>
                             <option value="Cash">Cash</option>
                             <option value="Bank">Bank</option>
-                            <option value="Paytm">Paytm</option>
                             <option value="UPI">UPI</option>
                             <option value="Cheque">Cheque</option>
+                            <option value="NEFT">NEFT</option>
+                            <option value="RTGS">RTGS</option>
+                            <option value="IMPS">IMPS</option>
                         </select>
                     </div>
-                    <div><label>📌 Status</label>
-                        <select id="f_status" onchange="renderAll()">
+                    <div>
+                        <label>📌 Status</label>
+                        <select id="f_status" onchange="app.renderAll()">
                             <option value="ALL">All</option>
                             <option value="active">Active</option>
                             <option value="deleted">Deleted</option>
@@ -209,13 +951,28 @@
             
             <div class="table-res">
                 <table>
-                    <thead><tr>
-                        <th>Date</th><th>Voucher No</th><th>Head</th>
-                        <th>Sub Head</th><th>Party</th><th>Amount</th>
-                        <th>Mode</th><th>Created By</th><th>Status</th><th>Actions</th>
-                    </tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Voucher No</th>
+                            <th>Head</th>
+                            <th>Sub Head</th>
+                            <th>Party</th>
+                            <th>Amount</th>
+                            <th>Mode</th>
+                            <th>Created By</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody id="v_list"></tbody>
                 </table>
+            </div>
+            
+            <!-- Deleted Vouchers -->
+            <div style="margin-top:15px;">
+                <h4 style="font-size:14px; color:#64748b;">🗑️ Deleted Vouchers</h4>
+                <div id="deleted_list"></div>
             </div>
         </div>
 
@@ -223,85 +980,23 @@
         <div id="module-dashboard" class="module-pane">
             <div class="report-card">
                 <h4>📊 Analytics Dashboard</h4>
-                
-                <!-- Quick Stats -->
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom:20px;">
-                    <div class="stat-box"><p>Total Revenue</p><h3 id="dash_revenue">₹ 0</h3></div>
-                    <div class="stat-box"><p>Avg Per Voucher</p><h3 id="dash_avg">₹ 0</h3></div>
-                    <div class="stat-box"><p>This Month</p><h3 id="dash_month">₹ 0</h3></div>
-                    <div class="stat-box"><p>Unique Parties</p><h3 id="dash_parties">0</h3></div>
-                </div>
-                
-                <!-- Charts -->
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
-                    <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
-                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">📊 Voucher Status</p>
-                        <canvas id="chartVouchers" height="200"></canvas>
-                    </div>
-                    <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
-                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">💰 Amount by Mode</p>
-                        <canvas id="chartAmounts" height="200"></canvas>
-                    </div>
-                </div>
-                
-                <div style="margin-top:20px; background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
-                    <p style="font-size:12px; color:#64748b; margin-bottom:10px;">📈 Monthly Revenue Trend</p>
-                    <canvas id="chartMonthly" height="100"></canvas>
-                </div>
-                
-                <!-- Recent Activity -->
-                <div style="margin-top:20px; background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
-                    <p style="font-size:12px; color:#64748b; margin-bottom:10px;">🕐 Recent Activity</p>
-                    <div id="recent_activity" style="max-height:150px; overflow-y:auto; font-size:13px;">
-                        <p style="color:#999; text-align:center; padding:20px;">No recent activity</p>
-                    </div>
-                </div>
+                <div id="dashboard_widgets"></div>
             </div>
         </div>
 
         <!-- ===== REPORTS MODULE ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
-                <h4>📈 Reports</h4>
-                
-                <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
-                    <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
-                    <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
-                    <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
-                    <div><label>💰 Amount Min</label><input type="number" id="r_amount_min" onchange="renderReports()" placeholder="Min"></div>
-                    <div><label>💰 Amount Max</label><input type="number" id="r_amount_max" onchange="renderReports()" placeholder="Max"></div>
-                    <div><label>📂 Head</label>
-                        <select id="r_head_filter" onchange="renderReports()">
-                            <option value="">All Heads</option>
-                        </select>
-                    </div>
-                    <div><label>👤 Party</label><input type="text" id="r_party_filter" oninput="renderReports()" placeholder="Party name..."></div>
-                    <div><label>💳 Mode</label>
-                        <select id="r_mode_filter" onchange="renderReports()">
-                            <option value="">All Modes</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Bank">Bank</option>
-                            <option value="Paytm">Paytm</option>
-                            <option value="UPI">UPI</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
-                    </div>
-                    <div><label>📌 Status</label>
-                        <select id="r_status" onchange="renderReports()">
-                            <option value="ALL">All</option>
-                            <option value="active">Active</option>
-                            <option value="deleted">Deleted</option>
-                        </select>
-                    </div>
-                </div>
+                <h4>📈 Reports & Export</h4>
                 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
-                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
-                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
-                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
-                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
-                    <button class="btn-xlsx" style="background:#8b5cf6;" onclick="app.backupData()">💾 Backup</button>
+                    <button class="btn-login" onclick="app.exportAllVouchers()">📎 All Vouchers</button>
+                    <button class="btn-login" style="background:#10b981;" onclick="app.exportActiveVouchers()">📎 Active</button>
+                    <button class="btn-login" style="background:#f59e0b;" onclick="app.exportDeletedVouchers()">📎 Deleted</button>
+                    <button class="btn-login" style="background:#8b5cf6;" onclick="app.exportEditedVouchers()">📎 Edited</button>
+                    <button class="btn-login" style="background:#ef4444;" onclick="app.exportFilteredData()">📎 Filtered</button>
                 </div>
+                
                 <div id="report_content"></div>
             </div>
         </div>
@@ -313,14 +1008,21 @@
     <div class="modal-content">
         <h3 id="partyModalTitle">➕ Add Party</h3>
         <input type="hidden" id="edit_party_id">
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <div><label>Party Name</label><input type="text" id="new_party_name"></div>
-            <div><label>Phone</label><input type="text" id="new_party_phone"></div>
-            <div><label>Address</label><input type="text" id="new_party_address"></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-login" style="width:auto" onclick="saveParty()">💾 Save</button>
-                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddPartyModal()">Cancel</button>
-            </div>
+        <div>
+            <label>Party Name</label>
+            <input type="text" id="new_party_name">
+        </div>
+        <div>
+            <label>Phone</label>
+            <input type="text" id="new_party_phone">
+        </div>
+        <div>
+            <label>Address</label>
+            <input type="text" id="new_party_address">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+            <button class="btn-login" onclick="app.saveParty()">💾 Save</button>
+            <button class="btn-action" onclick="app.closeAddPartyModal()">Cancel</button>
         </div>
     </div>
 </div>
@@ -329,13 +1031,91 @@
     <div class="modal-content">
         <h3 id="signatoryModalTitle">✍️ Add Signatory</h3>
         <input type="hidden" id="edit_signatory_id">
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <div><label>Signatory Name</label><input type="text" id="new_signatory_name"></div>
-            <div><label>Designation</label><input type="text" id="new_signatory_designation"></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-login" style="width:auto" onclick="saveSignatory()">💾 Save</button>
-                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddSignatoryModal()">Cancel</button>
+        <div>
+            <label>Signatory Name</label>
+            <input type="text" id="new_signatory_name">
+        </div>
+        <div>
+            <label>Designation</label>
+            <input type="text" id="new_signatory_designation">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+            <button class="btn-login" onclick="app.saveSignatory()">💾 Save</button>
+            <button class="btn-action" onclick="app.closeAddSignatoryModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="editVoucherModal" class="modal">
+    <div class="modal-content">
+        <h3>✏️ Edit Voucher</h3>
+        <input type="hidden" id="edit_voucher_id">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+                <label>Voucher No</label>
+                <input type="text" id="edit_voucher_vno">
             </div>
+            <div>
+                <label>Date</label>
+                <input type="date" id="edit_voucher_date">
+            </div>
+            <div>
+                <label>Firm</label>
+                <input type="text" id="edit_voucher_firm">
+            </div>
+            <div>
+                <label>Head</label>
+                <input type="text" id="edit_voucher_head">
+            </div>
+            <div>
+                <label>Sub Head</label>
+                <input type="text" id="edit_voucher_subhead">
+            </div>
+            <div>
+                <label>Party</label>
+                <input type="text" id="edit_voucher_party">
+            </div>
+            <div>
+                <label>Amount (₹)</label>
+                <input type="number" id="edit_voucher_amount">
+            </div>
+            <div>
+                <label>Mode</label>
+                <select id="edit_voucher_mode">
+                    <option value="Cash">Cash</option>
+                    <option value="Bank">Bank</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Cheque">Cheque</option>
+                </select>
+            </div>
+            <div>
+                <label>Bank Name</label>
+                <input type="text" id="edit_voucher_bank">
+            </div>
+            <div>
+                <label>Bank Account</label>
+                <input type="text" id="edit_voucher_account">
+            </div>
+            <div>
+                <label>IFSC</label>
+                <input type="text" id="edit_voucher_ifsc">
+            </div>
+            <div>
+                <label>Reference No</label>
+                <input type="text" id="edit_voucher_ref">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Signatory</label>
+                <input type="text" id="edit_voucher_signatory">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Narration</label>
+                <textarea id="edit_voucher_narration" rows="2"></textarea>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-login" onclick="app.saveEditVoucher()">💾 Update</button>
+            <button class="btn-action" onclick="document.getElementById('editVoucherModal').style.display='none'">Cancel</button>
         </div>
     </div>
 </div>
@@ -346,61 +1126,59 @@
         
         <h4>🏢 Firms</h4>
         <div id="firms_list"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_firm_name" placeholder="Firm Name">
-            <input type="text" id="new_firm_short" placeholder="Short Code">
-            <input type="text" id="new_firm_logo" placeholder="Logo URL" value="logo.jpeg">
-            <button class="btn-add" onclick="addFirm()">+ Add</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="new_firm_name" placeholder="Firm Name" style="flex:1; min-width:100px;">
+            <input type="text" id="new_firm_short" placeholder="Short Code" style="width:100px;">
+            <button class="btn-login" onclick="app.addFirm()">+ Add</button>
         </div>
         
         <h4>👤 Users</h4>
         <div id="users_list"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_user_id" placeholder="User ID">
-            <input type="text" id="new_user_pass" placeholder="Password">
-            <select id="new_user_role"><option value="Admin">Admin</option></select>
-            <select id="new_user_firm"><option value="">Select Firm</option></select>
-            <button class="btn-add" onclick="addUser()">+ Add</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="new_user_id" placeholder="User ID" style="flex:1; min-width:80px;">
+            <input type="text" id="new_user_pass" placeholder="Password" style="flex:1; min-width:80px;">
+            <select id="new_user_role" style="width:100px;">
+                <option value="Staff">Staff</option>
+                <option value="Admin">Admin</option>
+            </select>
+            <select id="new_user_firm" style="width:120px;">
+                <option value="">Select Firm</option>
+            </select>
+            <button class="btn-login" onclick="app.addUser()">+ Add</button>
         </div>
         
         <h4>🔐 Permissions</h4>
-        <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-            <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
-            <label><input type="checkbox" id="perm_edit" checked> ✏️ Edit</label>
-            <label><input type="checkbox" id="perm_delete" checked> 🗑️ Delete</label>
-            <label><input type="checkbox" id="perm_whatsapp" checked> 💬 WhatsApp</label>
-            <label><input type="checkbox" id="perm_reports" checked> 📊 Reports</label>
-            <label><input type="checkbox" id="perm_view_all" checked> 👁️ View All</label>
-            <label><input type="checkbox" id="perm_party_add" checked> 👤 Add Party</label>
-            <label><input type="checkbox" id="perm_signatory_add" checked> ✍️ Add Signatory</label>
-            <label><input type="checkbox" id="perm_bank_add" checked> 🏦 Add Bank</label>
-            <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:6px; background:#f8fafc; padding:12px; border-radius:8px;">
+            <label><input type="checkbox" id="perm_print"> 🖨️ Print</label>
+            <label><input type="checkbox" id="perm_edit"> ✏️ Edit</label>
+            <label><input type="checkbox" id="perm_delete"> 🗑️ Delete</label>
+            <label><input type="checkbox" id="perm_whatsapp"> 💬 WhatsApp</label>
+            <label><input type="checkbox" id="perm_reports"> 📊 Reports</label>
+            <label><input type="checkbox" id="perm_view_all"> 👁️ View All</label>
+            <label><input type="checkbox" id="perm_party_add"> 👤 Add Party</label>
+            <label><input type="checkbox" id="perm_signatory_add"> ✍️ Add Signatory</label>
+            <label><input type="checkbox" id="perm_bank_add"> 🏦 Add Bank</label>
+            <label><input type="checkbox" id="perm_expense_add"> 📂 Add Expense</label>
         </div>
         
         <h4>📂 Expense Heads</h4>
         <div id="heads_list"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_head_name" placeholder="Expense Head">
-            <input type="text" id="new_subhead_name" placeholder="Sub Head">
-            <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="new_head_name" placeholder="Expense Head" style="flex:1; min-width:100px;">
+            <input type="text" id="new_subhead_name" placeholder="Sub Head" style="flex:1; min-width:100px;">
+            <button class="btn-login" onclick="app.addExpenseHead()">+ Add</button>
         </div>
         
-        <h4>🏦 Bank Management (Firm Wise)</h4>
-        <div style="margin-bottom:10px;">
-            <label style="font-size:12px;">Select Firm</label>
-            <select id="bank_firm_select" onchange="app.loadBankAccounts()" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1; width:200px;">
-                <option value="">-- Select Firm --</option>
-            </select>
-        </div>
-        <div id="bank_accounts_list" style="margin-bottom:10px;"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
-            <input type="text" id="new_bank_name" placeholder="Bank Name" style="width:150px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
-            <input type="text" id="new_bank_account" placeholder="Account No." style="width:150px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
-            <input type="text" id="new_bank_ifsc" placeholder="IFSC Code" style="width:120px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
-            <button class="btn-add" onclick="app.addBankAccount()">+ Add Bank</button>
-        </div>
-        <div style="font-size:11px; color:#64748b; margin-top:5px;">
-            📌 Select Firm first, then add bank details for that firm
+        <h4>🏦 Bank Management</h4>
+        <select id="bank_firm_select" onchange="app.loadBankAccounts()" style="margin-bottom:8px;">
+            <option value="">-- Select Firm --</option>
+        </select>
+        <div id="bank_accounts_list"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="new_bank_name" placeholder="Bank Name" style="flex:1; min-width:100px;">
+            <input type="text" id="new_bank_account" placeholder="Account No." style="flex:1; min-width:100px;">
+            <input type="text" id="new_bank_ifsc" placeholder="IFSC" style="width:100px;">
+            <button class="btn-login" onclick="app.addBankAccount()">+ Add</button>
         </div>
         
         <h4>👤 Parties</h4>
@@ -410,69 +1188,50 @@
         <div id="signatories_list"></div>
         
         <h4>📥 Bulk Import</h4>
-        <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
-                <div>
-                    <label style="font-size:11px;">Import Expense Heads</label>
-                    <input type="file" id="importHeadsFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
-                    <button class="btn-add" onclick="app.importExpenseHeads()" style="margin-top:5px;">📤 Import</button>
-                </div>
-                <div>
-                    <label style="font-size:11px;">Import Parties</label>
-                    <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
-                    <button class="btn-add" onclick="app.importParties()" style="margin-top:5px;">📤 Import</button>
-                </div>
-                <div>
-                    <label style="font-size:11px;">Import Vouchers</label>
-                    <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
-                    <button class="btn-add" onclick="app.importVouchers()" style="margin-top:5px;">📤 Import</button>
-                </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; background:#f8fafc; padding:12px; border-radius:8px;">
+            <div>
+                <label style="font-size:11px;">Expense Heads</label>
+                <input type="file" id="importHeadsFile" accept=".csv,.xlsx" style="display:block; font-size:11px;">
+                <button class="btn-login" style="margin-top:4px; font-size:12px; padding:4px 12px;" onclick="app.importExpenseHeads()">📤 Import</button>
             </div>
-            <div style="font-size:10px; color:#64748b; margin-top:8px;">
-                📌 CSV Format: Head,SubHead | PartyName,Phone,Address | Date,VoucherNo,Head,Party,Amount,Mode,Narration
+            <div>
+                <label style="font-size:11px;">Parties</label>
+                <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="display:block; font-size:11px;">
+                <button class="btn-login" style="margin-top:4px; font-size:12px; padding:4px 12px;" onclick="app.importParties()">📤 Import</button>
+            </div>
+            <div>
+                <label style="font-size:11px;">Vouchers</label>
+                <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="display:block; font-size:11px;">
+                <button class="btn-login" style="margin-top:4px; font-size:12px; padding:4px 12px;" onclick="app.importVouchers()">📤 Import</button>
             </div>
         </div>
-        
-        <h4>💾 Backup & Restore</h4>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
-            <button class="btn-add" onclick="app.backupData()">📥 Download Backup</button>
-            <button class="btn-add" onclick="document.getElementById('restoreFile').click()">📤 Restore Backup</button>
-            <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="app.restoreData(event)">
-            <span style="font-size:11px; color:#64748b;">Backup includes all vouchers, parties, signatories, firms, users</span>
-        </div>
-        
-        <h4>📝 Activity Logs</h4>
-        <div id="activity_logs" style="max-height:200px; overflow-y:auto; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-            <p style="color:#999; text-align:center; padding:10px;">No activity logs yet</p>
-        </div>
-        <button class="btn-add" onclick="app.clearActivityLogs()" style="margin-top:5px;">🗑️ Clear Logs</button>
         
         <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn-login" onclick="saveAllSettings()">💾 Save All</button>
-            <button class="btn-action" style="background:#64748b; color:white;" onclick="closeSettings()">Cancel</button>
+            <button class="btn-login" onclick="app.saveAllSettings()">💾 Save All</button>
+            <button class="btn-action" onclick="app.closeSettings()">Close</button>
         </div>
     </div>
 </div>
 
-<div id="toastMsg" class="toast-msg"></div>
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
 
 <!-- ===== MAIN SCRIPT ===== -->
 <script type="module">
     import App from './js/app.js';
     
-    console.log('🚀 Starting App...');
+    console.log('🚀 Starting Dev Vidyalaya ERP...');
     const app = new App();
     window.app = app;
     
-    // Expose functions
+    // Expose all functions to global scope
     window.openSettings = () => app.openSettings();
     window.logout = () => app.logout();
     window.saveVoucher = () => app.saveVoucher();
     window.editVoucher = (id) => app.editVoucher(id);
     window.deleteVoucher = (id) => app.deleteVoucher(id);
-    window.recoverVoucher = (id) => app.recoverVoucher(id);
-    window.generateA4Print = (v) => app.printVoucher(v);
     window.shareVoucher = (id) => app.shareVoucher(id);
+    window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
     window.openAddPartyModal = () => app.openAddPartyModal();
     window.openAddSignatoryModal = () => app.openAddSignatoryModal();
     window.saveParty = () => app.saveParty();
@@ -481,30 +1240,12 @@
     window.closeAddSignatoryModal = () => app.closeAddSignatoryModal();
     window.closeSettings = () => app.closeSettings();
     window.resetForm = () => app.resetForm();
-    window.toggleBankField = () => app.toggleBankField();
-    window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
-    window.toggleTheme = () => app.toggleTheme();
-    
-    window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
-    window.filterSubHeads = (v) => app.filterSubHeads(v);
-    window.filterFirms = (v) => app.filterFirms(v);
-    window.filterParties = (v) => app.filterParties(v);
-    window.filterSignatories = (v) => app.filterSignatories(v);
-    window.filterModes = (v) => app.filterModes(v);
-    
-    window.selectExpenseHead = (h) => app.selectExpenseHead(h);
-    window.selectSubHead = (s) => app.selectSubHead(s);
-    window.selectFirm = (f) => app.selectFirm(f);
-    window.selectParty = (p) => app.selectParty(p);
-    window.selectSignatory = (s) => app.selectSignatory(s);
-    window.selectMode = (m) => app.selectMode(m);
-    
-    window.renderAll = () => app.renderAll();
-    window.renderReports = () => app.renderReports();
+    window.toggleTheme = () => app.toggleDarkMode();
     window.exportAllVouchers = () => app.exportAllVouchers();
     window.exportActiveVouchers = () => app.exportActiveVouchers();
     window.exportDeletedVouchers = () => app.exportDeletedVouchers();
     window.exportEditedVouchers = () => app.exportEditedVouchers();
+    window.exportFilteredData = () => app.exportFilteredData();
     window.saveAllSettings = () => app.saveAllSettings();
     window.addFirm = () => app.addFirm();
     window.addUser = () => app.addUser();
@@ -518,35 +1259,29 @@
     window.deleteFirm = (k) => app.deleteFirm(k);
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
-
-    // Close dropdown on outside click
-    document.addEventListener('click', function(e) {
-        document.querySelectorAll('.dropdown-list').forEach(dropdown => {
-            if (!dropdown.contains(e.target)) {
-                const wrapper = dropdown.closest('.search-wrapper');
-                if (wrapper) {
-                    const input = wrapper.querySelector('input');
-                    if (input && e.target !== input) {
-                        dropdown.style.display = 'none';
-                    }
-                }
-            }
-        });
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.dropdown-list').forEach(dropdown => {
-                dropdown.style.display = 'none';
-            });
-        }
-    });
-
+    
+    window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
+    window.filterSubHeads = (v) => app.filterSubHeads(v);
+    window.filterFirms = (v) => app.filterFirms(v);
+    window.filterParties = (v) => app.filterParties(v);
+    window.filterSignatories = (v) => app.filterSignatories(v);
+    
+    window.selectExpenseHead = (h) => app.selectExpenseHead(h);
+    window.selectSubHead = (s) => app.selectSubHead(s);
+    window.selectFirm = (f) => app.selectFirm(f);
+    window.selectParty = (p) => app.selectParty(p);
+    window.selectSignatory = (s) => app.selectSignatory(s);
+    
+    window.renderAll = () => app.renderAll();
+    window.renderReports = () => app.renderReports();
+    
     app.init().then(() => {
         console.log('✅ App Ready!');
     }).catch(err => {
         console.error('❌ App Error:', err);
+        showToast('⚠️ Error loading app. Check console.');
     });
 </script>
+
 </body>
 </html>
