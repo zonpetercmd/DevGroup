@@ -257,7 +257,7 @@
                             <div id="r_partyDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="r_party_value">
-                        <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
+                        <button class="btn-add" onclick="window.receipts.openAddReceiptPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Receipt Party</button>
                     </div>
                     
                     <div>
@@ -278,7 +278,7 @@
                             <div id="r_signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="r_signatory_value">
-                        <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
+                        <button class="btn-add" onclick="window.receipts.openAddReceiptSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Receipt Signatory</button>
                     </div>
                     
                     <div><label>💰 Amount (₹)</label><input type="number" id="r_amt" value="0"></div>
@@ -418,6 +418,39 @@
     </div>
 </div>
 
+<!-- ===== RECEIPTS PARTY MODAL ===== -->
+<div id="r_addPartyModal" class="modal">
+    <div class="modal-content">
+        <h3 id="r_party_modal_title">➕ Add Receipt Party</h3>
+        <input type="hidden" id="r_edit_party_id">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div><label>Party Name</label><input type="text" id="r_new_party_name"></div>
+            <div><label>Phone</label><input type="text" id="r_new_party_phone"></div>
+            <div><label>Address</label><input type="text" id="r_new_party_address"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-login" style="width:auto" onclick="window.receipts.saveReceiptParty()">💾 Save</button>
+                <button class="btn-action" style="background:#64748b; color:white;" onclick="window.receipts.closeAddReceiptPartyModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RECEIPTS SIGNATORY MODAL ===== -->
+<div id="r_addSignatoryModal" class="modal">
+    <div class="modal-content">
+        <h3 id="r_signatory_modal_title">✍️ Add Receipt Signatory</h3>
+        <input type="hidden" id="r_edit_signatory_id">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div><label>Signatory Name</label><input type="text" id="r_new_signatory_name"></div>
+            <div><label>Designation</label><input type="text" id="r_new_signatory_designation"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-login" style="width:auto" onclick="window.receipts.saveReceiptSignatory()">💾 Save</button>
+                <button class="btn-action" style="background:#64748b; color:white;" onclick="window.receipts.closeAddReceiptSignatoryModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="settings-modal" class="modal">
     <div class="modal-content">
         <h3>⚙️ Admin Settings</h3>
@@ -519,6 +552,29 @@
             </div>
         </div>
         
+        <!-- ===== RECEIPTS SETTINGS ===== -->
+        <hr style="margin:20px 0; border:1px solid #e2e8f0;">
+        
+        <h4>🧾 Receipts Settings</h4>
+        
+        <!-- Receipt Heads -->
+        <h5>📂 Receipt Heads</h5>
+        <div id="r_heads_list"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="text" id="r_new_head_name" placeholder="Receipt Head" style="width:150px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            <button class="btn-add" onclick="window.receipts.addReceiptHead()">+ Add</button>
+        </div>
+        
+        <!-- Receipt Parties -->
+        <h5>👤 Receipt Parties</h5>
+        <div id="r_parties_list"></div>
+        <button class="btn-add" onclick="window.receipts.openAddReceiptPartyModal()">+ New Receipt Party</button>
+        
+        <!-- Receipt Signatories -->
+        <h5>✍️ Receipt Signatories</h5>
+        <div id="r_signatories_list"></div>
+        <button class="btn-add" onclick="window.receipts.openAddReceiptSignatoryModal()">+ New Receipt Signatory</button>
+        
         <div style="display:flex; gap:10px; margin-top:15px;">
             <button class="btn-login" onclick="saveAllSettings()">💾 Save All</button>
             <button class="btn-action" style="background:#64748b; color:white;" onclick="closeSettings()">Cancel</button>
@@ -601,6 +657,11 @@
     window.editReceipt = (id) => receipts.edit(id);
     window.deleteReceipt = (id) => receipts.deleteReceipt(id);
     window.recoverReceipt = (id) => receipts.recover(id);
+    
+    // Expose Receipts Settings Functions
+    window.receipts.renderHeadsList();
+    window.receipts.renderPartiesList();
+    window.receipts.renderSignatoriesList();
     
     // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
