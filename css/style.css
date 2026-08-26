@@ -178,30 +178,35 @@ header {
     display: block;
 }
 
-/* Grids */
+/* ===== GRID - FIXED SAME LEVEL ===== */
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    align-items: end;
-}
-
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
+    align-items: stretch;  /* ✅ All items same height */
 }
 
-/* Labels */
-label {
-    display: block;
+.grid > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 80px;  /* ✅ Minimum height for all */
+}
+
+.grid > div label {
+    margin-bottom: 4px;
     font-size: 11px;
     font-weight: 600;
-    margin-bottom: 5px;
     color: #64748b;
 }
 
-select, input, textarea {
+.grid > div input,
+.grid > div select,
+.grid > div .search-wrapper {
+    width: 100%;
+}
+
+.grid > div .search-wrapper input {
     width: 100%;
     padding: 10px;
     border: 1px solid #cbd5e1;
@@ -209,13 +214,25 @@ select, input, textarea {
     font-size: 13px;
 }
 
-textarea {
-    resize: vertical;
-    min-height: 60px;
-    font-family: inherit;
+/* ✅ Button Alignment in Grid */
+.grid > div .btn-add {
+    align-self: flex-start;
+    margin-top: 5px;
+    font-size: 11px;
+    padding: 4px 10px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
-/* Search */
+/* ✅ Full Width Items (Narration) */
+.grid > div:last-child {
+    grid-column: 1 / -1;
+}
+
+/* ✅ Search Wrapper Position */
 .search-wrapper {
     position: relative;
 }
@@ -225,6 +242,7 @@ textarea {
     padding-right: 35px;
 }
 
+/* ===== DROPDOWN LIST ===== */
 .dropdown-list {
     position: absolute;
     top: 100%;
@@ -256,6 +274,35 @@ textarea {
     color: #94a3b8;
     text-align: center;
     padding: 15px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+/* Labels */
+label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #64748b;
+}
+
+select, input, textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
 }
 
 /* Table */
