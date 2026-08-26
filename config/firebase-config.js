@@ -10,7 +10,6 @@ export const FIREBASE_CONFIG = {
   appId: "1:677011391483:web:f12522edb952292912815e"
 };
 
-// ✅ Firebase Mode - Online Data
 export const STORAGE_MODE = {
   current: 'firebase'
 };
