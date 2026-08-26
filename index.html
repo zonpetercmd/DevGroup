@@ -81,81 +81,86 @@
                 <h4 id="form-title">📝 Add Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
-                <!-- ✅ Fixed Grid - Same Level for Party & Signatory -->
+                <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
-                    <!-- Row 1: Date, Expense Head, Sub Head -->
+                    <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
+                    <!-- Expense Head - Search + Dropdown -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="expense_head_input" placeholder="Search head..." oninput="filterExpenseHeads(this.value)">
+                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="filterExpenseHeads(this.value)" autocomplete="off" onfocus="this.select();">
                             <div id="expenseHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
+                    <!-- Sub Head - Search + Dropdown -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="sub_head_input" placeholder="Search sub head..." oninput="filterSubHeads(this.value)">
+                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="filterSubHeads(this.value)" autocomplete="off" onfocus="this.select();">
                             <div id="subHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Row 2: Firm, Party, Payment Mode -->
+                    <!-- Firm - Search + Dropdown -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
-                            <input type="text" id="firm_name_input" placeholder="Search firm..." oninput="filterFirms(this.value)">
+                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="filterFirms(this.value)" autocomplete="off" onfocus="this.select();">
                             <div id="firmDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
+                    <!-- Party - Search + Dropdown -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
-                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)">
+                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)" autocomplete="off" onfocus="this.select();">
                             <div id="partyDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="party_value">
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
+                    <!-- Payment Mode - Search + Dropdown -->
                     <div>
                         <label>💳 Payment Mode</label>
-                        <select id="v_mode" onchange="toggleBankField()">
-                            <option value="Cash">Cash</option>
-                            <option value="Bank">Bank</option>
-                            <option value="Paytm">Paytm</option>
-                            <option value="UPI">UPI</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
+                        <div class="search-wrapper">
+                            <input type="text" id="v_mode_input" placeholder="Search or select mode..." oninput="filterModes(this.value)" autocomplete="off" onfocus="this.select();">
+                            <div id="modeDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Row 3: Bank Account, Reference No, Signatory -->
+                    <!-- Bank Account -->
                     <div id="bank_account_field">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
+                    <!-- Reference No -->
                     <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
                     
+                    <!-- Signatory - Search + Dropdown -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)">
+                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)" autocomplete="off" onfocus="this.select();">
                             <div id="signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="signatory_value">
                         <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
-                    <!-- Row 4: Amount, Voucher No (2 Columns) -->
+                    <!-- Amount -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
                     
+                    <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
                     <!-- Narration - Full Width -->
@@ -227,49 +232,51 @@
         </div>
 
         <!-- ===== REPORTS ===== -->
-<div id="module-reports" class="module-pane">
-    <div class="report-card">
-        <h4>📊 Reports</h4>
-        
-        <!-- ✅ Enhanced Filters for Reports -->
-        <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
-            <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
-            <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
-            <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
-            <div><label>💰 Amount Min</label><input type="number" id="r_amount_min" onchange="renderReports()" placeholder="Min"></div>
-            <div><label>💰 Amount Max</label><input type="number" id="r_amount_max" onchange="renderReports()" placeholder="Max"></div>
-            <div><label>📂 Head</label>
-                <select id="r_head_filter" onchange="renderReports()">
-                    <option value="">All Heads</option>
-                </select>
-            </div>
-            <div><label>👤 Party</label><input type="text" id="r_party_filter" oninput="renderReports()" placeholder="Party name..."></div>
-            <div><label>💳 Mode</label>
-                <select id="r_mode_filter" onchange="renderReports()">
-                    <option value="">All Modes</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Bank">Bank</option>
-                    <option value="Paytm">Paytm</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Cheque">Cheque</option>
-                </select>
-            </div>
-            <div><label>📌 Status</label>
-                <select id="r_status" onchange="renderReports()">
-                    <option value="ALL">All</option>
-                    <option value="active">Active</option>
-                    <option value="deleted">Deleted</option>
-                </select>
+        <div id="module-reports" class="module-pane">
+            <div class="report-card">
+                <h4>📊 Reports</h4>
+                
+                <!-- ✅ Enhanced Filters for Reports -->
+                <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
+                    <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
+                    <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
+                    <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
+                    <div><label>💰 Amount Min</label><input type="number" id="r_amount_min" onchange="renderReports()" placeholder="Min"></div>
+                    <div><label>💰 Amount Max</label><input type="number" id="r_amount_max" onchange="renderReports()" placeholder="Max"></div>
+                    <div><label>📂 Head</label>
+                        <select id="r_head_filter" onchange="renderReports()">
+                            <option value="">All Heads</option>
+                        </select>
+                    </div>
+                    <div><label>👤 Party</label><input type="text" id="r_party_filter" oninput="renderReports()" placeholder="Party name..."></div>
+                    <div><label>💳 Mode</label>
+                        <select id="r_mode_filter" onchange="renderReports()">
+                            <option value="">All Modes</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    <div><label>📌 Status</label>
+                        <select id="r_status" onchange="renderReports()">
+                            <option value="ALL">All</option>
+                            <option value="active">Active</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
+                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
+                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
+                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
+                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
+                </div>
+                <div id="report_content"></div>
             </div>
         </div>
-        
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
-            <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
-            <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
-            <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
-            <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
-        </div>
-        <div id="report_content"></div>
     </div>
 </div>
 
@@ -441,16 +448,22 @@
     window.resetForm = () => app.resetForm();
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
+    
+    // ✅ Search + Dropdown Functions
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
     window.filterSubHeads = (v) => app.filterSubHeads(v);
     window.filterFirms = (v) => app.filterFirms(v);
     window.filterParties = (v) => app.filterParties(v);
     window.filterSignatories = (v) => app.filterSignatories(v);
+    window.filterModes = (v) => app.filterModes(v);
+    
     window.selectExpenseHead = (h) => app.selectExpenseHead(h);
     window.selectSubHead = (s) => app.selectSubHead(s);
     window.selectFirm = (f) => app.selectFirm(f);
     window.selectParty = (p) => app.selectParty(p);
     window.selectSignatory = (s) => app.selectSignatory(s);
+    window.selectMode = (m) => app.selectMode(m);
+    
     window.renderAll = () => app.renderAll();
     window.renderReports = () => app.renderReports();
     window.exportAllVouchers = () => app.exportAllVouchers();
