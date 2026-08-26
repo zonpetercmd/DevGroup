@@ -1,1071 +1,537 @@
-// js/app.js - Main Application (Complete)
+// ============================================================
+// COMPLETE APP.JS - Updated with Latest Features
+// ============================================================
 
-import Storage from './storage.js';
-import PrintEngine from './print.js';
-import { 
-    showToast, generateId, getFinancialYear, 
-    formatDate, formatCurrency, getToday 
-} from './utils.js';
-import { DEFAULT_PERMISSIONS, STORAGE_KEYS } from '../config/constants.js';
+// ===== STORAGE KEYS =====
+const STORAGE_KEYS = {
+    VOUCHERS: 'expense_vouchers',
+    FIRMS: 'firms_data',
+    USERS: 'users_data',
+    EXPENSE_HEADS: 'expense_heads',
+    PARTIES: 'parties_data',
+    SIGNATORIES: 'signatories_data',
+    BANK_ACCOUNTS: 'bank_accounts',
+    PERMISSIONS: 'user_permissions',
+    DARK_MODE: 'dark_mode_preference',
+    VIEW_PREFERENCES: 'view_preferences'
+};
 
-class App {
+// ===== UTILITY FUNCTIONS =====
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-IN', { 
+        style: 'currency', 
+        currency: 'INR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+    });
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// ===== STORAGE CLASS =====
+class StorageManager {
     constructor() {
-        this.storage = new Storage();
-        this.printEngine = new PrintEngine();
-        
-        this.db = [];
-        this.deletedVouchers = [];
-        this.editLogs = [];
-        this.parties = [];
-        this.signatories = [];
-        this.expenseHeads = {};
-        this.allUsers = [];
-        this.allFirms = {};
-        this.voucherCounter = {};
-        this.bankAccounts = {};
-        this.userPermissions = { ...DEFAULT_PERMISSIONS };
-        
-        this.currentUser = '';
-        this.currentRole = '';
-        this.currentFirm = '';
-        this.loaded = false;
+        this.listeners = [];
+        this.voucherListeners = [];
     }
 
-    async init() {
-        console.log('🚀 App Initializing...');
-        await this.loadAllData();
-        this.checkSession();
-        this.setupEventListeners();
-        this.setupRealtimeListener();
-        console.log('✅ App Ready!');
-    }
-
-    async loadAllData() {
-        const data = await this.storage.loadAllData();
-        this.allFirms = data.allFirms;
-        this.db = data.db;
-        this.deletedVouchers = data.deletedVouchers;
-        this.editLogs = data.editLogs;
-        this.parties = data.parties;
-        this.signatories = data.signatories;
-        this.expenseHeads = data.expenseHeads;
-        this.allUsers = data.allUsers;
-        this.voucherCounter = data.voucherCounter;
-        this.bankAccounts = data.bankAccounts || {};
-        this.userPermissions = data.userPermissions || DEFAULT_PERMISSIONS;
-        this.loaded = true;
-        console.log('✅ Data loaded. Firms:', Object.keys(this.allFirms).length);
-    }
-
-    checkSession() {
-        this.updateLoginRoleDropdown();
-        
-        if (sessionStorage.getItem('auth') === 'ok') {
-            this.currentUser = sessionStorage.getItem('user') || 'Admin';
-            this.currentRole = sessionStorage.getItem('role') || 'Admin';
-            this.currentFirm = sessionStorage.getItem('firm') || '';
-            try {
-                this.userPermissions = JSON.parse(sessionStorage.getItem('permissions') || '{}');
-            } catch {
-                this.userPermissions = { ...DEFAULT_PERMISSIONS };
-            }
-            this.showMainApp();
-        } else {
-            this.showLogin();
-        }
-    }
-
-    showLogin() {
-        document.getElementById('login-screen').style.display = 'flex';
-        document.getElementById('main-app').style.display = 'none';
-    }
-
-    showMainApp() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        
-        document.getElementById('display_user').innerText = '👤 ' + this.currentUser;
-        document.getElementById('display_role').innerText = this.currentRole + 
-            (this.currentFirm ? ' (' + (this.allFirms[this.currentFirm]?.name || '') + ')' : '');
-        
-        document.getElementById('admin_settings_btn').style.display = 
-            this.currentRole === 'Admin' ? 'inline-block' : 'none';
-        
-        document.getElementById('v_date').value = getToday();
-        
-        let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
-        if (this.userPermissions.reports || this.currentRole === 'Admin') {
-            tabs += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
-        }
-        document.getElementById('moduleTabsContainer').innerHTML = tabs;
-        
-        this.renderAll();
-        this.updateFirmHeader();
-        this.generateVoucherNo();
-    }
-
-    async doLogin() {
-        const userId = document.getElementById('user_id').value.trim();
-        const pass = document.getElementById('user_pass').value.trim();
-        const role = document.getElementById('login_role').value;
-        const errorDiv = document.getElementById('login_error');
-        
-        errorDiv.style.display = 'none';
-        
-        if (!userId || !pass) {
-            errorDiv.innerText = 'Please enter User ID and Password';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        if (!role) {
-            errorDiv.innerText = 'Please select a Role';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        let actualRole = role;
-        let staffFirm = '';
-        if (role.startsWith('Staff_')) {
-            staffFirm = role.replace('Staff_', '');
-            actualRole = 'Staff';
-        }
-
-        let foundUser = this.allUsers.find(u => {
-            if (actualRole === 'Staff') {
-                return u.id === userId && u.password === pass && u.role === role && u.firm === staffFirm;
-            }
-            return u.id === userId && u.password === pass && u.role === role;
-        });
-        
-        if (!foundUser) {
-            if (userId === 'Admin' && pass === '1811' && role === 'Admin') {
-                foundUser = { id: 'Admin', role: 'Admin', firm: null, permissions: { ...DEFAULT_PERMISSIONS } };
-            } else {
-                errorDiv.innerText = 'Invalid credentials or role mismatch';
-                errorDiv.style.display = 'block';
-                return;
-            }
-        }
-        
-        this.currentUser = foundUser.id;
-        this.currentRole = foundUser.role;
-        this.currentFirm = foundUser.firm || '';
-        this.userPermissions = foundUser.permissions || { ...DEFAULT_PERMISSIONS };
-        
-        sessionStorage.setItem('auth', 'ok');
-        sessionStorage.setItem('user', this.currentUser);
-        sessionStorage.setItem('role', this.currentRole);
-        sessionStorage.setItem('firm', this.currentFirm);
-        sessionStorage.setItem('permissions', JSON.stringify(this.userPermissions));
-        
-        this.showMainApp();
-        showToast('✅ Login successful!');
-    }
-
-    logout() {
-        sessionStorage.clear();
-        this.currentUser = '';
-        this.currentRole = '';
-        this.currentFirm = '';
-        this.showLogin();
-        showToast('👋 Logged out');
-    }
-
-    updateLoginRoleDropdown() {
-        const select = document.getElementById('login_role');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">-- Select Role --</option>';
-        select.innerHTML += '<option value="Admin">Admin (Full Access)</option>';
-        
-        const firms = Object.keys(this.allFirms);
-        if (firms.length > 0) {
-            firms.forEach(f => {
-                if (this.allFirms[f]) {
-                    select.innerHTML += `<option value="Staff_${f}">Staff - ${this.allFirms[f].name}</option>`;
-                }
-            });
-        }
-        if (currentVal) select.value = currentVal;
-    }
-
-    updateSettingsRoleDropdown() {
-        const select = document.getElementById('new_user_role');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '';
-        select.innerHTML += '<option value="Admin">Admin</option>';
-        
-        const firms = Object.keys(this.allFirms);
-        if (firms.length > 0) {
-            firms.forEach(f => {
-                if (this.allFirms[f]) {
-                    select.innerHTML += `<option value="Staff_${f}">Staff - ${this.allFirms[f].name}</option>`;
-                }
-            });
-        }
-        if (currentVal) select.value = currentVal;
-    }
-
-    updateFirmSelectInSettings() {
-        const select = document.getElementById('new_user_firm');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">-- Select Firm --</option>';
-        
-        const firms = Object.keys(this.allFirms);
-        if (firms.length === 0) {
-            select.innerHTML += '<option value="" disabled>No firms available</option>';
-            return;
-        }
-        
-        firms.forEach(f => {
-            if (this.allFirms[f]) {
-                select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
-            }
-        });
-        if (currentVal) select.value = currentVal;
-    }
-
-    updateFirmHeader() {
-        const firmKey = document.getElementById('firm_name_value')?.value || '';
-        const firm = this.allFirms[firmKey] || this.allFirms['DevVidyalaya'];
-        if (firm) {
-            document.getElementById('form_firm_name').innerText = firm.name;
-            document.getElementById('form_firm_addr').innerText = 
-                (firm.addr || '📍 ' + firm.name) + ' | 📞 ' + (firm.mobile || '');
-            document.getElementById('form_logo').src = firm.logo || 'logo.jpeg';
-        }
-        this.updateBankDropdown();
-    }
-
-    updateBankDropdown() {
-        const firmKey = document.getElementById('firm_name_value')?.value || '';
-        const select = document.getElementById('bank_account');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">Select Bank</option>';
-        
-        const banks = this.bankAccounts[firmKey] || [];
-        banks.forEach(b => {
-            select.innerHTML += `<option value="${b.name}|${b.account}|${b.ifsc || ''}">${b.name} - ${b.account}</option>`;
-        });
-        if (currentVal) select.value = currentVal;
-    }
-
-    toggleBankField() {
-        const mode = document.getElementById('v_mode_value')?.value || document.getElementById('v_mode')?.value || 'Cash';
-        document.getElementById('bank_account_field').style.display = 
-            (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
-    }
-
-    generateVoucherNo() {
-        const firmKey = document.getElementById('firm_name_value')?.value || '';
-        const firm = this.allFirms[firmKey];
-        if (!firm) {
-            document.getElementById('v_no').value = 'Select Firm First';
-            return;
-        }
-        const fy = getFinancialYear();
-        const firmVouchers = this.db.filter(v => v.firmKey === firmKey);
-        let count = firmVouchers.length + 1;
-        if (this.voucherCounter[firmKey]) count = this.voucherCounter[firmKey] + 1;
-        document.getElementById('v_no').value = `${firm.short}/EXP/${fy}/${String(count).padStart(3, '0')}`;
-    }
-
-    async saveVoucher() {
-        const firmKey = document.getElementById('firm_name_value').value;
-        const head = document.getElementById('expense_head_value').value;
-        const subHead = document.getElementById('sub_head_value').value;
-        const party = document.getElementById('party_value').value;
-        const amount = parseFloat(document.getElementById('v_amt').value) || 0;
-        const mode = document.getElementById('v_mode_value').value || document.getElementById('v_mode_input')?.value || 'Cash';
-        const date = document.getElementById('v_date').value;
-        const referenceNo = document.getElementById('reference_no').value.trim();
-        const signatory = document.getElementById('signatory_value').value;
-        const narration = document.getElementById('v_narration').value.trim();
-        const vno = document.getElementById('v_no').value;
-        const editId = document.getElementById('edit_id').value;
-        
-        let bankAccount = '';
-        let bankName = '';
-        let bankIfsc = '';
-        if (mode === 'Bank' || mode === 'Cheque') {
-            const bankVal = document.getElementById('bank_account').value;
-            if (bankVal) {
-                const parts = bankVal.split('|');
-                bankName = parts[0] || '';
-                bankAccount = parts[1] || '';
-                bankIfsc = parts[2] || '';
-            }
-        }
-        
-        if (!firmKey) { showToast('Please select a Firm'); return; }
-        if (!head) { showToast('Please select Expense Head'); return; }
-        if (!party) { showToast('Please select Party'); return; }
-        if (amount <= 0) { showToast('Please enter valid amount'); return; }
-        if (!date) { showToast('Please select date'); return; }
-        
-        const voucher = {
-            id: editId || generateId(),
-            vno: vno,
-            date: date,
-            firmKey: firmKey,
-            firmName: this.allFirms[firmKey]?.name || firmKey,
-            head: head,
-            subHead: subHead,
-            party: party,
-            amount: amount,
-            mode: mode,
-            bankName: bankName,
-            bankAccount: bankAccount,
-            bankIfsc: bankIfsc,
-            referenceNo: referenceNo,
-            signatory: signatory,
-            narration: narration,
-            type: 'EXP',
-            status: 'active',
-            createdBy: this.currentUser,
-            createdAt: new Date().toISOString(),
-            timestamp: Date.now()
-        };
-        
-        if (editId) {
-            const oldVoucher = this.db.find(v => v.id === editId);
-            if (oldVoucher) {
-                const logEntry = {
-                    id: generateId(),
-                    voucherId: editId,
-                    vno: oldVoucher.vno,
-                    oldData: JSON.stringify(oldVoucher),
-                    newData: JSON.stringify(voucher),
-                    editedBy: this.currentUser,
-                    editedAt: new Date().toISOString(),
-                    changes: 'Voucher edited'
-                };
-                this.editLogs.push(logEntry);
-                await this.storage.save(STORAGE_KEYS.EDIT_LOGS, 
-                    Object.fromEntries(this.editLogs.map(e => [e.id, e]))
-                );
-            }
-        }
-        
-        await this.storage.saveVoucher(voucher);
-        
-        if (!editId) {
-            if (!this.voucherCounter[firmKey]) this.voucherCounter[firmKey] = 0;
-            this.voucherCounter[firmKey]++;
-            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
-        }
-        
-        if (editId) {
-            const idx = this.db.findIndex(v => v.id === editId);
-            if (idx !== -1) this.db[idx] = voucher;
-        } else {
-            this.db.push(voucher);
-        }
-        
-        this.renderAll();
-        this.resetForm();
-        showToast(editId ? '✅ Voucher updated!' : '✅ Voucher saved!');
-        this.updateHeadFilter();
-        
-        setTimeout(() => this.printVoucher(voucher), 500);
-    }
-
-    async printVoucher(voucher) {
+    async save(key, data) {
         try {
-            if (!voucher) {
-                showToast('❌ Voucher not found');
-                return;
-            }
-            if (!voucher.amount || isNaN(voucher.amount)) {
-                voucher.amount = 0;
-            }
-            console.log('🖨️ Printing voucher:', voucher.vno, 'Amount:', voucher.amount);
-            await this.printEngine.print(voucher, this.allFirms);
-        } catch (error) {
-            console.error('❌ Print error:', error);
-            showToast('❌ Print failed: ' + error.message);
+            localStorage.setItem(key, JSON.stringify(data));
+            this.notify(key, data);
+            return true;
+        } catch (e) {
+            console.error('Save error:', e);
+            return false;
         }
     }
 
-    async printVoucherById(id) {
+    async get(key, defaultVal = null) {
         try {
-            const voucher = this.db.find(v => v.id === id);
-            if (!voucher) {
-                showToast('❌ Voucher not found');
-                return;
-            }
-            await this.printVoucher(voucher);
-        } catch (error) {
-            console.error('❌ Print error:', error);
-            showToast('❌ Print failed: ' + error.message);
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultVal;
+        } catch (e) {
+            console.error('Get error:', e);
+            return defaultVal;
         }
     }
 
-    resetForm() {
-        document.getElementById('edit_id').value = '';
-        document.getElementById('expense_head_input').value = '';
-        document.getElementById('expense_head_value').value = '';
-        document.getElementById('sub_head_input').value = '';
-        document.getElementById('sub_head_value').value = '';
-        document.getElementById('firm_name_input').value = '';
-        document.getElementById('firm_name_value').value = '';
-        document.getElementById('party_input').value = '';
-        document.getElementById('party_value').value = '';
-        document.getElementById('v_amt').value = '0';
-        document.getElementById('reference_no').value = '';
-        document.getElementById('signatory_input').value = '';
-        document.getElementById('signatory_value').value = '';
-        document.getElementById('v_narration').value = '';
-        
-        document.getElementById('v_mode_input').value = '';
-        document.getElementById('v_mode_value').value = 'Cash';
-        document.getElementById('modeDropdown').style.display = 'none';
-        
-        document.getElementById('bank_account').value = '';
-        document.getElementById('bank_account_field').style.display = 'none';
-        document.getElementById('v_date').value = getToday();
-        document.getElementById('form-title').innerHTML = '📝 Add Payment Voucher';
-        this.updateFirmHeader();
-        this.generateVoucherNo();
-        showToast('🔄 Form reset');
+    async remove(key) {
+        localStorage.removeItem(key);
     }
 
-    editVoucher(id) {
-        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to edit');
-            return;
-        }
-        const v = this.db.find(x => x.id === id);
-        if (!v) { showToast('Voucher not found'); return; }
-        
-        document.getElementById('edit_id').value = v.id;
-        document.getElementById('v_date').value = v.date;
-        document.getElementById('expense_head_input').value = v.head;
-        document.getElementById('expense_head_value').value = v.head;
-        document.getElementById('sub_head_input').value = v.subHead || '';
-        document.getElementById('sub_head_value').value = v.subHead || '';
-        document.getElementById('firm_name_input').value = v.firmName;
-        document.getElementById('firm_name_value').value = v.firmKey;
-        document.getElementById('party_input').value = v.party;
-        document.getElementById('party_value').value = v.party;
-        document.getElementById('v_amt').value = v.amount;
-        
-        document.getElementById('v_mode_input').value = v.mode;
-        document.getElementById('v_mode_value').value = v.mode;
-        
-        document.getElementById('reference_no').value = v.referenceNo || '';
-        document.getElementById('signatory_input').value = v.signatory || '';
-        document.getElementById('signatory_value').value = v.signatory || '';
-        document.getElementById('v_narration').value = v.narration || '';
-        document.getElementById('v_no').value = v.vno;
-        document.getElementById('form-title').innerHTML = '✏️ Edit Voucher: ' + v.vno;
-        
-        if (v.bankName) {
-            const bankVal = v.bankName + '|' + (v.bankAccount || '') + '|' + (v.bankIfsc || '');
-            document.getElementById('bank_account').value = bankVal;
-            document.getElementById('bank_account_field').style.display = 'block';
-        }
-        
-        this.toggleBankField();
-        this.updateFirmHeader();
-        this.populateSubHeads(v.head);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        showToast('✏️ Edit mode - Modify and save');
+    async saveVoucher(voucher) {
+        const vouchers = await this.get(STORAGE_KEYS.VOUCHERS, {});
+        vouchers[voucher.id] = voucher;
+        await this.save(STORAGE_KEYS.VOUCHERS, vouchers);
+        this.notifyVoucherChange(vouchers);
+        return voucher;
     }
 
     async deleteVoucher(id) {
-        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to delete');
-            return;
-        }
-        if (!confirm('Delete this voucher permanently?')) return;
-        const v = this.db.find(x => x.id === id);
-        if (!v) { showToast('Voucher not found'); return; }
-        
-        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
-        this.deletedVouchers.push(deletedV);
-        
-        await this.storage.save(STORAGE_KEYS.DELETED, 
-            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
-        );
-        await this.storage.deleteVoucher(id);
-        
-        this.db = this.db.filter(x => x.id !== id);
-        this.renderAll();
-        this.generateVoucherNo();
-        this.updateHeadFilter();
-        showToast('✅ Voucher deleted');
+        const vouchers = await this.get(STORAGE_KEYS.VOUCHERS, {});
+        delete vouchers[id];
+        await this.save(STORAGE_KEYS.VOUCHERS, vouchers);
+        this.notifyVoucherChange(vouchers);
+        return true;
     }
 
-    async recoverVoucher(id) {
-        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to recover');
+    async getAllVouchers() {
+        const data = await this.get(STORAGE_KEYS.VOUCHERS, {});
+        return Object.values(data);
+    }
+
+    onVoucherChange(callback) {
+        this.voucherListeners.push(callback);
+    }
+
+    notifyVoucherChange(vouchers) {
+        const data = Object.values(vouchers || {});
+        this.voucherListeners.forEach(cb => cb(data));
+    }
+
+    notify(key, data) {
+        this.listeners.forEach(cb => cb(key, data));
+    }
+}
+
+// ===== MAIN APP CLASS =====
+class App {
+    constructor() {
+        this.storage = new StorageManager();
+        this.db = [];
+        this.deletedVouchers = [];
+        this.allFirms = {};
+        this.allUsers = [];
+        this.expenseHeads = {};
+        this.parties = [];
+        this.signatories = [];
+        this.bankAccounts = {};
+        this.editLogs = [];
+        this.currentUser = null;
+        this.currentRole = 'Staff';
+        this.currentFirm = null;
+        this.userPermissions = {};
+        this.currentVoucherId = null;
+        this.selectedVouchers = new Set();
+        this.currentSort = { field: 'date', direction: 'desc' };
+        this.searchQuery = '';
+        this.searchFilters = {};
+        this.isDarkMode = false;
+        this.viewMode = 'table';
+
+        this.init();
+    }
+
+    async init() {
+        // Load dark mode preference
+        this.isDarkMode = await this.storage.get(STORAGE_KEYS.DARK_MODE, false);
+        if (this.isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Load view preferences
+        const prefs = await this.storage.get(STORAGE_KEYS.VIEW_PREFERENCES, {});
+        this.viewMode = prefs.viewMode || 'table';
+        this.applyViewMode();
+
+        await this.loadData();
+        this.setupEventListeners();
+        this.setupRealtimeListener();
+        this.renderAll();
+
+        // Check for saved session
+        const savedUser = await this.storage.get('session_user', null);
+        if (savedUser) {
+            this.currentUser = savedUser.id;
+            this.currentRole = savedUser.role;
+            this.currentFirm = savedUser.firm;
+            this.userPermissions = savedUser.permissions || {};
+            this.showApp();
+            this.updateUI();
+            this.generateVoucherNo();
+            this.updateHeadFilter();
+        }
+    }
+
+    async loadData() {
+        // Load firms
+        const firms = await this.storage.get(STORAGE_KEYS.FIRMS, {});
+        this.allFirms = {
+            DevVidyalaya: { name: 'Dev Vidyalaya', short: 'DVS', logo: 'logo.jpeg', addr: '', mobile: '', email: '', gst: '', pan: '' },
+            DevGas: { name: 'Dev Gas', short: 'DVG', logo: 'logo.jpeg', addr: '', mobile: '', email: '', gst: '', pan: '' },
+            Rama: { name: 'Rama', short: 'RMA', logo: 'logo.jpeg', addr: '', mobile: '', email: '', gst: '', pan: '' },
+            ...firms
+        };
+
+        // Load users
+        const users = await this.storage.get(STORAGE_KEYS.USERS, {});
+        this.allUsers = Object.values(users);
+        if (this.allUsers.length === 0) {
+            this.allUsers = [
+                { id: 'Admin', password: 'admin123', role: 'Admin', firm: null, permissions: {} }
+            ];
+            await this.storage.save(STORAGE_KEYS.USERS, 
+                Object.fromEntries(this.allUsers.map(u => [u.id, u]))
+            );
+        }
+
+        // Load expense heads
+        this.expenseHeads = await this.storage.get(STORAGE_KEYS.EXPENSE_HEADS, {
+            'Administrative': ['Office Rent', 'Electricity', 'Water', 'Internet', 'Phone'],
+            'Salary': ['Staff Salary', 'Consultant Fee', 'Contractor Payment'],
+            'Travel': ['Conveyance', 'Fuel', 'Lodging', 'Food'],
+            'Marketing': ['Advertising', 'Promotion', 'Events'],
+            'Supplies': ['Stationery', 'Printing', 'Office Supplies'],
+            'Maintenance': ['Repair', 'AMC', 'Housekeeping'],
+            'Others': ['Miscellaneous']
+        });
+
+        // Load parties
+        const partiesData = await this.storage.get(STORAGE_KEYS.PARTIES, {});
+        this.parties = Object.values(partiesData);
+
+        // Load signatories
+        const signatoriesData = await this.storage.get(STORAGE_KEYS.SIGNATORIES, {});
+        this.signatories = Object.values(signatoriesData);
+
+        // Load bank accounts
+        this.bankAccounts = await this.storage.get(STORAGE_KEYS.BANK_ACCOUNTS, {});
+
+        // Load permissions
+        this.userPermissions = await this.storage.get(STORAGE_KEYS.PERMISSIONS, {
+            print: false, edit: false, delete: false, whatsapp: false,
+            reports: false, view_all: false, party_add: false,
+            signatory_add: false, bank_add: false, expense_add: false
+        });
+
+        // Load vouchers
+        const vouchers = await this.storage.get(STORAGE_KEYS.VOUCHERS, {});
+        this.db = Object.values(vouchers).filter(v => v.status !== 'deleted');
+        this.deletedVouchers = Object.values(vouchers).filter(v => v.status === 'deleted');
+
+        // Load edit logs
+        this.editLogs = await this.storage.get('edit_logs', []);
+    }
+
+    // ===== DARK MODE =====
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        document.body.classList.toggle('dark-mode');
+        this.storage.save(STORAGE_KEYS.DARK_MODE, this.isDarkMode);
+        document.querySelector('.dark-mode-toggle')?.classList.toggle('active');
+    }
+
+    // ===== VIEW MODE =====
+    applyViewMode() {
+        const container = document.getElementById('voucher-list');
+        if (!container) return;
+        if (this.viewMode === 'cards') {
+            container.classList.add('card-view');
+            container.classList.remove('table-view');
+        } else {
+            container.classList.add('table-view');
+            container.classList.remove('card-view');
+        }
+    }
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        this.applyViewMode();
+        this.storage.save(STORAGE_KEYS.VIEW_PREFERENCES, { viewMode: mode });
+        document.querySelectorAll('.view-mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+    }
+
+    // ===== LOGIN =====
+    doLogin() {
+        const id = document.getElementById('loginId').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        
+        if (!id || !pass) {
+            showToast('⚠️ Please enter ID and Password');
             return;
         }
-        if (!confirm('Are you sure you want to recover this voucher?')) return;
-        
-        const index = this.deletedVouchers.findIndex(v => v.id === id);
-        if (index === -1) {
-            showToast('❌ Deleted voucher not found');
+
+        const user = this.allUsers.find(u => u.id === id && u.password === pass);
+        if (!user) {
+            showToast('❌ Invalid credentials!');
             return;
         }
-        
-        const voucher = this.deletedVouchers[index];
-        voucher.status = 'active';
-        delete voucher.deletedBy;
-        delete voucher.deletedAt;
-        this.deletedVouchers.splice(index, 1);
-        this.db.push(voucher);
-        
-        await this.storage.saveVoucher(voucher);
-        await this.storage.save(STORAGE_KEYS.DELETED, 
-            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
-        );
-        
+
+        this.currentUser = user.id;
+        this.currentRole = user.role;
+        this.currentFirm = user.firm;
+        this.userPermissions = user.permissions || {};
+
+        // Save session
+        this.storage.save('session_user', {
+            id: user.id,
+            role: user.role,
+            firm: user.firm,
+            permissions: user.permissions
+        });
+
+        showToast(`✅ Welcome ${user.id}!`);
+        this.showApp();
+        this.updateUI();
+        this.generateVoucherNo();
+        this.updateHeadFilter();
+    }
+
+    logout() {
+        this.currentUser = null;
+        this.currentRole = 'Staff';
+        this.currentFirm = null;
+        this.userPermissions = {};
+        this.storage.remove('session_user');
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+        showToast('👋 Logged out');
+    }
+
+    showApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
         this.renderAll();
         this.updateStats();
         this.generateVoucherNo();
         this.updateHeadFilter();
-        showToast(`✅ Voucher ${voucher.vno} recovered successfully!`);
     }
 
-    renderAll() {
-        this.renderTable();
-        this.updateStats();
-        this.renderReports();
+    // ===== UI UPDATES =====
+    updateUI() {
+        const name = document.getElementById('header_user_name');
+        if (name) name.textContent = this.currentUser || 'Guest';
+
+        const role = document.getElementById('header_user_role');
+        if (role) role.textContent = this.currentRole || 'Staff';
+
+        let firmName = 'All Firms';
+        if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
+        else if (this.currentFirm && this.allFirms[this.currentFirm]) {
+            firmName = this.allFirms[this.currentFirm].name;
+        }
+        const headerFirm = document.getElementById('header_firm_name');
+        if (headerFirm) headerFirm.textContent = firmName;
+
+        // Update permissions in UI
+        this.updatePermissionUI();
     }
 
-    renderTable() {
-        const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
-        const start = document.getElementById('f_start')?.value || '';
-        const end = document.getElementById('f_end')?.value || '';
-        const status = document.getElementById('f_status')?.value || 'ALL';
-        
-        const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
-        const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
-        const headFilter = document.getElementById('f_head_filter')?.value || '';
-        const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
-        const modeFilter = document.getElementById('f_mode_filter')?.value || '';
-        
-        let dataToShow = [];
-        if (status === 'ALL' || status === 'active') {
-            dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
-        }
-        if (status === 'ALL' || status === 'deleted') {
-            dataToShow = dataToShow.concat(this.deletedVouchers);
-        }
-        
-        const seen = new Set();
-        dataToShow = dataToShow.filter(v => {
-            if (seen.has(v.id)) return false;
-            seen.add(v.id);
-            return true;
-        });
-        
-        const filtered = dataToShow.filter(v => {
-            let match = true;
-            
-            if (search) {
-                match = match && (
-                    v.party?.toLowerCase().includes(search) ||
-                    v.head?.toLowerCase().includes(search) ||
-                    v.narration?.toLowerCase().includes(search) ||
-                    v.vno?.toLowerCase().includes(search) ||
-                    v.subHead?.toLowerCase().includes(search) ||
-                    v.createdBy?.toLowerCase().includes(search)
-                );
+    updatePermissionUI() {
+        const elements = {
+            'btn-add-voucher': this.canAddExpense(),
+            'btn-edit-voucher': this.userPermissions.edit || this.currentRole === 'Admin',
+            'btn-delete-voucher': this.userPermissions.delete || this.currentRole === 'Admin',
+            'btn-print-voucher': this.userPermissions.print || this.currentRole === 'Admin',
+            'btn-whatsapp': this.userPermissions.whatsapp || this.currentRole === 'Admin',
+            'btn-reports': this.userPermissions.reports || this.currentRole === 'Admin',
+            'settings-btn': this.currentRole === 'Admin',
+            'add-party-btn': this.canAddParty(),
+            'add-signatory-btn': this.canAddSignatory(),
+            'add-bank-btn': this.canAddBank()
+        };
+
+        Object.entries(elements).forEach(([id, visible]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = visible ? '' : 'none';
             }
-            
-            if (start) match = match && v.date >= start;
-            if (end) match = match && v.date <= end;
-            
-            if (amountMin > 0) match = match && v.amount >= amountMin;
-            if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            
-            if (headFilter) match = match && v.head === headFilter;
-            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-            if (modeFilter) match = match && v.mode === modeFilter;
-            
-            return match;
         });
-        
-        const tbody = document.getElementById('v_list');
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.slice().reverse().map(v => {
-            const isDeleted = v.status === 'deleted';
-            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-            const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
-            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-            
-            let actions = '';
-            if (!isDeleted) {
-                if (this.userPermissions.print || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-                }
-                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-                }
-                if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-                }
-                if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-                }
-            } else {
-                actions = `
-                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                `;
-            }
-            
-            const createdBy = v.createdBy || 'Unknown';
-            const creatorBadge = this.currentRole === 'Admin' ? 
-                `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
-                `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
-            
-            return `<tr>
-                <td>${v.date}</td>
-                <td><b>${v.vno}</b></td>
-                <td>${v.head}</td>
-                <td>${v.subHead || '-'}</td>
-                <td>${v.party || '-'}</td>
-                <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.mode}</td>
-                <td>${creatorBadge}</td>
-                <td><span class="${statusClass}">${statusText}</span></td>
-                <td>${actions}</td>
-            </tr>`;
-        }).join('');
     }
 
     updateStats() {
-        const today = getToday();
-        const active = this.db.filter(v => v.status !== 'deleted');
-        const todayVouchers = active.filter(v => v.date === today);
-        const totalAmount = active.reduce((sum, v) => sum + v.amount, 0);
-        
-        document.getElementById('stat_today').innerHTML = todayVouchers.length;
-        document.getElementById('stat_total').innerHTML = active.length;
-        document.getElementById('stat_active').innerHTML = active.length;
-        document.getElementById('stat_deleted').innerHTML = this.deletedVouchers.length;
-        document.getElementById('stat_edited').innerHTML = this.editLogs.length;
-        document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
-    }
-
-    renderReports() {
-        const div = document.getElementById('report_content');
-        if (!div) return;
-        
-        const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
-        const start = document.getElementById('r_start')?.value || '';
-        const end = document.getElementById('r_end')?.value || '';
-        const status = document.getElementById('r_status')?.value || 'ALL';
-        const headFilter = document.getElementById('r_head_filter')?.value || '';
-        const headFilterOld = document.getElementById('r_head')?.value || '';
-        
-        const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
-        const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
-        const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
-        const modeFilter = document.getElementById('r_mode_filter')?.value || '';
-        
-        const finalHeadFilter = headFilter || headFilterOld;
-        
-        let allVouchers = [];
-        if (status === 'ALL' || status === 'active') {
-            allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
-        }
-        if (status === 'ALL' || status === 'deleted') {
-            allVouchers = allVouchers.concat(this.deletedVouchers);
-        }
-        
-        const seen = new Set();
-        allVouchers = allVouchers.filter(v => {
-            if (seen.has(v.id)) return false;
-            seen.add(v.id);
-            return true;
+        const total = this.db.filter(v => v.status !== 'deleted').length;
+        const totalAmount = this.db.filter(v => v.status !== 'deleted')
+            .reduce((sum, v) => sum + (v.amount || 0), 0);
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthVouchers = this.db.filter(v => {
+            const d = new Date(v.date);
+            return d >= monthStart && v.status !== 'deleted';
         });
-        
-        const filtered = allVouchers.filter(v => {
-            let match = true;
-            
-            if (search) {
-                match = match && (
-                    v.party?.toLowerCase().includes(search) ||
-                    v.head?.toLowerCase().includes(search) ||
-                    v.narration?.toLowerCase().includes(search) ||
-                    v.vno?.toLowerCase().includes(search) ||
-                    v.subHead?.toLowerCase().includes(search) ||
-                    v.createdBy?.toLowerCase().includes(search)
-                );
-            }
-            
-            if (start) match = match && v.date >= start;
-            if (end) match = match && v.date <= end;
-            
-            if (amountMin > 0) match = match && v.amount >= amountMin;
-            if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            
-            if (finalHeadFilter) match = match && v.head === finalHeadFilter;
-            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-            if (modeFilter) match = match && v.mode === modeFilter;
-            
-            return match;
-        });
-        
-        if (filtered.length === 0) {
-            div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
-            return;
-        }
-        
-        div.innerHTML = `
-            <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
-                <span>Total: <strong>${filtered.length}</strong></span>
-                <span>Active: <strong style="color:var(--success)">${filtered.filter(v => v.status !== 'deleted').length}</strong></span>
-                <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
-                <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
-            </div>
-            <div class="table-res">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th><th>Voucher No</th><th>Firm</th>
-                            <th>Head</th><th>Sub Head</th><th>Party</th>
-                            <th>Amount</th><th>Mode</th>
-                            <th>Created By</th>
-                            <th>Status</th><th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${filtered.slice().reverse().map(v => {
-                            const isDeleted = v.status === 'deleted';
-                            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-                            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-                            const createdBy = v.createdBy || 'Unknown';
-                            
-                            let actions = '';
-                            if (!isDeleted) {
-                                if (this.userPermissions.print || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-                                }
-                                if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-                                }
-                                if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-                                }
-                                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-                                }
-                            } else {
-                                actions = `
-                                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                                `;
-                            }
-                            
-                            return `<tr>
-                                <td>${v.date}</td>
-                                <td><b>${v.vno}</b></td>
-                                <td>${v.firmName || v.firmKey || '-'}</td>
-                                <td>${v.head}</td>
-                                <td>${v.subHead || '-'}</td>
-                                <td>${v.party || '-'}</td>
-                                <td>₹${v.amount.toLocaleString()}</td>
-                                <td>${v.mode}</td>
-                                <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
-                                <td>${statusText}</td>
-                                <td>${actions}</td>
-                            </tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-            ${this.editLogs.length > 0 ? `
-            <div style="margin-top:20px;">
-                <h5>📝 Edit Logs</h5>
-                <div class="table-res">
-                    <table>
-                        <thead><tr><th>Voucher</th><th>Edited By</th><th>Edited At</th></tr></thead>
-                        <tbody>
-                            ${this.editLogs.slice().reverse().map(log => `
-                                <tr>
-                                    <td>${log.vno}</td>
-                                    <td><span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${log.editedBy}</span></td>
-                                    <td>${new Date(log.editedAt).toLocaleString()}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            ` : ''}
-        `;
+        const monthAmount = monthVouchers.reduce((sum, v) => sum + (v.amount || 0), 0);
+
+        document.getElementById('stat-total-vouchers').textContent = total;
+        document.getElementById('stat-total-amount').textContent = formatCurrency(totalAmount);
+        document.getElementById('stat-month-vouchers').textContent = monthVouchers.length;
+        document.getElementById('stat-month-amount').textContent = formatCurrency(monthAmount);
     }
 
-    updateHeadFilter() {
-        const select = document.getElementById('r_head');
-        if (select) {
-            const currentVal = select.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-            select.innerHTML = '<option value="">All Heads</option>';
-            heads.forEach(h => {
-                select.innerHTML += `<option value="${h}">${h}</option>`;
-            });
-            if (currentVal) select.value = currentVal;
-        }
-        
-        const selectFilter = document.getElementById('f_head_filter');
-        if (selectFilter) {
-            const currentVal = selectFilter.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-            selectFilter.innerHTML = '<option value="">All Heads</option>';
-            heads.forEach(h => {
-                selectFilter.innerHTML += `<option value="${h}">${h}</option>`;
-            });
-            if (currentVal) selectFilter.value = currentVal;
-        }
-        
-        const selectR = document.getElementById('r_head_filter');
-        if (selectR) {
-            const currentVal = selectR.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-            selectR.innerHTML = '<option value="">All Heads</option>';
-            heads.forEach(h => {
-                selectR.innerHTML += `<option value="${h}">${h}</option>`;
-            });
-            if (currentVal) selectR.value = currentVal;
-        }
-    }
-
-    getModeOptions() {
-        return ['Cash', 'Bank', 'Paytm', 'UPI', 'Cheque'];
-    }
-
-    populateModes() {
-        const dropdown = document.getElementById('modeDropdown');
-        if (!dropdown) return;
-        const modes = this.getModeOptions();
-        dropdown.innerHTML = modes.map(m => 
-            `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    filterModes(search) {
-        const dropdown = document.getElementById('modeDropdown');
-        if (!dropdown) return;
-        if (!search || search.length < 1) { 
-            this.populateModes();
-            return; 
-        }
-        const modes = this.getModeOptions();
-        const filtered = modes.filter(m => m.toLowerCase().includes(search.toLowerCase()));
-        if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No mode found</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = filtered.map(m => 
-            `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    selectMode(mode) {
-        document.getElementById('v_mode_input').value = mode;
-        document.getElementById('v_mode_value').value = mode;
-        document.getElementById('modeDropdown').style.display = 'none';
-        this.toggleBankField();
-    }
-
+    // ===== HEADER DROPDOWNS =====
     populateExpenseHeads() {
+        const input = document.getElementById('expense_head_input');
+        if (!input) return;
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
+        
+        const search = input.value.toLowerCase();
         const heads = Object.keys(this.expenseHeads);
-        if (heads.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No heads added. Add in Settings.</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = heads.map(h => 
-            `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
+        const filtered = search ? heads.filter(h => h.toLowerCase().includes(search)) : heads;
 
-    populateSubHeads(head) {
-        const dropdown = document.getElementById('subHeadDropdown');
-        if (!dropdown) return;
-        const subHeads = this.expenseHeads[head] || [];
-        if (subHeads.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No sub heads available</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = subHeads.map(sh => 
-            `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    populateFirmDropdown() {
-        const dropdown = document.getElementById('firmDropdown');
-        if (!dropdown) return;
-        let firms = [];
-        if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
-        else if (this.currentFirm) firms = [this.currentFirm];
-        if (firms.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No firms available</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = firms.map(f => 
-            `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    populatePartyDropdown() {
-        const dropdown = document.getElementById('partyDropdown');
-        if (!dropdown) return;
-        if (this.parties.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No parties. Add one.</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = this.parties.map(p => 
-            `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    populateSignatoryDropdown() {
-        const dropdown = document.getElementById('signatoryDropdown');
-        if (!dropdown) return;
-        if (this.signatories.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No signatories. Add one.</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = this.signatories.map(s => 
-            `<div onclick="selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    filterExpenseHeads(search) {
-        const dropdown = document.getElementById('expenseHeadDropdown');
-        if (!dropdown) return;
-        if (!search || search.length < 1) { 
-            this.populateExpenseHeads();
-            return; 
-        }
-        const heads = Object.keys(this.expenseHeads);
-        const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No head found</div>';
             dropdown.style.display = 'block';
             return;
         }
+
         dropdown.innerHTML = filtered.map(h => 
-            `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
+            `<div onclick="app.selectExpenseHead('${h.replace(/'/g, "\\'")}')" 
+                  style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;"
+                  onmouseover="this.style.background='#f1f5f9'" 
+                  onmouseout="this.style.background=''">
+                ${h}
+            </div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
-    filterSubHeads(search) {
+    populateSubHeads(head) {
+        const input = document.getElementById('sub_head_input');
+        if (!input) return;
         const dropdown = document.getElementById('subHeadDropdown');
         if (!dropdown) return;
-        const head = document.getElementById('expense_head_value').value;
-        if (!head) {
-            dropdown.innerHTML = '<div class="no-result">Select a head first</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
+
         const subHeads = this.expenseHeads[head] || [];
-        if (!search || search.length < 1) {
-            this.populateSubHeads(head);
-            return;
-        }
-        const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
+        const search = input.value.toLowerCase();
+        const filtered = search ? subHeads.filter(s => s.toLowerCase().includes(search)) : subHeads;
+
         if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
+            dropdown.innerHTML = '<div class="no-result">No sub-head found</div>';
             dropdown.style.display = 'block';
             return;
         }
+
         dropdown.innerHTML = filtered.map(sh => 
-            `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
+            `<div onclick="app.selectSubHead('${sh.replace(/'/g, "\\'")}')" 
+                  style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;"
+                  onmouseover="this.style.background='#f1f5f9'" 
+                  onmouseout="this.style.background=''">
+                ${sh}
+            </div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
-    filterFirms(search) {
+    populateFirmDropdown() {
+        const input = document.getElementById('firm_name_input');
+        if (!input) return;
         const dropdown = document.getElementById('firmDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) { 
-            this.populateFirmDropdown();
-            return; 
-        }
+
         let firms = [];
         if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
         else if (this.currentFirm) firms = [this.currentFirm];
-        const filtered = firms.filter(f => 
-            (this.allFirms[f]?.name || f).toLowerCase().includes(search.toLowerCase())
-        );
+
+        const search = input.value.toLowerCase();
+        const filtered = search ? firms.filter(f => 
+            (this.allFirms[f]?.name || f).toLowerCase().includes(search)
+        ) : firms;
+
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firm found</div>';
             dropdown.style.display = 'block';
             return;
         }
+
         dropdown.innerHTML = filtered.map(f => 
-            `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
+            `<div onclick="app.selectFirm('${f}')" 
+                  style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;"
+                  onmouseover="this.style.background='#f1f5f9'" 
+                  onmouseout="this.style.background=''">
+                ${this.allFirms[f]?.name || f}
+            </div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
-    filterParties(search) {
+    populatePartyDropdown() {
+        const input = document.getElementById('party_input');
+        if (!input) return;
         const dropdown = document.getElementById('partyDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) { 
-            this.populatePartyDropdown();
-            return; 
-        }
-        const filtered = this.parties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+
+        const search = input.value.toLowerCase();
+        const filtered = search ? this.parties.filter(p => 
+            p.name.toLowerCase().includes(search) ||
+            (p.phone && p.phone.includes(search))
+        ) : this.parties;
+
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No party found</div>';
             dropdown.style.display = 'block';
             return;
         }
+
         dropdown.innerHTML = filtered.map(p => 
-            `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
+            `<div onclick="app.selectParty('${p.name.replace(/'/g, "\\'")}')" 
+                  style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;"
+                  onmouseover="this.style.background='#f1f5f9'" 
+                  onmouseout="this.style.background=''">
+                ${p.name} ${p.phone ? '📞 ' + p.phone : ''}
+            </div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
-    filterSignatories(search) {
+    populateSignatoryDropdown() {
+        const input = document.getElementById('signatory_input');
+        if (!input) return;
         const dropdown = document.getElementById('signatoryDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) { 
-            this.populateSignatoryDropdown();
-            return; 
-        }
-        const filtered = this.signatories.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+
+        const search = input.value.toLowerCase();
+        const filtered = search ? this.signatories.filter(s => 
+            s.name.toLowerCase().includes(search)
+        ) : this.signatories;
+
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No signatory found</div>';
             dropdown.style.display = 'block';
             return;
         }
+
         dropdown.innerHTML = filtered.map(s => 
-            `<div onclick="selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
+            `<div onclick="app.selectSignatory('${s.name.replace(/'/g, "\\'")}')" 
+                  style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;"
+                  onmouseover="this.style.background='#f1f5f9'" 
+                  onmouseout="this.style.background=''">
+                ${s.name} ${s.designation ? ' - ' + s.designation : ''}
+            </div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
+    // ===== SELECT FUNCTIONS =====
     selectExpenseHead(head) {
         document.getElementById('expense_head_input').value = head;
         document.getElementById('expense_head_value').value = head;
@@ -1100,8 +566,614 @@ class App {
         document.getElementById('signatoryDropdown').style.display = 'none';
     }
 
+    // ===== VOUCHER CRUD =====
+    async addVoucher() {
+        const firmKey = document.getElementById('firm_name_value').value;
+        const head = document.getElementById('expense_head_value').value;
+        const subHead = document.getElementById('sub_head_value').value;
+        const party = document.getElementById('party_value').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const date = document.getElementById('voucher_date').value;
+        const mode = document.getElementById('payment_mode').value;
+        const narration = document.getElementById('narration').value;
+        const signatory = document.getElementById('signatory_value').value;
+        const bankName = document.getElementById('bank_name').value;
+        const bankAccount = document.getElementById('bank_account').value;
+        const bankIfsc = document.getElementById('bank_ifsc').value;
+        const referenceNo = document.getElementById('reference_no').value;
+
+        if (!firmKey) { showToast('❌ Please select a firm'); return; }
+        if (!head) { showToast('❌ Please select expense head'); return; }
+        if (!party) { showToast('❌ Please select party'); return; }
+        if (!amount || amount <= 0) { showToast('❌ Enter valid amount'); return; }
+        if (!date) { showToast('❌ Select date'); return; }
+
+        // Check for duplicate
+        if (this.isDuplicateVoucher(date, firmKey, head, party, amount)) {
+            showToast('⚠️ Duplicate voucher! Similar entry exists.');
+            return;
+        }
+
+        const vno = document.getElementById('voucher_no').value || this.generateVoucherNo();
+
+        const voucher = {
+            id: generateId(),
+            vno: vno,
+            date: date,
+            firmKey: firmKey,
+            firmName: this.allFirms[firmKey]?.name || firmKey,
+            head: head,
+            subHead: subHead || '',
+            party: party,
+            amount: amount,
+            mode: mode || 'Cash',
+            bankName: bankName || '',
+            bankAccount: bankAccount || '',
+            bankIfsc: bankIfsc || '',
+            referenceNo: referenceNo || '',
+            signatory: signatory || '',
+            narration: narration || '',
+            type: 'EXP',
+            status: 'active',
+            createdBy: this.currentUser,
+            createdAt: new Date().toISOString(),
+            timestamp: Date.now()
+        };
+
+        await this.storage.saveVoucher(voucher);
+        this.db.push(voucher);
+        this.renderAll();
+        this.updateStats();
+        this.generateVoucherNo();
+        this.updateHeadFilter();
+        this.clearVoucherForm();
+        showToast('✅ Voucher added successfully!');
+    }
+
+    isDuplicateVoucher(date, firmKey, head, party, amount) {
+        const threshold = 0.01;
+        return this.db.some(v => 
+            v.date === date &&
+            v.firmKey === firmKey &&
+            v.head === head &&
+            v.party === party &&
+            Math.abs(v.amount - amount) < threshold &&
+            v.status !== 'deleted'
+        );
+    }
+
+    clearVoucherForm() {
+        document.getElementById('party_value').value = '';
+        document.getElementById('party_input').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('narration').value = '';
+        document.getElementById('signatory_value').value = '';
+        document.getElementById('signatory_input').value = '';
+        document.getElementById('bank_name').value = '';
+        document.getElementById('bank_account').value = '';
+        document.getElementById('bank_ifsc').value = '';
+        document.getElementById('reference_no').value = '';
+        document.getElementById('voucher_date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('payment_mode').value = 'Cash';
+    }
+
+    async editVoucher(id) {
+        const voucher = this.db.find(v => v.id === id);
+        if (!voucher) { showToast('Voucher not found'); return; }
+
+        // Check permission
+        if (this.currentRole !== 'Admin' && !this.userPermissions.edit) {
+            showToast('❌ No permission to edit');
+            return;
+        }
+
+        // Log edit
+        this.editLogs.push({
+            voucherId: id,
+            editedBy: this.currentUser,
+            timestamp: new Date().toISOString(),
+            changes: { ...voucher }
+        });
+        await this.storage.save('edit_logs', this.editLogs);
+
+        // Show edit modal
+        document.getElementById('edit_voucher_id').value = id;
+        document.getElementById('edit_voucher_vno').value = voucher.vno;
+        document.getElementById('edit_voucher_date').value = voucher.date;
+        document.getElementById('edit_voucher_firm').value = voucher.firmKey;
+        document.getElementById('edit_voucher_head').value = voucher.head;
+        document.getElementById('edit_voucher_subhead').value = voucher.subHead || '';
+        document.getElementById('edit_voucher_party').value = voucher.party;
+        document.getElementById('edit_voucher_amount').value = voucher.amount;
+        document.getElementById('edit_voucher_mode').value = voucher.mode || 'Cash';
+        document.getElementById('edit_voucher_bank').value = voucher.bankName || '';
+        document.getElementById('edit_voucher_account').value = voucher.bankAccount || '';
+        document.getElementById('edit_voucher_ifsc').value = voucher.bankIfsc || '';
+        document.getElementById('edit_voucher_ref').value = voucher.referenceNo || '';
+        document.getElementById('edit_voucher_signatory').value = voucher.signatory || '';
+        document.getElementById('edit_voucher_narration').value = voucher.narration || '';
+
+        document.getElementById('editVoucherModal').style.display = 'flex';
+    }
+
+    async saveEditVoucher() {
+        const id = document.getElementById('edit_voucher_id').value;
+        const voucher = this.db.find(v => v.id === id);
+        if (!voucher) { showToast('Voucher not found'); return; }
+
+        const newVno = document.getElementById('edit_voucher_vno').value.trim();
+        const newDate = document.getElementById('edit_voucher_date').value;
+        const newHead = document.getElementById('edit_voucher_head').value.trim();
+        const newSubHead = document.getElementById('edit_voucher_subhead').value.trim();
+        const newParty = document.getElementById('edit_voucher_party').value.trim();
+        const newAmount = parseFloat(document.getElementById('edit_voucher_amount').value);
+        const newMode = document.getElementById('edit_voucher_mode').value;
+        const newBank = document.getElementById('edit_voucher_bank').value.trim();
+        const newAccount = document.getElementById('edit_voucher_account').value.trim();
+        const newIfsc = document.getElementById('edit_voucher_ifsc').value.trim();
+        const newRef = document.getElementById('edit_voucher_ref').value.trim();
+        const newSignatory = document.getElementById('edit_voucher_signatory').value.trim();
+        const newNarration = document.getElementById('edit_voucher_narration').value.trim();
+
+        if (!newVno) { showToast('Voucher number required'); return; }
+        if (!newDate) { showToast('Date required'); return; }
+        if (!newHead) { showToast('Head required'); return; }
+        if (!newParty) { showToast('Party required'); return; }
+        if (!newAmount || newAmount <= 0) { showToast('Valid amount required'); return; }
+
+        // Update voucher
+        voucher.vno = newVno;
+        voucher.date = newDate;
+        voucher.head = newHead;
+        voucher.subHead = newSubHead;
+        voucher.party = newParty;
+        voucher.amount = newAmount;
+        voucher.mode = newMode;
+        voucher.bankName = newBank;
+        voucher.bankAccount = newAccount;
+        voucher.bankIfsc = newIfsc;
+        voucher.referenceNo = newRef;
+        voucher.signatory = newSignatory;
+        voucher.narration = newNarration;
+        voucher.updatedAt = new Date().toISOString();
+
+        await this.storage.saveVoucher(voucher);
+        this.renderAll();
+        this.updateStats();
+        document.getElementById('editVoucherModal').style.display = 'none';
+        showToast('✅ Voucher updated successfully!');
+    }
+
+    async deleteVoucher(id) {
+        if (!confirm('Delete this voucher?')) return;
+        if (this.currentRole !== 'Admin' && !this.userPermissions.delete) {
+            showToast('❌ No permission to delete');
+            return;
+        }
+
+        const voucher = this.db.find(v => v.id === id);
+        if (voucher) {
+            voucher.status = 'deleted';
+            voucher.deletedAt = new Date().toISOString();
+            voucher.deletedBy = this.currentUser;
+            this.deletedVouchers.push(voucher);
+            this.db = this.db.filter(v => v.id !== id);
+            await this.storage.saveVoucher(voucher);
+            this.renderAll();
+            this.updateStats();
+            showToast('🗑️ Voucher deleted');
+        }
+    }
+
+    async restoreVoucher(id) {
+        const voucher = this.deletedVouchers.find(v => v.id === id);
+        if (voucher) {
+            voucher.status = 'active';
+            delete voucher.deletedAt;
+            delete voucher.deletedBy;
+            this.db.push(voucher);
+            this.deletedVouchers = this.deletedVouchers.filter(v => v.id !== id);
+            await this.storage.saveVoucher(voucher);
+            this.renderAll();
+            this.updateStats();
+            showToast('↩️ Voucher restored');
+        }
+    }
+
+    generateVoucherNo() {
+        const prefix = this.currentFirm ? 
+            (this.allFirms[this.currentFirm]?.short || 'EXP') : 'EXP';
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const count = this.db.filter(v => {
+            const d = new Date(v.date);
+            return d.getFullYear() === date.getFullYear() &&
+                   d.getMonth() === date.getMonth() &&
+                   v.status !== 'deleted';
+        }).length + 1;
+        const vno = `${prefix}/${year}${month}/${String(count).padStart(4, '0')}`;
+        const input = document.getElementById('voucher_no');
+        if (input) input.value = vno;
+        return vno;
+    }
+
+    // ===== SEARCH & FILTER =====
+    applySearch() {
+        const query = document.getElementById('globalSearch')?.value || '';
+        this.searchQuery = query.toLowerCase();
+        this.renderAll();
+    }
+
+    clearSearch() {
+        document.getElementById('globalSearch').value = '';
+        this.searchQuery = '';
+        this.searchFilters = {};
+        document.getElementById('filterModal').style.display = 'none';
+        this.renderAll();
+    }
+
+    openFilterModal() {
+        document.getElementById('filterModal').style.display = 'flex';
+        // Populate filter options
+        this.populateFilterOptions();
+    }
+
+    populateFilterOptions() {
+        // Populate head filter
+        const headSelect = document.getElementById('filter_head');
+        if (headSelect) {
+            headSelect.innerHTML = '<option value="">All Heads</option>';
+            Object.keys(this.expenseHeads).forEach(h => {
+                headSelect.innerHTML += `<option value="${h}">${h}</option>`;
+            });
+        }
+
+        // Populate firm filter
+        const firmSelect = document.getElementById('filter_firm');
+        if (firmSelect) {
+            firmSelect.innerHTML = '<option value="">All Firms</option>';
+            Object.keys(this.allFirms).forEach(f => {
+                firmSelect.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+            });
+        }
+
+        // Populate mode filter
+        const modeSelect = document.getElementById('filter_mode');
+        if (modeSelect) {
+            modeSelect.innerHTML = '<option value="">All Modes</option>';
+            ['Cash', 'Bank', 'UPI', 'Cheque', 'NEFT', 'RTGS', 'IMPS'].forEach(m => {
+                modeSelect.innerHTML += `<option value="${m}">${m}</option>`;
+            });
+        }
+
+        // Populate amount range
+        const maxAmount = Math.max(...this.db.map(v => v.amount || 0), 1000);
+        document.getElementById('filter_amount_max').max = maxAmount;
+        document.getElementById('filter_amount_max').step = 100;
+    }
+
+    applyFilters() {
+        const filters = {
+            head: document.getElementById('filter_head')?.value || '',
+            firm: document.getElementById('filter_firm')?.value || '',
+            mode: document.getElementById('filter_mode')?.value || '',
+            dateFrom: document.getElementById('filter_date_from')?.value || '',
+            dateTo: document.getElementById('filter_date_to')?.value || '',
+            amountMin: parseFloat(document.getElementById('filter_amount_min')?.value) || 0,
+            amountMax: parseFloat(document.getElementById('filter_amount_max')?.value) || Infinity,
+            party: document.getElementById('filter_party')?.value.toLowerCase() || '',
+            createdBy: document.getElementById('filter_created_by')?.value.toLowerCase() || ''
+        };
+
+        this.searchFilters = filters;
+        document.getElementById('filterModal').style.display = 'none';
+        this.renderAll();
+        showToast('🔍 Filters applied');
+    }
+
+    // ===== RENDER FUNCTIONS =====
+    renderAll() {
+        this.renderVoucherList();
+        this.renderDeletedList();
+        this.updateStats();
+        this.updateHeadFilter();
+    }
+
+    renderVoucherList() {
+        const container = document.getElementById('voucher-list');
+        if (!container) return;
+
+        let vouchers = this.db.filter(v => v.status !== 'deleted');
+
+        // Apply search
+        if (this.searchQuery) {
+            vouchers = vouchers.filter(v => 
+                (v.vno || '').toLowerCase().includes(this.searchQuery) ||
+                (v.party || '').toLowerCase().includes(this.searchQuery) ||
+                (v.head || '').toLowerCase().includes(this.searchQuery) ||
+                (v.subHead || '').toLowerCase().includes(this.searchQuery) ||
+                (v.firmName || '').toLowerCase().includes(this.searchQuery) ||
+                (v.narration || '').toLowerCase().includes(this.searchQuery) ||
+                (v.referenceNo || '').toLowerCase().includes(this.searchQuery)
+            );
+        }
+
+        // Apply filters
+        const f = this.searchFilters;
+        if (f.head) vouchers = vouchers.filter(v => v.head === f.head);
+        if (f.firm) vouchers = vouchers.filter(v => v.firmKey === f.firm);
+        if (f.mode) vouchers = vouchers.filter(v => v.mode === f.mode);
+        if (f.dateFrom) vouchers = vouchers.filter(v => v.date >= f.dateFrom);
+        if (f.dateTo) vouchers = vouchers.filter(v => v.date <= f.dateTo);
+        if (f.amountMin) vouchers = vouchers.filter(v => v.amount >= f.amountMin);
+        if (f.amountMax && f.amountMax !== Infinity) 
+            vouchers = vouchers.filter(v => v.amount <= f.amountMax);
+        if (f.party) vouchers = vouchers.filter(v => 
+            (v.party || '').toLowerCase().includes(f.party)
+        );
+        if (f.createdBy) vouchers = vouchers.filter(v => 
+            (v.createdBy || '').toLowerCase().includes(f.createdBy)
+        );
+
+        // Apply sort
+        const { field, direction } = this.currentSort;
+        vouchers.sort((a, b) => {
+            let valA = a[field] || '';
+            let valB = b[field] || '';
+            if (field === 'amount') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            } else if (field === 'date') {
+                valA = new Date(valA);
+                valB = new Date(valB);
+            }
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        if (vouchers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="text-align:center; padding:40px;">
+                    <div style="font-size:48px; margin-bottom:16px;">📭</div>
+                    <h3>No vouchers found</h3>
+                    <p style="color:#999;">${this.searchQuery || Object.keys(this.searchFilters).length > 0 ? 'Try adjusting your search or filters' : 'Add your first voucher'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Select view mode
+        if (this.viewMode === 'cards') {
+            container.innerHTML = vouchers.map(v => this._renderCard(v)).join('');
+        } else {
+            container.innerHTML = this._renderTable(vouchers);
+        }
+    }
+
+    _renderTable(vouchers) {
+        const headers = [
+            { key: 'select', label: '☑' },
+            { key: 'sno', label: '#' },
+            { key: 'date', label: 'Date' },
+            { key: 'vno', label: 'Voucher No' },
+            { key: 'firmName', label: 'Firm' },
+            { key: 'head', label: 'Head' },
+            { key: 'subHead', label: 'Sub Head' },
+            { key: 'party', label: 'Party' },
+            { key: 'amount', label: 'Amount' },
+            { key: 'mode', label: 'Mode' },
+            { key: 'referenceNo', label: 'Reference' },
+            { key: 'signatory', label: 'Signatory' },
+            { key: 'actions', label: 'Actions' }
+        ];
+
+        let html = `
+            <div class="table-responsive">
+                <table class="voucher-table">
+                    <thead>
+                        <tr>
+                            ${headers.map(h => `
+                                <th onclick="app.sortBy('${h.key}')" style="cursor:pointer;">
+                                    ${h.label}
+                                    ${this.currentSort.field === h.key ? (this.currentSort.direction === 'asc' ? '↑' : '↓') : ''}
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        vouchers.forEach((v, index) => {
+            const isSelected = this.selectedVouchers.has(v.id);
+            html += `
+                <tr class="${isSelected ? 'selected-row' : ''}" 
+                    onclick="app.selectVoucher('${v.id}')"
+                    style="cursor:pointer;">
+                    <td>
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                               onclick="event.stopPropagation(); app.toggleSelectVoucher('${v.id}')" />
+                    </td>
+                    <td>${index + 1}</td>
+                    <td>${formatDate(v.date)}</td>
+                    <td><strong>${v.vno || '-'}</strong></td>
+                    <td>${v.firmName || '-'}</td>
+                    <td>${v.head || '-'}</td>
+                    <td>${v.subHead || '-'}</td>
+                    <td>${v.party || '-'}</td>
+                    <td><strong>${formatCurrency(v.amount || 0)}</strong></td>
+                    <td><span class="mode-badge">${v.mode || 'Cash'}</span></td>
+                    <td>${v.referenceNo || '-'}</td>
+                    <td>${v.signatory || '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-sm btn-edit" onclick="event.stopPropagation(); app.editVoucher('${v.id}')">✏️</button>
+                            <button class="btn-sm btn-del" onclick="event.stopPropagation(); app.deleteVoucher('${v.id}')">🗑️</button>
+                            <button class="btn-sm btn-print" onclick="event.stopPropagation(); app.printVoucher('${v.id}')">🖨️</button>
+                            ${this.userPermissions.whatsapp || this.currentRole === 'Admin' ? 
+                                `<button class="btn-sm btn-whatsapp" onclick="event.stopPropagation(); app.shareVoucher('${v.id}')">💬</button>` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // Add bulk actions
+        if (this.selectedVouchers.size > 0) {
+            html += `
+                <div class="bulk-actions">
+                    <span>${this.selectedVouchers.size} selected</span>
+                    <button class="btn-sm" onclick="app.bulkDelete()">🗑️ Delete Selected</button>
+                    <button class="btn-sm" onclick="app.bulkExport()">📊 Export Selected</button>
+                    <button class="btn-sm" onclick="app.clearSelection()">✖ Clear</button>
+                </div>
+            `;
+        }
+
+        return html;
+    }
+
+    _renderCard(voucher) {
+        const isSelected = this.selectedVouchers.has(voucher.id);
+        return `
+            <div class="voucher-card ${isSelected ? 'selected' : ''}" 
+                 onclick="app.selectVoucher('${voucher.id}')">
+                <div class="card-header">
+                    <div>
+                        <span class="card-vno">${voucher.vno || '-'}</span>
+                        <span class="card-date">${formatDate(voucher.date)}</span>
+                    </div>
+                    <div>
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                               onclick="event.stopPropagation(); app.toggleSelectVoucher('${voucher.id}')" />
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-firm">🏢 ${voucher.firmName || '-'}</div>
+                    <div class="card-head">📋 ${voucher.head || '-'} ${voucher.subHead ? '→ ' + voucher.subHead : ''}</div>
+                    <div class="card-party">👤 ${voucher.party || '-'}</div>
+                    <div class="card-amount">${formatCurrency(voucher.amount || 0)}</div>
+                    <div class="card-meta">
+                        <span class="mode-badge">${voucher.mode || 'Cash'}</span>
+                        ${voucher.referenceNo ? `<span>📎 ${voucher.referenceNo}</span>` : ''}
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-sm btn-edit" onclick="event.stopPropagation(); app.editVoucher('${voucher.id}')">✏️</button>
+                    <button class="btn-sm btn-del" onclick="event.stopPropagation(); app.deleteVoucher('${voucher.id}')">🗑️</button>
+                    <button class="btn-sm btn-print" onclick="event.stopPropagation(); app.printVoucher('${voucher.id}')">🖨️</button>
+                    ${this.userPermissions.whatsapp || this.currentRole === 'Admin' ? 
+                        `<button class="btn-sm btn-whatsapp" onclick="event.stopPropagation(); app.shareVoucher('${voucher.id}')">💬</button>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    renderDeletedList() {
+        const container = document.getElementById('deleted-list');
+        if (!container) return;
+
+        if (this.deletedVouchers.length === 0) {
+            container.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No deleted vouchers</p>';
+            return;
+        }
+
+        container.innerHTML = this.deletedVouchers.map(v => `
+            <div class="deleted-item" style="padding:10px; border:1px solid #fee2e2; border-radius:6px; margin-bottom:8px; background:#fef2f2; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+                    <span><strong>${v.vno}</strong></span>
+                    <span>${formatDate(v.date)}</span>
+                    <span>${v.party || '-'}</span>
+                    <span>${formatCurrency(v.amount || 0)}</span>
+                    <span style="font-size:12px; color:#999;">Deleted: ${v.deletedBy || 'unknown'}</span>
+                </div>
+                <div>
+                    <button class="btn-sm" onclick="app.restoreVoucher('${v.id}')">↩️ Restore</button>
+                    <button class="btn-sm btn-del" onclick="app.permanentDelete('${v.id}')">✖ Permanently</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ===== SELECTION & BULK OPERATIONS =====
+    toggleSelectVoucher(id) {
+        if (this.selectedVouchers.has(id)) {
+            this.selectedVouchers.delete(id);
+        } else {
+            this.selectedVouchers.add(id);
+        }
+        this.renderAll();
+    }
+
+    selectVoucher(id) {
+        // Just toggle selection on click
+        this.toggleSelectVoucher(id);
+    }
+
+    clearSelection() {
+        this.selectedVouchers.clear();
+        this.renderAll();
+    }
+
+    getSelectedVouchers() {
+        return this.db.filter(v => this.selectedVouchers.has(v.id));
+    }
+
+    async bulkDelete() {
+        const selected = this.getSelectedVouchers();
+        if (selected.length === 0) { showToast('No vouchers selected'); return; }
+        if (!confirm(`Delete ${selected.length} vouchers?`)) return;
+        if (this.currentRole !== 'Admin' && !this.userPermissions.delete) {
+            showToast('❌ No permission to delete');
+            return;
+        }
+
+        for (const v of selected) {
+            v.status = 'deleted';
+            v.deletedAt = new Date().toISOString();
+            v.deletedBy = this.currentUser;
+            this.deletedVouchers.push(v);
+            this.db = this.db.filter(item => item.id !== v.id);
+            await this.storage.saveVoucher(v);
+        }
+        this.selectedVouchers.clear();
+        this.renderAll();
+        this.updateStats();
+        showToast(`🗑️ ${selected.length} vouchers deleted`);
+    }
+
+    async bulkExport() {
+        const selected = this.getSelectedVouchers();
+        if (selected.length === 0) { showToast('No vouchers selected'); return; }
+        this.exportToExcel(selected, 'Selected_Vouchers_Export');
+    }
+
+    // ===== SORTING =====
+    sortBy(field) {
+        if (field === 'select' || field === 'sno' || field === 'actions') return;
+        if (this.currentSort.field === field) {
+            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSort.field = field;
+            this.currentSort.direction = 'desc';
+        }
+        this.renderAll();
+    }
+
+    // ===== EXPORT FUNCTIONS =====
     exportToExcel(data, filename) {
-        if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
+        if (typeof XLSX === 'undefined') { 
+            showToast('Excel library loading...'); 
+            return; 
+        }
+        
         const ws = XLSX.utils.json_to_sheet(data.map(v => ({
             'Date': v.date,
             'Voucher No': v.vno,
@@ -1121,6 +1193,16 @@ class App {
             'Status': v.status || 'active',
             'Created At': v.createdAt || ''
         })));
+
+        // Set column widths
+        ws['!cols'] = [
+            { wch: 12 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
+            { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 10 },
+            { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
+            { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 10 },
+            { wch: 20 }
+        ];
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
         XLSX.writeFile(wb, filename + '.xlsx');
@@ -1151,6 +1233,33 @@ class App {
         this.exportToExcel(editedVouchers, 'Edited_Vouchers');
     }
 
+    exportFilteredData() {
+        let vouchers = this.db.filter(v => v.status !== 'deleted');
+        
+        // Apply current search and filters
+        if (this.searchQuery) {
+            vouchers = vouchers.filter(v => 
+                (v.vno || '').toLowerCase().includes(this.searchQuery) ||
+                (v.party || '').toLowerCase().includes(this.searchQuery) ||
+                (v.head || '').toLowerCase().includes(this.searchQuery)
+            );
+        }
+        
+        const f = this.searchFilters;
+        if (f.head) vouchers = vouchers.filter(v => v.head === f.head);
+        if (f.firm) vouchers = vouchers.filter(v => v.firmKey === f.firm);
+        if (f.mode) vouchers = vouchers.filter(v => v.mode === f.mode);
+        if (f.dateFrom) vouchers = vouchers.filter(v => v.date >= f.dateFrom);
+        if (f.dateTo) vouchers = vouchers.filter(v => v.date <= f.dateTo);
+        
+        if (vouchers.length === 0) {
+            showToast('No data to export with current filters');
+            return;
+        }
+        this.exportToExcel(vouchers, 'Filtered_Vouchers_Export');
+    }
+
+    // ===== SHARE =====
     shareVoucher(id) {
         if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') {
             showToast('❌ No permission to share');
@@ -1158,7 +1267,17 @@ class App {
         }
         const v = this.db.find(x => x.id === id);
         if (!v) { showToast('Voucher not found'); return; }
-        const message = `*${v.firmName}*\nVoucher: ${v.vno}\nDate: ${v.date}\nHead: ${v.head}\nParty: ${v.party}\nAmount: ₹${v.amount.toFixed(2)}\n\nThank you!`;
+        
+        const message = `*${v.firmName || 'Expense'}*\n` +
+                       `Voucher: ${v.vno}\n` +
+                       `Date: ${formatDate(v.date)}\n` +
+                       `Head: ${v.head}\n` +
+                       `Party: ${v.party}\n` +
+                       `Amount: ${formatCurrency(v.amount)}\n` +
+                       `Mode: ${v.mode || 'Cash'}\n` +
+                       (v.referenceNo ? `Reference: ${v.referenceNo}\n` : '') +
+                       `\nThank you!`;
+        
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     }
 
@@ -1168,6 +1287,200 @@ class App {
         this.shareVoucher(voucher.id);
     }
 
+    // ===== PRINT =====
+    printVoucher(id) {
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Voucher not found'); return; }
+        
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Voucher - ${v.vno}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; }
+                        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                        .voucher-title { font-size: 24px; font-weight: bold; }
+                        .voucher-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; margin: 20px 0; }
+                        .detail-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+                        .detail-label { font-weight: bold; color: #666; }
+                        .amount { font-size: 28px; color: #2563eb; text-align: center; padding: 20px; background: #f0f5ff; border-radius: 8px; margin: 20px 0; }
+                        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; font-size: 12px; color: #999; }
+                        .signature { margin-top: 40px; display: flex; justify-content: flex-end; }
+                        .signature-line { width: 200px; border-top: 1px solid #333; padding-top: 10px; text-align: center; }
+                        @media print { body { padding: 20px; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="voucher-title">🧾 Expense Voucher</div>
+                        <div>${v.firmName || ''}</div>
+                    </div>
+                    
+                    <div class="voucher-details">
+                        <div class="detail-item"><span class="detail-label">Voucher No:</span> ${v.vno}</div>
+                        <div class="detail-item"><span class="detail-label">Date:</span> ${formatDate(v.date)}</div>
+                        <div class="detail-item"><span class="detail-label">Head:</span> ${v.head}</div>
+                        <div class="detail-item"><span class="detail-label">Sub Head:</span> ${v.subHead || '-'}</div>
+                        <div class="detail-item"><span class="detail-label">Party:</span> ${v.party}</div>
+                        <div class="detail-item"><span class="detail-label">Mode:</span> ${v.mode || 'Cash'}</div>
+                        ${v.referenceNo ? `<div class="detail-item"><span class="detail-label">Reference No:</span> ${v.referenceNo}</div>` : ''}
+                        ${v.bankName ? `<div class="detail-item"><span class="detail-label">Bank:</span> ${v.bankName}</div>` : ''}
+                        ${v.signatory ? `<div class="detail-item"><span class="detail-label">Signatory:</span> ${v.signatory}</div>` : ''}
+                    </div>
+                    
+                    <div class="amount">Amount: ${formatCurrency(v.amount)}</div>
+                    
+                    ${v.narration ? `<div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 6px;"><strong>Narration:</strong> ${v.narration}</div>` : ''}
+                    
+                    <div class="signature">
+                        <div class="signature-line">Authorized Signatory</div>
+                    </div>
+                    
+                    <div class="footer">
+                        Generated on ${new Date().toLocaleString()} | ${v.createdBy || 'System'}
+                    </div>
+                    
+                    <script>
+                        window.onload = function() { window.print(); window.close(); }
+                    <\/script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    // ===== DASHBOARD WIDGETS =====
+    renderDashboard() {
+        const container = document.getElementById('dashboard-widgets');
+        if (!container) return;
+
+        const total = this.db.filter(v => v.status !== 'deleted').length;
+        const totalAmount = this.db.filter(v => v.status !== 'deleted')
+            .reduce((sum, v) => sum + (v.amount || 0), 0);
+        
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthVouchers = this.db.filter(v => {
+            const d = new Date(v.date);
+            return d >= monthStart && v.status !== 'deleted';
+        });
+        const monthAmount = monthVouchers.reduce((sum, v) => sum + (v.amount || 0), 0);
+
+        // Firm wise breakdown
+        const firmData = {};
+        this.db.filter(v => v.status !== 'deleted').forEach(v => {
+            const key = v.firmKey || 'unknown';
+            if (!firmData[key]) firmData[key] = { count: 0, amount: 0 };
+            firmData[key].count++;
+            firmData[key].amount += v.amount || 0;
+        });
+
+        // Head wise breakdown
+        const headData = {};
+        this.db.filter(v => v.status !== 'deleted').forEach(v => {
+            const key = v.head || 'unknown';
+            if (!headData[key]) headData[key] = { count: 0, amount: 0 };
+            headData[key].count++;
+            headData[key].amount += v.amount || 0;
+        });
+
+        container.innerHTML = `
+            <div class="dashboard-grid">
+                <div class="widget widget-total">
+                    <div class="widget-icon">📊</div>
+                    <div class="widget-content">
+                        <div class="widget-label">Total Vouchers</div>
+                        <div class="widget-value">${total}</div>
+                    </div>
+                </div>
+                <div class="widget widget-amount">
+                    <div class="widget-icon">💰</div>
+                    <div class="widget-content">
+                        <div class="widget-label">Total Amount</div>
+                        <div class="widget-value">${formatCurrency(totalAmount)}</div>
+                    </div>
+                </div>
+                <div class="widget widget-month">
+                    <div class="widget-icon">📅</div>
+                    <div class="widget-content">
+                        <div class="widget-label">This Month</div>
+                        <div class="widget-value">${monthVouchers.length} | ${formatCurrency(monthAmount)}</div>
+                    </div>
+                </div>
+                <div class="widget widget-firms">
+                    <div class="widget-icon">🏢</div>
+                    <div class="widget-content">
+                        <div class="widget-label">Active Firms</div>
+                        <div class="widget-value">${Object.keys(firmData).length}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-breakdown">
+                <div class="breakdown-section">
+                    <h4>By Firm</h4>
+                    ${Object.entries(firmData).map(([key, data]) => `
+                        <div class="breakdown-item">
+                            <span>${this.allFirms[key]?.name || key}</span>
+                            <span>${data.count} | ${formatCurrency(data.amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="breakdown-section">
+                    <h4>By Head</h4>
+                    ${Object.entries(headData).map(([key, data]) => `
+                        <div class="breakdown-item">
+                            <span>${key}</span>
+                            <span>${data.count} | ${formatCurrency(data.amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // ===== REPORTS =====
+    renderReports() {
+        this.renderDashboard();
+        this.updateHeadFilter();
+        this.renderVoucherList();
+    }
+
+    updateHeadFilter() {
+        const select = document.getElementById('filter_head');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">All Heads</option>';
+        Object.keys(this.expenseHeads).forEach(h => {
+            select.innerHTML += `<option value="${h}">${h}</option>`;
+        });
+        if (currentVal) select.value = currentVal;
+    }
+
+    // ===== SETTINGS =====
+    openSettings() {
+        if (this.currentRole !== 'Admin') {
+            showToast('❌ Only Admin can access settings');
+            return;
+        }
+        document.getElementById('settings-modal').style.display = 'flex';
+        this.renderFirmsList();
+        this.renderUsersList();
+        this.renderHeadsList();
+        this.renderPartiesList();
+        this.renderSignatoriesList();
+        this.updateFirmSelectInSettings();
+        this.updateSettingsRoleDropdown();
+        this.updateBankFirmSelect();
+        this.loadBankAccounts();
+    }
+
+    closeSettings() {
+        document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    // ===== PARTY MANAGEMENT =====
     openAddPartyModal() {
         if (!this.canAddParty()) {
             showToast('❌ No permission to add party');
@@ -1244,6 +1557,33 @@ class App {
         showToast('✅ Party deleted');
     }
 
+    renderPartiesList() {
+        const container = document.getElementById('parties_list');
+        if (!container) return;
+        if (this.parties.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No parties added</p>';
+            return;
+        }
+        container.innerHTML = this.parties.map(p => `
+            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                    <span><strong>${p.name}</strong></span>
+                    ${p.phone ? `<span>📞 ${p.phone}</span>` : ''}
+                    ${p.address ? `<span>📍 ${p.address}</span>` : ''}
+                </div>
+                <div>
+                    <button class="btn-sm" onclick="app.editParty('${p.id}')">✏️</button>
+                    <button class="btn-sm btn-del" onclick="app.deleteParty('${p.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    canAddParty() {
+        return this.userPermissions.party_add || this.currentRole === 'Admin';
+    }
+
+    // ===== SIGNATORY MANAGEMENT =====
     openAddSignatoryModal() {
         if (!this.canAddSignatory()) {
             showToast('❌ No permission to add signatory');
@@ -1317,27 +1657,32 @@ class App {
         showToast('✅ Signatory deleted');
     }
 
-    openSettings() {
-        if (this.currentRole !== 'Admin') {
-            showToast('❌ Only Admin can access settings');
+    renderSignatoriesList() {
+        const container = document.getElementById('signatories_list');
+        if (!container) return;
+        if (this.signatories.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No signatories added</p>';
             return;
         }
-        document.getElementById('settings-modal').style.display = 'flex';
-        this.renderFirmsList();
-        this.renderUsersList();
-        this.renderHeadsList();
-        this.renderPartiesList();
-        this.renderSignatoriesList();
-        this.updateFirmSelectInSettings();
-        this.updateSettingsRoleDropdown();
-        this.updateBankFirmSelect();
-        this.loadBankAccounts();
+        container.innerHTML = this.signatories.map(s => `
+            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                    <span><strong>${s.name}</strong></span>
+                    ${s.designation ? `<span>📋 ${s.designation}</span>` : ''}
+                </div>
+                <div>
+                    <button class="btn-sm" onclick="app.editSignatory('${s.id}')">✏️</button>
+                    <button class="btn-sm btn-del" onclick="app.deleteSignatory('${s.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
     }
 
-    closeSettings() {
-        document.getElementById('settings-modal').style.display = 'none';
+    canAddSignatory() {
+        return this.userPermissions.signatory_add || this.currentRole === 'Admin';
     }
 
+    // ===== FIRM MANAGEMENT =====
     renderFirmsList() {
         const container = document.getElementById('firms_list');
         if (!container) return;
@@ -1356,9 +1701,9 @@ class App {
                         ${this.allFirms[f].logo ? `<span><img src="${this.allFirms[f].logo}" height="25" onerror="this.style.display='none'" style="border-radius:4px;"></span>` : ''}
                     </div>
                     <div>
-                        <button class="btn-action btn-edit" onclick="editFirm('${f}')">✏️ Edit</button>
+                        <button class="btn-action btn-edit" onclick="app.editFirm('${f}')">✏️ Edit</button>
                         ${!['DevVidyalaya', 'DevGas', 'Rama'].includes(f) ? 
-                            `<button class="btn-action btn-del" onclick="deleteFirm('${f}')">✖</button>` : ''}
+                            `<button class="btn-action btn-del" onclick="app.deleteFirm('${f}')">✖</button>` : ''}
                     </div>
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:15px; margin-top:5px; font-size:12px; color:#64748b;">
@@ -1479,6 +1824,7 @@ class App {
         showToast('✅ Firm deleted');
     }
 
+    // ===== USER MANAGEMENT =====
     renderUsersList() {
         const container = document.getElementById('users_list');
         if (!container) return;
@@ -1499,7 +1845,7 @@ class App {
                     </div>
                     <div>
                         ${u.id !== 'Admin' ? 
-                            `<button class="btn-action btn-del" onclick="deleteUser('${u.id}')">✖</button>` : ''}
+                            `<button class="btn-action btn-del" onclick="app.deleteUser('${u.id}')">✖</button>` : ''}
                     </div>
                 </div>
                 <div style="display:flex; gap:12px; margin-top:5px; font-size:12px; color:#64748b; flex-wrap:wrap;">
@@ -1583,6 +1929,7 @@ class App {
         showToast('✅ User deleted');
     }
 
+    // ===== EXPENSE HEAD MANAGEMENT =====
     renderHeadsList() {
         const container = document.getElementById('heads_list');
         if (!container) return;
@@ -1594,7 +1941,7 @@ class App {
         container.innerHTML = heads.map(h => `
             <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
                 <span><strong>${h}</strong> → ${(this.expenseHeads[h] || []).join(', ')}</span>
-                <button class="btn-action btn-del" onclick="deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
+                <button class="btn-action btn-del" onclick="app.deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
             </div>
         `).join('');
     }
@@ -1630,6 +1977,11 @@ class App {
         showToast('✅ Deleted');
     }
 
+    canAddExpense() {
+        return this.userPermissions.expense_add || this.currentRole === 'Admin';
+    }
+
+    // ===== BANK MANAGEMENT =====
     updateBankFirmSelect() {
         const select = document.getElementById('bank_firm_select');
         if (!select) return;
@@ -1712,22 +2064,71 @@ class App {
         showToast('✅ Bank account deleted');
     }
 
-    canAddParty() {
-        return this.userPermissions.party_add || this.currentRole === 'Admin';
-    }
-
-    canAddSignatory() {
-        return this.userPermissions.signatory_add || this.currentRole === 'Admin';
-    }
-
     canAddBank() {
         return this.userPermissions.bank_add || this.currentRole === 'Admin';
     }
 
-    canAddExpense() {
-        return this.userPermissions.expense_add || this.currentRole === 'Admin';
+    updateBankDropdown() {
+        const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
+        if (!firmKey) return;
+        const banks = this.bankAccounts[firmKey] || [];
+        const select = document.getElementById('bank_name');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- Select Bank --</option>';
+        banks.forEach(b => {
+            select.innerHTML += `<option value="${b.name}">${b.name} - ${b.account}</option>`;
+        });
+        if (currentVal) select.value = currentVal;
     }
 
+    // ===== UTILITY HELPERS =====
+    updateFirmHeader() {
+        const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
+        const header = document.getElementById('header_firm_name');
+        if (header && firmKey && this.allFirms[firmKey]) {
+            header.textContent = this.allFirms[firmKey].name;
+        }
+    }
+
+    updateFirmSelectInSettings() {
+        const select = document.getElementById('new_user_firm');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- Select Firm --</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            if (this.allFirms[f]) {
+                select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+            }
+        });
+        if (currentVal) select.value = currentVal;
+    }
+
+    updateSettingsRoleDropdown() {
+        const select = document.getElementById('new_user_role');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = `
+            <option value="Staff">Staff</option>
+            <option value="Admin">Admin</option>
+        `;
+        if (currentVal) select.value = currentVal;
+        this.toggleFirmSelect();
+    }
+
+    toggleFirmSelect() {
+        const role = document.getElementById('new_user_role')?.value;
+        const firmGroup = document.getElementById('new_user_firm_group');
+        if (firmGroup) {
+            firmGroup.style.display = role === 'Admin' ? 'none' : 'block';
+        }
+    }
+
+    updateLoginRoleDropdown() {
+        // Not needed for login
+    }
+
+    // ===== IMPORT FUNCTIONS =====
     async importExpenseHeads() {
         const fileInput = document.getElementById('importHeadsFile');
         if (!fileInput.files || !fileInput.files[0]) {
@@ -1882,62 +2283,16 @@ class App {
         });
     }
 
-    async saveAllSettings() {
-        const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
-        });
-        await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
-        await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.id, u]))
-        );
-        const perms = {
-            print: document.getElementById('perm_print').checked,
-            edit: document.getElementById('perm_edit').checked,
-            delete: document.getElementById('perm_delete').checked,
-            whatsapp: document.getElementById('perm_whatsapp').checked,
-            reports: document.getElementById('perm_reports').checked,
-            view_all: document.getElementById('perm_view_all').checked,
-            party_add: document.getElementById('perm_party_add').checked,
-            signatory_add: document.getElementById('perm_signatory_add').checked,
-            bank_add: document.getElementById('perm_bank_add').checked,
-            expense_add: document.getElementById('perm_expense_add').checked
-        };
-        await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
-        this.userPermissions = perms;
-        showToast('✅ All settings saved!');
-        this.closeSettings();
-        this.populateFirmDropdown();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        this.updateHeadFilter();
-        this.updateUI();
+    // ===== PERMANENT DELETE =====
+    async permanentDelete(id) {
+        if (!confirm('⚠️ Permanently delete this voucher? This cannot be undone!')) return;
+        this.deletedVouchers = this.deletedVouchers.filter(v => v.id !== id);
+        await this.storage.deleteVoucher(id);
+        this.renderAll();
+        showToast('🗑️ Voucher permanently deleted');
     }
 
-    switchModule(module) {
-        document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
-        const pane = document.getElementById('module-' + module);
-        if (pane) pane.classList.add('active');
-        document.querySelectorAll('.module-tab').forEach(t => {
-            if (t.textContent.toLowerCase().includes(module)) t.classList.add('active');
-        });
-        if (module === 'reports') this.renderReports();
-    }
-
-    updateUI() {
-        let firmName = 'All Firms (Admin)';
-        if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
-        else if (this.currentFirm && this.allFirms[this.currentFirm]) {
-            firmName = this.allFirms[this.currentFirm].name;
-        }
-        document.getElementById('header_firm_name').innerText = firmName;
-    }
-
+    // ===== SETUP =====
     setupRealtimeListener() {
         this.storage.onVoucherChange((db) => {
             this.db = db;
@@ -1949,23 +2304,85 @@ class App {
     }
 
     setupEventListeners() {
-        document.getElementById('loginBtn').addEventListener('click', () => this.doLogin());
+        // Login
+        document.getElementById('loginBtn')?.addEventListener('click', () => this.doLogin());
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                if (document.getElementById('login-screen').style.display !== 'none') {
+                if (document.getElementById('login-screen')?.style.display !== 'none') {
                     this.doLogin();
                 }
             }
             if (e.key === 'Escape') {
-                document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
+                document.querySelectorAll('.modal').forEach(m => { 
+                    m.style.display = 'none'; 
+                });
+            }
+            // Ctrl+F for search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('globalSearch')?.focus();
             }
         });
+
+        // Modal close on backdrop click
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) this.style.display = 'none';
             });
         });
+
+        // Dark mode toggle
+        document.querySelector('.dark-mode-toggle')?.addEventListener('click', () => {
+            this.toggleDarkMode();
+        });
+
+        // Search input
+        document.getElementById('globalSearch')?.addEventListener('input', () => {
+            this.applySearch();
+        });
+
+        // Export filtered data button
+        document.getElementById('exportFilteredBtn')?.addEventListener('click', () => {
+            this.exportFilteredData();
+        });
     }
 }
 
+// ===== GLOBAL TOAST FUNCTION =====
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    if (!toast) {
+        const div = document.createElement('div');
+        div.id = 'toast';
+        div.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px; 
+            background: #1e293b; color: white; padding: 12px 24px;
+            border-radius: 8px; font-size: 14px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9999; max-width: 400px;
+            transition: all 0.3s ease;
+            opacity: 0; transform: translateY(20px);
+        `;
+        document.body.appendChild(div);
+    }
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+    }, 3000);
+}
+
+// ===== INITIALIZE APP =====
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new App();
+    // Make app globally accessible
+    window.app = app;
+});
+
+// ===== EXPORT FOR MODULE =====
 export default App;
