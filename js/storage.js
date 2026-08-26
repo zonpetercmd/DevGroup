@@ -1,4 +1,4 @@
-// js/storage.js - Firebase + Local Storage (Updated)
+// js/storage.js - Firebase + Local Storage
 
 import { FIREBASE_CONFIG, STORAGE_MODE } from '../config/firebase-config.js';
 import { DEFAULT_FIRMS, STORAGE_KEYS } from '../config/constants.js';
