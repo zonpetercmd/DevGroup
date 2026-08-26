@@ -1,8 +1,7 @@
-// js/app.js - Main Application (With Search + Dropdown + Recover + Receipts)
+// js/app.js - Main Application (With Search + Dropdown + Recover)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
-import ReceiptsModule from './receipts.js';
 import { 
     showToast, generateId, getFinancialYear, 
     formatDate, formatCurrency, getToday 
@@ -13,7 +12,6 @@ class App {
     constructor() {
         this.storage = new Storage();
         this.printEngine = new PrintEngine();
-        this.receipts = null;  // ✅ Receipts Module
         
         // Data
         this.db = [];
@@ -39,11 +37,6 @@ class App {
     async init() {
         console.log('🚀 App Initializing...');
         await this.loadAllData();
-        
-        // ✅ Initialize Receipts Module
-        this.receipts = new ReceiptsModule(this);
-        await this.receipts.load();
-        
         this.checkSession();
         this.setupEventListeners();
         this.setupRealtimeListener();
@@ -106,9 +99,7 @@ class App {
         
         document.getElementById('v_date').value = getToday();
         
-        // ✅ Tabs - Including Receipts
         let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
-        tabs += `<button class="module-tab" onclick="switchModule('receipts')">🧾 Receipts</button>`;
         if (this.userPermissions.reports || this.currentRole === 'Admin') {
             tabs += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
         }
@@ -117,12 +108,6 @@ class App {
         this.renderAll();
         this.updateFirmHeader();
         this.generateVoucherNo();
-        
-        // ✅ Render Receipts Table
-        if (this.receipts) {
-            this.receipts.renderTable();
-            this.receipts.updateStats();
-        }
     }
 
     // ===== LOGIN - FIXED FOR STAFF =====
@@ -685,6 +670,7 @@ class App {
                     actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                 }
             } else {
+                // ✅ Deleted Vouchers में Recover Button
                 actions = `
                     <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
                 `;
@@ -2094,10 +2080,6 @@ class App {
             if (t.textContent.toLowerCase().includes(module)) t.classList.add('active');
         });
         if (module === 'reports') this.renderReports();
-        if (module === 'receipts' && this.receipts) {
-            this.receipts.renderTable();
-            this.receipts.updateStats();
-        }
     }
 
     // ===== UI UPDATE =====
