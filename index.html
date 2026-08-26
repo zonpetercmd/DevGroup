@@ -81,7 +81,7 @@
                 <h4 id="form-title">📝 Add Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
-                <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid with onfocus fix -->
+                <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
                     <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
@@ -90,7 +90,7 @@
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="filterExpenseHeads(this.value)" onfocus="this.select(); populateExpenseHeads();" autocomplete="off">
+                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="filterExpenseHeads(this.value)" onfocus="populateExpenseHeads();" autocomplete="off">
                             <div id="expenseHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="expense_head_value">
@@ -100,7 +100,7 @@
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="filterSubHeads(this.value)" onfocus="this.select(); populateSubHeads(document.getElementById('expense_head_value').value);" autocomplete="off">
+                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="filterSubHeads(this.value)" onfocus="populateSubHeads(document.getElementById('expense_head_value').value);" autocomplete="off">
                             <div id="subHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="sub_head_value">
@@ -110,7 +110,7 @@
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
-                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="filterFirms(this.value)" onfocus="this.select(); populateFirmDropdown();" autocomplete="off">
+                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="filterFirms(this.value)" onfocus="populateFirmDropdown();" autocomplete="off">
                             <div id="firmDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="firm_name_value">
@@ -120,7 +120,7 @@
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
-                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)" onfocus="this.select(); populatePartyDropdown();" autocomplete="off">
+                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)" onfocus="populatePartyDropdown();" autocomplete="off">
                             <div id="partyDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="party_value">
@@ -131,7 +131,7 @@
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
-                            <input type="text" id="v_mode_input" placeholder="Search or select mode..." oninput="filterModes(this.value)" onfocus="this.select(); populateModes();" autocomplete="off">
+                            <input type="text" id="v_mode_input" placeholder="Search or select mode..." oninput="filterModes(this.value)" onfocus="populateModes();" autocomplete="off">
                             <div id="modeDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="v_mode_value">
@@ -150,7 +150,7 @@
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)" onfocus="this.select(); populateSignatoryDropdown();" autocomplete="off">
+                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)" onfocus="populateSignatoryDropdown();" autocomplete="off">
                             <div id="signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="signatory_value">
