@@ -1,4 +1,5 @@
 // js/utils.js
+
 export function showToast(msg, duration = 3000) {
     const toast = document.getElementById('toastMsg');
     if (!toast) return;
@@ -47,7 +48,8 @@ export function formatDate(dateStr) {
 }
 
 export function formatCurrency(amount) {
-    return '₹ ' + amount.toLocaleString('en-IN');
+    if (!amount && amount !== 0) return '₹ 0';
+    return '₹ ' + Number(amount).toLocaleString('en-IN');
 }
 
 export function getToday() {
