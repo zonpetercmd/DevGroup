@@ -1,4 +1,4 @@
-// js/app.js - Main Application (With Created By Column)
+// js/app.js - Main Application (With Enhanced Filters)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
@@ -533,12 +533,19 @@ class App {
         this.renderReports();
     }
 
-    // ===== RENDER TABLE - WITH CREATED BY =====
+    // ===== RENDER TABLE - WITH ENHANCED FILTERS =====
     renderTable() {
         const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('f_start')?.value || '';
         const end = document.getElementById('f_end')?.value || '';
         const status = document.getElementById('f_status')?.value || 'ALL';
+        
+        // ✅ New Filters - Amount Range
+        const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
+        const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
+        const headFilter = document.getElementById('f_head_filter')?.value || '';
+        const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
+        const modeFilter = document.getElementById('f_mode_filter')?.value || '';
         
         let dataToShow = [];
         if (status === 'ALL' || status === 'active') {
@@ -557,6 +564,8 @@ class App {
         
         const filtered = dataToShow.filter(v => {
             let match = true;
+            
+            // Search Filter
             if (search) {
                 match = match && (
                     v.party?.toLowerCase().includes(search) ||
@@ -567,8 +576,24 @@ class App {
                     v.createdBy?.toLowerCase().includes(search)
                 );
             }
+            
+            // Date Filters
             if (start) match = match && v.date >= start;
             if (end) match = match && v.date <= end;
+            
+            // ✅ Amount Filter
+            if (amountMin > 0) match = match && v.amount >= amountMin;
+            if (amountMax < Infinity) match = match && v.amount <= amountMax;
+            
+            // ✅ Head Filter
+            if (headFilter) match = match && v.head === headFilter;
+            
+            // ✅ Party Filter
+            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+            
+            // ✅ Mode Filter
+            if (modeFilter) match = match && v.mode === modeFilter;
+            
             return match;
         });
         
