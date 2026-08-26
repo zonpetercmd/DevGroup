@@ -45,11 +45,11 @@
             <img src="logo.jpeg" id="header_logo" height="35" onerror="this.style.display='none'">
             <div style="font-weight:600; font-size:14px;" id="header_firm_name">Dev Vidyalaya</div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <span id="display_role"></span>
             <span id="display_user"></span>
             <button id="admin_settings_btn" onclick="openSettings()" style="display:none;">⚙️ Settings</button>
-            <button onclick="logout()">Logout</button>
+            <button onclick="logout()" style="background:#ef4444; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">Logout</button>
         </div>
     </header>
 
@@ -67,7 +67,7 @@
         <!-- Tabs -->
         <div class="module-tabs" id="moduleTabsContainer"></div>
 
-        <!-- ===== TRANSACTIONS ===== -->
+        <!-- ===== CREATE VOUCHER ===== -->
         <div id="module-transactions" class="module-pane active">
             <div class="form-card">
                 <div class="firm-header" id="firmHeader">
@@ -78,7 +78,7 @@
                     </div>
                 </div>
                 
-                <h4 id="form-title">📝 Add Payment Voucher</h4>
+                <h4 id="form-title">📝 Create Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
                 <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
@@ -86,31 +86,31 @@
                     <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
-                    <!-- Expense Head - Search + Dropdown -->
+                    <!-- Expense Head - Search + Dropdown (Read-only input) -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="expense_head_input" placeholder="Search or select head..." oninput="filterExpenseHeads(this.value)" onfocus="populateExpenseHeads();" autocomplete="off">
+                            <input type="text" id="expense_head_input" placeholder="Select expense head..." readonly onclick="this.nextElementSibling.style.display='block'; populateExpenseHeads();" onfocus="populateExpenseHeads();" autocomplete="off">
                             <div id="expenseHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
-                    <!-- Sub Head - Search + Dropdown -->
+                    <!-- Sub Head - Search + Dropdown (Read-only input) -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
-                            <input type="text" id="sub_head_input" placeholder="Search or select sub head..." oninput="filterSubHeads(this.value)" onfocus="populateSubHeads(document.getElementById('expense_head_value').value);" autocomplete="off">
+                            <input type="text" id="sub_head_input" placeholder="Select sub head..." readonly onclick="this.nextElementSibling.style.display='block'; populateSubHeads(document.getElementById('expense_head_value').value);" onfocus="populateSubHeads(document.getElementById('expense_head_value').value);" autocomplete="off">
                             <div id="subHeadDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Firm - Search + Dropdown -->
+                    <!-- Firm - Search + Dropdown (Read-only input) -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
-                            <input type="text" id="firm_name_input" placeholder="Search or select firm..." oninput="filterFirms(this.value)" onfocus="populateFirmDropdown();" autocomplete="off">
+                            <input type="text" id="firm_name_input" placeholder="Select firm..." readonly onclick="this.nextElementSibling.style.display='block'; populateFirmDropdown();" onfocus="populateFirmDropdown();" autocomplete="off">
                             <div id="firmDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="firm_name_value">
@@ -127,38 +127,50 @@
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
-                    <!-- Payment Mode - Search + Dropdown -->
+                    <!-- Payment Mode - Search + Dropdown with Sub-options -->
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
-                            <input type="text" id="v_mode_input" placeholder="Search or select mode..." oninput="filterModes(this.value)" onfocus="populateModes();" autocomplete="off">
+                            <input type="text" id="v_mode_input" placeholder="Select mode..." readonly onclick="this.nextElementSibling.style.display='block'; populateModes();" onfocus="populateModes();" autocomplete="off">
                             <div id="modeDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Bank Account -->
-                    <div id="bank_account_field">
+                    <!-- Bank Account - Dynamic Sub-options -->
+                    <div id="bank_account_field" style="display:none;">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <!-- Reference No -->
-                    <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
+                    <!-- UPI Sub-options -->
+                    <div id="upi_options_field" style="display:none;">
+                        <label>📱 UPI App</label>
+                        <select id="upi_app">
+                            <option value="">Select UPI App</option>
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="GooglePay">GooglePay</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="AmazonPay">Amazon Pay</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                     
-                    <!-- Signatory - Search + Dropdown -->
+                    <!-- Reference No - Optional -->
+                    <div><label>🔢 Reference No. <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label><input type="text" id="reference_no" placeholder="Optional"></div>
+                    
+                    <!-- Signatory - Search + Dropdown (Read-only input) -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)" onfocus="populateSignatoryDropdown();" autocomplete="off">
+                            <input type="text" id="signatory_input" placeholder="Select signatory..." readonly onclick="this.nextElementSibling.style.display='block'; populateSignatoryDropdown();" onfocus="populateSignatoryDropdown();" autocomplete="off">
                             <div id="signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="signatory_value">
-                        <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
                     <!-- Amount -->
-                    <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
+                    <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0" step="0.01"></div>
                     
                     <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
@@ -171,7 +183,7 @@
                 </div>
                 
                 <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">💾 Save</button>
+                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">📤 Submit Voucher</button>
                     <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">🔄 Reset</button>
                     <button id="whatsappShareBtn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
                 </div>
@@ -196,7 +208,6 @@
                             <option value="">All Modes</option>
                             <option value="Cash">Cash</option>
                             <option value="Bank">Bank</option>
-                            <option value="Paytm">Paytm</option>
                             <option value="UPI">UPI</option>
                             <option value="Cheque">Cheque</option>
                         </select>
@@ -231,12 +242,12 @@
             </div>
         </div>
 
-        <!-- ===== REPORTS ===== -->
+        <!-- ===== VOUCHER LIST (formerly Reports) ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
-                <h4>📊 Reports</h4>
+                <h4>📋 Voucher List</h4>
                 
-                <!-- ✅ Enhanced Filters for Reports -->
+                <!-- ✅ Enhanced Filters -->
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
                     <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
                     <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
@@ -254,7 +265,6 @@
                             <option value="">All Modes</option>
                             <option value="Cash">Cash</option>
                             <option value="Bank">Bank</option>
-                            <option value="Paytm">Paytm</option>
                             <option value="UPI">UPI</option>
                             <option value="Cheque">Cheque</option>
                         </select>
@@ -266,13 +276,19 @@
                             <option value="deleted">Deleted</option>
                         </select>
                     </div>
+                    <div><label>🏢 Firm</label>
+                        <select id="r_firm_filter" onchange="renderReports()">
+                            <option value="">All Firms</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
-                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
-                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
-                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
-                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
+                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 Export All</button>
+                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Export Active</button>
+                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Export Deleted</button>
+                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Export Edited</button>
+                    <button class="btn-xlsx" style="background:#8b5cf6;" onclick="exportFilteredVouchers()">📎 Export Filtered</button>
                 </div>
                 <div id="report_content"></div>
             </div>
@@ -281,14 +297,20 @@
 </div>
 
 <!-- ===== MODALS ===== -->
+
+<!-- Add Party Modal -->
 <div id="addPartyModal" class="modal">
     <div class="modal-content">
         <h3 id="partyModalTitle">➕ Add Party</h3>
         <input type="hidden" id="edit_party_id">
+        <input type="hidden" id="edit_party_firm">
         <div style="display:flex; flex-direction:column; gap:12px;">
             <div><label>Party Name</label><input type="text" id="new_party_name"></div>
             <div><label>Phone</label><input type="text" id="new_party_phone"></div>
             <div><label>Address</label><input type="text" id="new_party_address"></div>
+            <div><label>Firm</label>
+                <select id="new_party_firm"><option value="">-- Select Firm --</option></select>
+            </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-login" style="width:auto" onclick="saveParty()">💾 Save</button>
                 <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddPartyModal()">Cancel</button>
@@ -297,13 +319,18 @@
     </div>
 </div>
 
+<!-- Add Signatory Modal -->
 <div id="addSignatoryModal" class="modal">
     <div class="modal-content">
         <h3 id="signatoryModalTitle">✍️ Add Signatory</h3>
         <input type="hidden" id="edit_signatory_id">
+        <input type="hidden" id="edit_signatory_firm">
         <div style="display:flex; flex-direction:column; gap:12px;">
             <div><label>Signatory Name</label><input type="text" id="new_signatory_name"></div>
             <div><label>Designation</label><input type="text" id="new_signatory_designation"></div>
+            <div><label>Firm</label>
+                <select id="new_signatory_firm"><option value="">-- Select Firm --</option></select>
+            </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-login" style="width:auto" onclick="saveSignatory()">💾 Save</button>
                 <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddSignatoryModal()">Cancel</button>
@@ -312,30 +339,39 @@
     </div>
 </div>
 
+<!-- ===== SETTINGS MODAL ===== -->
 <div id="settings-modal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 800px;">
         <h3>⚙️ Admin Settings</h3>
         
         <!-- ===== FIRMS ===== -->
         <h4>🏢 Firms</h4>
         <div id="firms_list"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_firm_name" placeholder="Firm Name">
-            <input type="text" id="new_firm_short" placeholder="Short Code">
-            <input type="text" id="new_firm_logo" placeholder="Logo URL" value="logo.jpeg">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <input type="text" id="new_firm_name" placeholder="Firm Name" style="flex:1; min-width:150px;">
+            <input type="text" id="new_firm_short" placeholder="Short Code" style="width:120px;">
+            <input type="text" id="new_firm_logo" placeholder="Logo URL" value="logo.jpeg" style="flex:1; min-width:150px;">
             <button class="btn-add" onclick="addFirm()">+ Add</button>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+            <input type="text" id="new_firm_addr" placeholder="Address" style="flex:2; min-width:200px;">
+            <input type="text" id="new_firm_mobile" placeholder="Mobile" style="width:150px;">
+            <input type="text" id="new_firm_email" placeholder="Email" style="flex:1; min-width:150px;">
+            <input type="text" id="new_firm_gst" placeholder="GST" style="width:150px;">
+            <input type="text" id="new_firm_pan" placeholder="PAN" style="width:150px;">
         </div>
         
         <!-- ===== USERS ===== -->
         <h4>👤 Users</h4>
         <div id="users_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_user_id" placeholder="User ID">
-            <input type="text" id="new_user_pass" placeholder="Password">
-            <select id="new_user_role"><option value="Admin">Admin</option></select>
-            <select id="new_user_firm"><option value="">Select Firm</option></select>
+            <input type="text" id="new_user_id" placeholder="User ID" style="width:150px;">
+            <input type="text" id="new_user_pass" placeholder="Password" style="width:150px;">
+            <select id="new_user_role" style="width:150px;"><option value="Admin">Admin</option></select>
+            <select id="new_user_firm" style="width:200px;"><option value="">Select Firm</option></select>
             <button class="btn-add" onclick="addUser()">+ Add</button>
         </div>
+        <div style="font-size:11px; color:#64748b; margin-top:5px;">💡 Staff को multiple firms access देने के लिए एक से ज्यादा Staff entries बनाएं</div>
         
         <!-- ===== PERMISSIONS ===== -->
         <h4>🔐 Permissions</h4>
@@ -344,7 +380,7 @@
             <label><input type="checkbox" id="perm_edit" checked> ✏️ Edit</label>
             <label><input type="checkbox" id="perm_delete" checked> 🗑️ Delete</label>
             <label><input type="checkbox" id="perm_whatsapp" checked> 💬 WhatsApp</label>
-            <label><input type="checkbox" id="perm_reports" checked> 📊 Reports</label>
+            <label><input type="checkbox" id="perm_reports" checked> 📋 Voucher List</label>
             <label><input type="checkbox" id="perm_view_all" checked> 👁️ View All</label>
             <label><input type="checkbox" id="perm_party_add" checked> 👤 Add Party</label>
             <label><input type="checkbox" id="perm_signatory_add" checked> ✍️ Add Signatory</label>
@@ -352,14 +388,15 @@
             <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
         </div>
         
-        <!-- ===== EXPENSE HEADS ===== -->
+        <!-- ===== EXPENSE HEADS - FIRM WISE ===== -->
         <h4>📂 Expense Heads</h4>
-        <div id="heads_list"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="new_head_name" placeholder="Expense Head">
-            <input type="text" id="new_subhead_name" placeholder="Sub Head">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <select id="expense_head_firm" style="width:200px;"><option value="">-- Select Firm --</option></select>
+            <input type="text" id="new_head_name" placeholder="Expense Head" style="flex:1; min-width:150px;">
+            <input type="text" id="new_subhead_name" placeholder="Sub Head" style="flex:1; min-width:150px;">
             <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
         </div>
+        <div id="heads_list"></div>
         
         <!-- ===== BANK MANAGEMENT ===== -->
         <h4>🏦 Bank Management (Firm Wise)</h4>
@@ -376,21 +413,34 @@
             <input type="text" id="new_bank_ifsc" placeholder="IFSC Code" style="width:120px; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
             <button class="btn-add" onclick="app.addBankAccount()">+ Add Bank</button>
         </div>
-        <div style="font-size:11px; color:#64748b; margin-top:5px;">
-            📌 Select Firm first, then add bank details for that firm
-        </div>
         
-        <!-- ===== PARTIES ===== -->
+        <!-- ===== PARTIES - FIRM WISE ===== -->
         <h4>👤 Parties</h4>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <select id="party_firm_filter" onchange="renderPartiesList()" style="width:200px;">
+                <option value="">-- All Firms --</option>
+            </select>
+            <button class="btn-add" onclick="openAddPartyModalFromSettings()">+ Add Party</button>
+            <button class="btn-add" onclick="document.getElementById('importPartiesFile').click()" style="background:#8b5cf6;">📥 Import</button>
+            <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importParties()">
+        </div>
         <div id="parties_list"></div>
         
-        <!-- ===== SIGNATORIES ===== -->
+        <!-- ===== SIGNATORIES - FIRM WISE ===== -->
         <h4>✍️ Signatories</h4>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <select id="signatory_firm_filter" onchange="renderSignatoriesList()" style="width:200px;">
+                <option value="">-- All Firms --</option>
+            </select>
+            <button class="btn-add" onclick="openAddSignatoryModalFromSettings()">+ Add Signatory</button>
+            <button class="btn-add" onclick="document.getElementById('importSignatoriesFile').click()" style="background:#8b5cf6;">📥 Import</button>
+            <input type="file" id="importSignatoriesFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importSignatories()">
+        </div>
         <div id="signatories_list"></div>
         
         <!-- ===== BULK IMPORT ===== -->
         <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
-            <h4>📥 Bulk Import</h4>
+            <h4>📥 Bulk Import / Export</h4>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                 <div>
                     <label style="font-size:11px;">Import Expense Heads</label>
@@ -398,18 +448,17 @@
                     <button class="btn-add" onclick="app.importExpenseHeads()" style="margin-top:5px;">📤 Import</button>
                 </div>
                 <div>
-                    <label style="font-size:11px;">Import Parties</label>
-                    <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
-                    <button class="btn-add" onclick="app.importParties()" style="margin-top:5px;">📤 Import</button>
+                    <label style="font-size:11px;">Export Expense Heads</label>
+                    <button class="btn-add" onclick="app.exportExpenseHeads()" style="background:#10b981; margin-top:5px;">📎 Export</button>
                 </div>
                 <div>
-                    <label style="font-size:11px;">Import Vouchers</label>
-                    <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
-                    <button class="btn-add" onclick="app.importVouchers()" style="margin-top:5px;">📤 Import</button>
+                    <label style="font-size:11px;">Export Parties</label>
+                    <button class="btn-add" onclick="app.exportParties()" style="background:#10b981; margin-top:5px;">📎 Export</button>
                 </div>
-            </div>
-            <div style="font-size:10px; color:#64748b; margin-top:8px;">
-                📌 CSV Format: Head,SubHead | PartyName,Phone,Address | Date,VoucherNo,Head,Party,Amount,Mode,Narration
+                <div>
+                    <label style="font-size:11px;">Export Signatories</label>
+                    <button class="btn-add" onclick="app.exportSignatories()" style="background:#10b981; margin-top:5px;">📎 Export</button>
+                </div>
             </div>
         </div>
         
@@ -436,11 +485,13 @@
     window.saveVoucher = () => app.saveVoucher();
     window.editVoucher = (id) => app.editVoucher(id);
     window.deleteVoucher = (id) => app.deleteVoucher(id);
-    window.recoverVoucher = (id) => app.recoverVoucher(id);  // ✅ Recover Function
+    window.recoverVoucher = (id) => app.recoverVoucher(id);
     window.generateA4Print = (v) => app.printVoucher(v);
     window.shareVoucher = (id) => app.shareVoucher(id);
     window.openAddPartyModal = () => app.openAddPartyModal();
     window.openAddSignatoryModal = () => app.openAddSignatoryModal();
+    window.openAddPartyModalFromSettings = () => app.openAddPartyModalFromSettings();
+    window.openAddSignatoryModalFromSettings = () => app.openAddSignatoryModalFromSettings();
     window.saveParty = () => app.saveParty();
     window.saveSignatory = () => app.saveSignatory();
     window.closeAddPartyModal = () => app.closeAddPartyModal();
@@ -449,6 +500,9 @@
     window.resetForm = () => app.resetForm();
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
+    window.renderPartiesList = () => app.renderPartiesList();
+    window.renderSignatoriesList = () => app.renderSignatoriesList();
+    window.exportFilteredVouchers = () => app.exportFilteredVouchers();
     
     // ✅ Search + Dropdown Functions
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
@@ -457,6 +511,12 @@
     window.filterParties = (v) => app.filterParties(v);
     window.filterSignatories = (v) => app.filterSignatories(v);
     window.filterModes = (v) => app.filterModes(v);
+    window.populateExpenseHeads = () => app.populateExpenseHeads();
+    window.populateSubHeads = (h) => app.populateSubHeads(h);
+    window.populateFirmDropdown = () => app.populateFirmDropdown();
+    window.populatePartyDropdown = () => app.populatePartyDropdown();
+    window.populateSignatoryDropdown = () => app.populateSignatoryDropdown();
+    window.populateModes = () => app.populateModes();
     
     window.selectExpenseHead = (h) => app.selectExpenseHead(h);
     window.selectSubHead = (s) => app.selectSubHead(s);
@@ -500,12 +560,49 @@
         });
     });
 
-    // ===== CLOSE DROPDOWN ON ESC KEY =====
+    // ===== KEYBOARD NAVIGATION FOR DROPDOWNS =====
     document.addEventListener('keydown', function(e) {
+        // Close dropdowns on Escape
         if (e.key === 'Escape') {
             document.querySelectorAll('.dropdown-list').forEach(dropdown => {
                 dropdown.style.display = 'none';
             });
+        }
+        
+        // Arrow down/up navigation for dropdowns
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            const activeDropdown = document.querySelector('.dropdown-list[style*="display: block"]');
+            if (activeDropdown) {
+                e.preventDefault();
+                const items = activeDropdown.querySelectorAll('div:not(.no-result)');
+                if (items.length === 0) return;
+                
+                let currentIndex = -1;
+                items.forEach((item, idx) => {
+                    if (item.classList.contains('selected')) {
+                        currentIndex = idx;
+                        item.classList.remove('selected');
+                    }
+                });
+                
+                if (e.key === 'ArrowDown') {
+                    currentIndex = (currentIndex + 1) % items.length;
+                } else {
+                    currentIndex = (currentIndex - 1 + items.length) % items.length;
+                }
+                
+                items[currentIndex].classList.add('selected');
+                items[currentIndex].scrollIntoView({ block: 'nearest' });
+            }
+        }
+        
+        // Enter to select from dropdown
+        if (e.key === 'Enter') {
+            const selectedItem = document.querySelector('.dropdown-list[style*="display: block"] .selected');
+            if (selectedItem) {
+                e.preventDefault();
+                selectedItem.click();
+            }
         }
     });
 
