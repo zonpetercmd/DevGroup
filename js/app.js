@@ -39,6 +39,7 @@ class App {
     async init() {
         console.log('🚀 App Initializing...');
         await this.loadAllData();
+        console.log('✅ Data loaded, firms:', Object.keys(this.allFirms).length);
         this.checkSession();
         this.setupEventListeners();
         this.setupRealtimeListener();
@@ -48,15 +49,15 @@ class App {
     // ===== LOAD DATA =====
     async loadAllData() {
         const data = await this.storage.loadAllData();
-        this.allFirms = data.allFirms;
-        this.db = data.db;
-        this.deletedVouchers = data.deletedVouchers;
-        this.editLogs = data.editLogs;
-        this.parties = data.parties;
-        this.signatories = data.signatories;
-        this.expenseHeads = data.expenseHeads;
-        this.allUsers = data.allUsers;
-        this.voucherCounter = data.voucherCounter;
+        this.allFirms = data.allFirms || {};
+        this.db = data.db || [];
+        this.deletedVouchers = data.deletedVouchers || [];
+        this.editLogs = data.editLogs || [];
+        this.parties = data.parties || [];
+        this.signatories = data.signatories || [];
+        this.expenseHeads = data.expenseHeads || {};
+        this.allUsers = data.allUsers || [];
+        this.voucherCounter = data.voucherCounter || {};
         this.bankAccounts = data.bankAccounts || {};
         this.userPermissions = data.userPermissions || DEFAULT_PERMISSIONS;
         this.loaded = true;
@@ -72,6 +73,7 @@ class App {
             return;
         }
         
+        // ✅ Update dropdown with loaded data
         this.updateLoginRoleDropdown();
         
         if (sessionStorage.getItem('auth') === 'ok') {
@@ -190,7 +192,7 @@ class App {
         showToast('👋 Logged out');
     }
 
-    // ===== UPDATE DROPDOWNS =====
+    // ===== UPDATE LOGIN ROLE DROPDOWN - FIXED =====
     updateLoginRoleDropdown() {
         const select = document.getElementById('login_role');
         if (!select) {
@@ -199,39 +201,48 @@ class App {
         }
         
         const currentVal = select.value;
-        select.innerHTML = '<option value="">-- Select Role --</option>';
-        select.innerHTML += '<option value="Admin">Admin (Full Access)</option>';
         
-        // ✅ Ensure allFirms is loaded
+        // ✅ Always show at least Admin option
+        let html = '<option value="">-- Select Role --</option>';
+        html += '<option value="Admin">Admin (Full Access)</option>';
+        
+        // ✅ Get firms from loaded data
         const firms = Object.keys(this.allFirms || {});
         console.log('🏢 Updating login roles, firms found:', firms.length);
+        console.log('📋 Firms:', firms);
         
         if (firms.length > 0) {
             firms.forEach(f => {
                 const firm = this.allFirms[f];
-                if (firm) {
-                    select.innerHTML += `<option value="Staff_${f}">Staff - ${firm.name || f}</option>`;
+                if (firm && firm.name) {
+                    html += `<option value="Staff_${f}">Staff - ${firm.name}</option>`;
+                } else if (firm) {
+                    html += `<option value="Staff_${f}">Staff - ${f}</option>`;
                 }
             });
         } else {
-            // 🔥 Fallback - Default firms if data not loaded
-            console.warn('⚠️ No firms found, using fallback');
-            const fallbackFirms = {
-                'DevVidyalaya': 'Dev Vidyalaya',
-                'DevGas': 'Dev Gas Agency',
-                'Rama': 'Rama Enterprises'
-            };
-            Object.keys(fallbackFirms).forEach(f => {
-                select.innerHTML += `<option value="Staff_${f}">Staff - ${fallbackFirms[f]}</option>`;
+            // 🔥 FALLBACK - Hardcoded default firms
+            console.warn('⚠️ No firms in data, using hardcoded fallback');
+            const fallbackFirms = [
+                { key: 'DevVidyalaya', name: 'Dev Vidyalaya' },
+                { key: 'DevGas', name: 'Dev Gas Agency' },
+                { key: 'Rama', name: 'Rama Enterprises' }
+            ];
+            fallbackFirms.forEach(f => {
+                html += `<option value="Staff_${f.key}">Staff - ${f.name}</option>`;
             });
         }
         
-        // ✅ Restore previous value if it exists
-        if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
-            select.value = currentVal;
-        }
-        
+        select.innerHTML = html;
         console.log('✅ Login role dropdown updated. Total options:', select.options.length);
+        
+        // ✅ Restore previous value if it exists
+        if (currentVal) {
+            const optionExists = Array.from(select.options).some(opt => opt.value === currentVal);
+            if (optionExists) {
+                select.value = currentVal;
+            }
+        }
     }
 
     updateSettingsRoleDropdown() {
@@ -272,7 +283,6 @@ class App {
     }
 
     updateFirmDropdownsInSettings() {
-        // Update all firm dropdowns in settings
         const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'signatory_firm_filter', 'new_party_firm', 'new_signatory_firm', 'r_firm_filter'];
         firmSelects.forEach(id => {
             const select = document.getElementById(id);
@@ -919,7 +929,6 @@ class App {
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        // Select first item by default for keyboard nav
         const firstItem = dropdown.querySelector('div');
         if (firstItem) firstItem.classList.add('selected');
     }
@@ -1302,7 +1311,6 @@ class App {
     }
 
     async deleteParty(id) {
-        // Check if party is used in any voucher
         const used = this.db.some(v => v.party === this.parties.find(p => p.id === id)?.name);
         if (used) {
             showToast('❌ Cannot delete: Party is used in vouchers');
@@ -1429,7 +1437,6 @@ class App {
     }
 
     async deleteSignatory(id) {
-        // Check if signatory is used in any voucher
         const used = this.db.some(v => v.signatory === this.signatories.find(s => s.id === id)?.name);
         if (used) {
             showToast('❌ Cannot delete: Signatory is used in vouchers');
@@ -1780,7 +1787,6 @@ class App {
         const firm = document.getElementById('expense_head_firm')?.value || '';
         let heads = Object.keys(this.expenseHeads);
         if (firm) {
-            // Filter heads that belong to this firm
             heads = heads.filter(h => this.expenseHeads[h]?.firm === firm);
         }
         if (heads.length === 0) {
@@ -2305,7 +2311,6 @@ class App {
             });
         });
 
-        // Payment mode change listener for UPI sub-options
         document.getElementById('v_mode_value')?.addEventListener('change', () => this.toggleBankField());
     }
 
