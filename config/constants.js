@@ -54,15 +54,5 @@ export const STORAGE_KEYS = {
     USERS: 'users',
     VOUCHER_COUNTER: 'voucherCounter',
     BANK_ACCOUNTS: 'bankAccounts',
-    PERMISSIONS: 'userPermissions',
-    
-    // ✅ Receipts Data
-    RECEIPTS: 'receipts',
-    RECEIPT_COUNTER: 'receiptCounter',
-    DELETED_RECEIPTS: 'deletedReceipts',
-    
-    // ✅ Receipts Settings (अलग से)
-    RECEIPT_HEADS: 'receiptHeads',
-    RECEIPT_PARTIES: 'receiptParties',
-    RECEIPT_SIGNATORIES: 'receiptSignatories'
+    PERMISSIONS: 'userPermissions'
 };
