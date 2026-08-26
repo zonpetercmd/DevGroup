@@ -1,4 +1,4 @@
-// js/app.js - Main Application (With Search + Dropdown + Recover)
+// js/app.js - Main Application (With Search + Dropdown + Recover + Firm-wise)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
@@ -25,6 +25,8 @@ class App {
         this.voucherCounter = {};
         this.bankAccounts = {};
         this.userPermissions = { ...DEFAULT_PERMISSIONS };
+        this.paymentModes = ['Cash', 'Bank', 'UPI', 'Cheque'];
+        this.upiApps = ['PhonePe', 'GooglePay', 'Paytm', 'AmazonPay', 'Other'];
         
         // Session
         this.currentUser = '';
@@ -59,7 +61,6 @@ class App {
         this.userPermissions = data.userPermissions || DEFAULT_PERMISSIONS;
         this.loaded = true;
         console.log('✅ Data loaded. Firms:', Object.keys(this.allFirms).length);
-        console.log('🏢 Firms:', Object.keys(this.allFirms));
     }
 
     // ===== SESSION =====
@@ -99,18 +100,21 @@ class App {
         
         document.getElementById('v_date').value = getToday();
         
-        let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>`;
+        let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📝 Create Voucher</button>`;
         if (this.userPermissions.reports || this.currentRole === 'Admin') {
-            tabs += `<button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>`;
+            tabs += `<button class="module-tab" onclick="switchModule('reports')">📋 Voucher List</button>`;
         }
         document.getElementById('moduleTabsContainer').innerHTML = tabs;
         
         this.renderAll();
         this.updateFirmHeader();
         this.generateVoucherNo();
+        this.updateFirmDropdownsInSettings();
+        this.renderPartiesList();
+        this.renderSignatoriesList();
     }
 
-    // ===== LOGIN - FIXED FOR STAFF =====
+    // ===== LOGIN =====
     async doLogin() {
         const userId = document.getElementById('user_id').value.trim();
         const pass = document.getElementById('user_pass').value.trim();
@@ -200,18 +204,12 @@ class App {
 
     updateSettingsRoleDropdown() {
         const select = document.getElementById('new_user_role');
-        if (!select) {
-            console.warn('⚠️ new_user_role element not found');
-            return;
-        }
+        if (!select) return;
         const currentVal = select.value;
-        
         select.innerHTML = '';
         select.innerHTML += '<option value="Admin">Admin</option>';
         
         const firms = Object.keys(this.allFirms);
-        console.log('🏢 Updating settings roles with firms:', firms);
-        
         if (firms.length > 0) {
             firms.forEach(f => {
                 if (this.allFirms[f]) {
@@ -219,38 +217,43 @@ class App {
                 }
             });
         }
-        
-        if (currentVal) {
-            select.value = currentVal;
-        }
-        console.log('✅ Settings Role dropdown updated. Options:', select.options.length);
+        if (currentVal) select.value = currentVal;
     }
 
     updateFirmSelectInSettings() {
         const select = document.getElementById('new_user_firm');
-        if (!select) {
-            console.warn('⚠️ new_user_firm element not found');
-            return;
-        }
+        if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Firm --</option>';
         
         const firms = Object.keys(this.allFirms);
-        console.log('🏢 Loading firms for settings:', firms);
-        
         if (firms.length === 0) {
             select.innerHTML += '<option value="" disabled>No firms available</option>';
             return;
         }
-        
         firms.forEach(f => {
             if (this.allFirms[f]) {
                 select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
             }
         });
-        
         if (currentVal) select.value = currentVal;
-        console.log('✅ Firm dropdown updated with', firms.length, 'firms');
+    }
+
+    updateFirmDropdownsInSettings() {
+        // Update all firm dropdowns in settings
+        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'signatory_firm_filter', 'new_party_firm', 'new_signatory_firm', 'r_firm_filter'];
+        firmSelects.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Select Firm --</option>';
+            Object.keys(this.allFirms).forEach(f => {
+                if (this.allFirms[f]) {
+                    select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+                }
+            });
+            if (currentVal) select.value = currentVal;
+        });
     }
 
     // ===== FIRM HEADER =====
@@ -266,7 +269,7 @@ class App {
         this.updateBankDropdown();
     }
 
-    // ===== BANK DROPDOWN - FIRM WISE =====
+    // ===== BANK DROPDOWN =====
     updateBankDropdown() {
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         const select = document.getElementById('bank_account');
@@ -281,10 +284,18 @@ class App {
         if (currentVal) select.value = currentVal;
     }
 
+    // ===== TOGGLE BANK FIELD =====
     toggleBankField() {
-        const mode = document.getElementById('v_mode_value')?.value || document.getElementById('v_mode')?.value || 'Cash';
-        document.getElementById('bank_account_field').style.display = 
-            (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
+        const mode = document.getElementById('v_mode_value').value || 'Cash';
+        const bankField = document.getElementById('bank_account_field');
+        const upiField = document.getElementById('upi_options_field');
+        
+        bankField.style.display = (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
+        upiField.style.display = mode === 'UPI' ? 'block' : 'none';
+        
+        if (mode === 'Bank' || mode === 'Cheque') {
+            this.updateBankDropdown();
+        }
     }
 
     // ===== VOUCHER NUMBER =====
@@ -302,17 +313,14 @@ class App {
         document.getElementById('v_no').value = `${firm.short}/EXP/${fy}/${String(count).padStart(3, '0')}`;
     }
 
-    // ===== SAVE VOUCHER (Updated for Search Dropdowns) =====
+    // ===== SAVE VOUCHER =====
     async saveVoucher() {
         const firmKey = document.getElementById('firm_name_value').value;
         const head = document.getElementById('expense_head_value').value;
         const subHead = document.getElementById('sub_head_value').value;
         const party = document.getElementById('party_value').value;
         const amount = parseFloat(document.getElementById('v_amt').value) || 0;
-        
-        // ✅ Mode - Search Dropdown से Value लें
-        const mode = document.getElementById('v_mode_value').value || document.getElementById('v_mode_input')?.value || 'Cash';
-        
+        const mode = document.getElementById('v_mode_value').value || 'Cash';
         const date = document.getElementById('v_date').value;
         const referenceNo = document.getElementById('reference_no').value.trim();
         const signatory = document.getElementById('signatory_value').value;
@@ -323,6 +331,8 @@ class App {
         let bankAccount = '';
         let bankName = '';
         let bankIfsc = '';
+        let upiApp = '';
+        
         if (mode === 'Bank' || mode === 'Cheque') {
             const bankVal = document.getElementById('bank_account').value;
             if (bankVal) {
@@ -331,6 +341,10 @@ class App {
                 bankAccount = parts[1] || '';
                 bankIfsc = parts[2] || '';
             }
+        }
+        
+        if (mode === 'UPI') {
+            upiApp = document.getElementById('upi_app').value || '';
         }
         
         if (!firmKey) { showToast('Please select a Firm'); return; }
@@ -353,6 +367,7 @@ class App {
             bankName: bankName,
             bankAccount: bankAccount,
             bankIfsc: bankIfsc,
+            upiApp: upiApp,
             referenceNo: referenceNo,
             signatory: signatory,
             narration: narration,
@@ -400,7 +415,7 @@ class App {
         
         this.renderAll();
         this.resetForm();
-        showToast(editId ? '✅ Voucher updated!' : '✅ Voucher saved!');
+        showToast(editId ? '✅ Voucher updated!' : '✅ Voucher submitted!');
         this.updateHeadFilter();
         
         setTimeout(() => this.printVoucher(voucher), 500);
@@ -438,7 +453,7 @@ class App {
         }
     }
 
-    // ===== RESET FORM (Updated) =====
+    // ===== RESET FORM =====
     resetForm() {
         document.getElementById('edit_id').value = '';
         document.getElementById('expense_head_input').value = '';
@@ -454,22 +469,21 @@ class App {
         document.getElementById('signatory_input').value = '';
         document.getElementById('signatory_value').value = '';
         document.getElementById('v_narration').value = '';
-        
-        // ✅ Mode Reset
         document.getElementById('v_mode_input').value = '';
         document.getElementById('v_mode_value').value = 'Cash';
         document.getElementById('modeDropdown').style.display = 'none';
-        
         document.getElementById('bank_account').value = '';
         document.getElementById('bank_account_field').style.display = 'none';
+        document.getElementById('upi_options_field').style.display = 'none';
+        document.getElementById('upi_app').value = '';
         document.getElementById('v_date').value = getToday();
-        document.getElementById('form-title').innerHTML = '📝 Add Payment Voucher';
+        document.getElementById('form-title').innerHTML = '📝 Create Payment Voucher';
         this.updateFirmHeader();
         this.generateVoucherNo();
         showToast('🔄 Form reset');
     }
 
-    // ===== EDIT VOUCHER (Updated) =====
+    // ===== EDIT VOUCHER =====
     editVoucher(id) {
         if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
             showToast('❌ No permission to edit');
@@ -489,11 +503,8 @@ class App {
         document.getElementById('party_input').value = v.party;
         document.getElementById('party_value').value = v.party;
         document.getElementById('v_amt').value = v.amount;
-        
-        // ✅ Mode Set
         document.getElementById('v_mode_input').value = v.mode;
         document.getElementById('v_mode_value').value = v.mode;
-        
         document.getElementById('reference_no').value = v.referenceNo || '';
         document.getElementById('signatory_input').value = v.signatory || '';
         document.getElementById('signatory_value').value = v.signatory || '';
@@ -506,12 +517,16 @@ class App {
             document.getElementById('bank_account').value = bankVal;
             document.getElementById('bank_account_field').style.display = 'block';
         }
+        if (v.upiApp) {
+            document.getElementById('upi_app').value = v.upiApp;
+            document.getElementById('upi_options_field').style.display = 'block';
+        }
         
         this.toggleBankField();
         this.updateFirmHeader();
         this.populateSubHeads(v.head);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        showToast('✏️ Edit mode - Modify and save');
+        showToast('✏️ Edit mode - Modify and submit');
     }
 
     // ===== DELETE VOUCHER =====
@@ -539,7 +554,7 @@ class App {
         showToast('✅ Voucher deleted');
     }
 
-    // ===== RECOVER DELETED VOUCHER =====
+    // ===== RECOVER VOUCHER =====
     async recoverVoucher(id) {
         if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
             showToast('❌ No permission to recover');
@@ -548,7 +563,6 @@ class App {
         
         if (!confirm('Are you sure you want to recover this voucher?')) return;
         
-        // Deleted Vouchers से ढूंढें
         const index = this.deletedVouchers.findIndex(v => v.id === id);
         if (index === -1) {
             showToast('❌ Deleted voucher not found');
@@ -556,19 +570,13 @@ class App {
         }
         
         const voucher = this.deletedVouchers[index];
-        
-        // Status को Active करें
         voucher.status = 'active';
         delete voucher.deletedBy;
         delete voucher.deletedAt;
         
-        // Deleted List से Remove करें
         this.deletedVouchers.splice(index, 1);
-        
-        // Active Vouchers में Add करें
         this.db.push(voucher);
         
-        // Firebase Save करें
         await this.storage.saveVoucher(voucher);
         await this.storage.save(STORAGE_KEYS.DELETED, 
             Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
@@ -588,13 +596,12 @@ class App {
         this.renderReports();
     }
 
-    // ===== RENDER TABLE - WITH RECOVER BUTTON =====
+    // ===== RENDER TABLE =====
     renderTable() {
         const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('f_start')?.value || '';
         const end = document.getElementById('f_end')?.value || '';
         const status = document.getElementById('f_status')?.value || 'ALL';
-        
         const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
         const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
         const headFilter = document.getElementById('f_head_filter')?.value || '';
@@ -618,7 +625,6 @@ class App {
         
         const filtered = dataToShow.filter(v => {
             let match = true;
-            
             if (search) {
                 match = match && (
                     v.party?.toLowerCase().includes(search) ||
@@ -629,17 +635,13 @@ class App {
                     v.createdBy?.toLowerCase().includes(search)
                 );
             }
-            
             if (start) match = match && v.date >= start;
             if (end) match = match && v.date <= end;
-            
             if (amountMin > 0) match = match && v.amount >= amountMin;
             if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            
             if (headFilter) match = match && v.head === headFilter;
             if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
             if (modeFilter) match = match && v.mode === modeFilter;
-            
             return match;
         });
         
@@ -670,7 +672,6 @@ class App {
                     actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                 }
             } else {
-                // ✅ Deleted Vouchers में Recover Button
                 actions = `
                     <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
                 `;
@@ -688,7 +689,7 @@ class App {
                 <td>${v.subHead || '-'}</td>
                 <td>${v.party || '-'}</td>
                 <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.mode}</td>
+                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
                 <td>${creatorBadge}</td>
                 <td><span class="${statusClass}">${statusText}</span></td>
                 <td>${actions}</td>
@@ -710,7 +711,7 @@ class App {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS - WITH ENHANCED FILTERS =====
+    // ===== REPORTS / VOUCHER LIST =====
     renderReports() {
         const div = document.getElementById('report_content');
         if (!div) return;
@@ -720,14 +721,11 @@ class App {
         const end = document.getElementById('r_end')?.value || '';
         const status = document.getElementById('r_status')?.value || 'ALL';
         const headFilter = document.getElementById('r_head_filter')?.value || '';
-        const headFilterOld = document.getElementById('r_head')?.value || '';
-        
         const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
         const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
         const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
         const modeFilter = document.getElementById('r_mode_filter')?.value || '';
-        
-        const finalHeadFilter = headFilter || headFilterOld;
+        const firmFilter = document.getElementById('r_firm_filter')?.value || '';
         
         let allVouchers = [];
         if (status === 'ALL' || status === 'active') {
@@ -746,7 +744,6 @@ class App {
         
         const filtered = allVouchers.filter(v => {
             let match = true;
-            
             if (search) {
                 match = match && (
                     v.party?.toLowerCase().includes(search) ||
@@ -757,17 +754,14 @@ class App {
                     v.createdBy?.toLowerCase().includes(search)
                 );
             }
-            
             if (start) match = match && v.date >= start;
             if (end) match = match && v.date <= end;
-            
             if (amountMin > 0) match = match && v.amount >= amountMin;
             if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            
-            if (finalHeadFilter) match = match && v.head === finalHeadFilter;
+            if (headFilter) match = match && v.head === headFilter;
             if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
             if (modeFilter) match = match && v.mode === modeFilter;
-            
+            if (firmFilter) match = match && v.firmKey === firmFilter;
             return match;
         });
         
@@ -829,7 +823,7 @@ class App {
                                 <td>${v.subHead || '-'}</td>
                                 <td>${v.party || '-'}</td>
                                 <td>₹${v.amount.toLocaleString()}</td>
-                                <td>${v.mode}</td>
+                                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
                                 <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
                                 <td>${statusText}</td>
                                 <td>${actions}</td>
@@ -862,82 +856,56 @@ class App {
 
     // ===== UPDATE HEAD FILTER =====
     updateHeadFilter() {
-        // 1️⃣ Report Head Filter (पुराना - r_head)
-        const select = document.getElementById('r_head');
-        if (select) {
+        const headSelects = ['f_head_filter', 'r_head_filter'];
+        const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
+        
+        headSelects.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
             const currentVal = select.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
             select.innerHTML = '<option value="">All Heads</option>';
             heads.forEach(h => {
                 select.innerHTML += `<option value="${h}">${h}</option>`;
             });
             if (currentVal) select.value = currentVal;
-        }
-        
-        // 2️⃣ Transaction Head Filter (नया - f_head_filter)
-        const selectFilter = document.getElementById('f_head_filter');
-        if (selectFilter) {
-            const currentVal = selectFilter.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-            selectFilter.innerHTML = '<option value="">All Heads</option>';
-            heads.forEach(h => {
-                selectFilter.innerHTML += `<option value="${h}">${h}</option>`;
-            });
-            if (currentVal) selectFilter.value = currentVal;
-        }
-        
-        // 3️⃣ Report Head Filter (नया - r_head_filter)
-        const selectR = document.getElementById('r_head_filter');
-        if (selectR) {
-            const currentVal = selectR.value;
-            const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-            selectR.innerHTML = '<option value="">All Heads</option>';
-            heads.forEach(h => {
-                selectR.innerHTML += `<option value="${h}">${h}</option>`;
-            });
-            if (currentVal) selectR.value = currentVal;
-        }
+        });
     }
 
     // ============================================================
-    // MODE DROPDOWN FUNCTIONS (Payment Mode - Search + Dropdown)
+    // MODE DROPDOWN FUNCTIONS
     // ============================================================
 
     getModeOptions() {
-        return ['Cash', 'Bank', 'Paytm', 'UPI', 'Cheque'];
+        return this.paymentModes;
     }
 
     populateModes() {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
-        
         const modes = this.getModeOptions();
         dropdown.innerHTML = modes.map(m => 
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        // Select first item by default for keyboard nav
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     filterModes(search) {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
-        
-        if (!search || search.length < 1) { 
+        if (!search || search.length < 1) {
             this.populateModes();
-            return; 
+            return;
         }
-        
         const modes = this.getModeOptions();
-        const filtered = modes.filter(m => 
-            m.toLowerCase().includes(search.toLowerCase())
-        );
-        
+        const filtered = modes.filter(m => m.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No mode found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        
         dropdown.innerHTML = filtered.map(m => 
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
@@ -952,7 +920,7 @@ class App {
     }
 
     // ============================================================
-    // POPULATE FUNCTIONS - SEARCH + DROPDOWN (All Fields)
+    // POPULATE FUNCTIONS - SEARCH + DROPDOWN
     // ============================================================
 
     populateExpenseHeads() {
@@ -968,6 +936,8 @@ class App {
             `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     populateSubHeads(head) {
@@ -983,6 +953,8 @@ class App {
             `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     populateFirmDropdown() {
@@ -1001,52 +973,57 @@ class App {
             `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     populatePartyDropdown() {
         const dropdown = document.getElementById('partyDropdown');
         if (!dropdown) return;
-        if (this.parties.length === 0) {
+        const parties = this.getPartiesForCurrentFirm();
+        if (parties.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No parties. Add one.</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = this.parties.map(p => 
+        dropdown.innerHTML = parties.map(p => 
             `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     populateSignatoryDropdown() {
         const dropdown = document.getElementById('signatoryDropdown');
         if (!dropdown) return;
-        if (this.signatories.length === 0) {
+        const signatories = this.getSignatoriesForCurrentFirm();
+        if (signatories.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No signatories. Add one.</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = this.signatories.map(s => 
+        dropdown.innerHTML = signatories.map(s => 
             `<div onclick="selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
         ).join('');
         dropdown.style.display = 'block';
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
 
     // ============================================================
-    // FILTER FUNCTIONS - SEARCH + DROPDOWN (All Fields)
+    // FILTER FUNCTIONS
     // ============================================================
 
     filterExpenseHeads(search) {
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
-        
-        if (!search || search.length < 1) { 
+        if (!search || search.length < 1) {
             this.populateExpenseHeads();
-            return; 
+            return;
         }
-        
         const heads = Object.keys(this.expenseHeads);
         const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No head found</div>';
             dropdown.style.display = 'block';
@@ -1068,12 +1045,10 @@ class App {
             return;
         }
         const subHeads = this.expenseHeads[head] || [];
-        
         if (!search || search.length < 1) {
             this.populateSubHeads(head);
             return;
         }
-        
         const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
@@ -1089,20 +1064,16 @@ class App {
     filterFirms(search) {
         const dropdown = document.getElementById('firmDropdown');
         if (!dropdown) return;
-        
-        if (!search || search.length < 1) { 
+        if (!search || search.length < 1) {
             this.populateFirmDropdown();
-            return; 
+            return;
         }
-        
         let firms = [];
         if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
         else if (this.currentFirm) firms = [this.currentFirm];
-        
         const filtered = firms.filter(f => 
             (this.allFirms[f]?.name || f).toLowerCase().includes(search.toLowerCase())
         );
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firm found</div>';
             dropdown.style.display = 'block';
@@ -1117,16 +1088,14 @@ class App {
     filterParties(search) {
         const dropdown = document.getElementById('partyDropdown');
         if (!dropdown) return;
-        
-        if (!search || search.length < 1) { 
+        if (!search || search.length < 1) {
             this.populatePartyDropdown();
-            return; 
+            return;
         }
-        
-        const filtered = this.parties.filter(p => 
+        const parties = this.getPartiesForCurrentFirm();
+        const filtered = parties.filter(p => 
             p.name.toLowerCase().includes(search.toLowerCase())
         );
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No party found</div>';
             dropdown.style.display = 'block';
@@ -1141,16 +1110,14 @@ class App {
     filterSignatories(search) {
         const dropdown = document.getElementById('signatoryDropdown');
         if (!dropdown) return;
-        
-        if (!search || search.length < 1) { 
+        if (!search || search.length < 1) {
             this.populateSignatoryDropdown();
-            return; 
+            return;
         }
-        
-        const filtered = this.signatories.filter(s => 
+        const signatories = this.getSignatoriesForCurrentFirm();
+        const filtered = signatories.filter(s => 
             s.name.toLowerCase().includes(search.toLowerCase())
         );
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No signatory found</div>';
             dropdown.style.display = 'block';
@@ -1200,87 +1167,49 @@ class App {
         document.getElementById('signatoryDropdown').style.display = 'none';
     }
 
-    // ===== EXPORT FUNCTIONS =====
-    exportToExcel(data, filename) {
-        if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
-        const ws = XLSX.utils.json_to_sheet(data.map(v => ({
-            'Date': v.date,
-            'Voucher No': v.vno,
-            'Firm': v.firmName || v.firmKey || '',
-            'Head': v.head,
-            'Sub Head': v.subHead || '',
-            'Party': v.party || '',
-            'Amount': v.amount,
-            'Mode': v.mode,
-            'Bank Name': v.bankName || '',
-            'Bank Account': v.bankAccount || '',
-            'IFSC': v.bankIfsc || '',
-            'Reference No': v.referenceNo || '',
-            'Signatory': v.signatory || '',
-            'Narration': v.narration || '',
-            'Created By': v.createdBy || '',
-            'Status': v.status || 'active',
-            'Created At': v.createdAt || ''
-        })));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
-        XLSX.writeFile(wb, filename + '.xlsx');
-        showToast('📎 Exported: ' + filename);
+    // ============================================================
+    // FIRM-WISE HELPERS
+    // ============================================================
+
+    getPartiesForCurrentFirm() {
+        const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
+        if (!firmKey) return this.parties;
+        return this.parties.filter(p => p.firm === firmKey || !p.firm);
     }
 
-    exportAllVouchers() {
-        const allVouchers = [...this.db.filter(v => v.status !== 'deleted'), ...this.deletedVouchers];
-        const unique = [];
-        const seen = new Set();
-        allVouchers.forEach(v => {
-            if (!seen.has(v.id)) { seen.add(v.id); unique.push(v); }
-        });
-        this.exportToExcel(unique, 'All_Vouchers_Report');
+    getSignatoriesForCurrentFirm() {
+        const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
+        if (!firmKey) return this.signatories;
+        return this.signatories.filter(s => s.firm === firmKey || !s.firm);
     }
 
-    exportActiveVouchers() {
-        this.exportToExcel(this.db.filter(v => v.status !== 'deleted'), 'Active_Vouchers');
-    }
+    // ============================================================
+    // PARTY FUNCTIONS
+    // ============================================================
 
-    exportDeletedVouchers() {
-        this.exportToExcel(this.deletedVouchers, 'Deleted_Vouchers');
-    }
-
-    exportEditedVouchers() {
-        const editedIds = new Set(this.editLogs.map(e => e.voucherId));
-        const editedVouchers = this.db.filter(v => editedIds.has(v.id));
-        this.exportToExcel(editedVouchers, 'Edited_Vouchers');
-    }
-
-    // ===== SHARE VOUCHER =====
-    shareVoucher(id) {
-        if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to share');
-            return;
-        }
-        const v = this.db.find(x => x.id === id);
-        if (!v) { showToast('Voucher not found'); return; }
-        const message = `*${v.firmName}*\nVoucher: ${v.vno}\nDate: ${v.date}\nHead: ${v.head}\nParty: ${v.party}\nAmount: ₹${v.amount.toFixed(2)}\n\nThank you!`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    }
-
-    shareInvoiceViaWhatsApp() {
-        const voucher = this.db[this.db.length - 1];
-        if (!voucher) { showToast('No voucher to share'); return; }
-        this.shareVoucher(voucher.id);
-    }
-
-    // ===== PARTY FUNCTIONS =====
     openAddPartyModal() {
         if (!this.canAddParty()) {
             showToast('❌ No permission to add party');
             return;
         }
+        const firmKey = document.getElementById('firm_name_value')?.value || '';
         document.getElementById('edit_party_id').value = '';
+        document.getElementById('edit_party_firm').value = '';
         document.getElementById('new_party_name').value = '';
         document.getElementById('new_party_phone').value = '';
         document.getElementById('new_party_address').value = '';
+        document.getElementById('new_party_firm').value = firmKey;
         document.getElementById('partyModalTitle').innerHTML = '➕ Add New Party';
+        document.getElementById('addPartyModal').style.display = 'flex';
+    }
+
+    openAddPartyModalFromSettings() {
+        document.getElementById('edit_party_id').value = '';
+        document.getElementById('edit_party_firm').value = '';
+        document.getElementById('new_party_name').value = '';
+        document.getElementById('new_party_phone').value = '';
+        document.getElementById('new_party_address').value = '';
+        document.getElementById('partyModalTitle').innerHTML = '➕ Add New Party (Settings)';
         document.getElementById('addPartyModal').style.display = 'flex';
     }
 
@@ -1295,21 +1224,23 @@ class App {
         }
         const id = document.getElementById('edit_party_id').value;
         const name = document.getElementById('new_party_name').value.trim();
+        const firm = document.getElementById('new_party_firm').value || this.currentFirm;
         if (!name) { showToast('Party name required'); return; }
         
         const party = { 
             id: id || generateId(), 
             name: name, 
             phone: document.getElementById('new_party_phone').value.trim(),
-            address: document.getElementById('new_party_address').value.trim() 
+            address: document.getElementById('new_party_address').value.trim(),
+            firm: firm
         };
         
         if (id) {
             const idx = this.parties.findIndex(p => p.id === id);
             if (idx !== -1) this.parties[idx] = party;
         } else {
-            if (this.parties.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-                showToast('Party already exists');
+            if (this.parties.find(p => p.name.toLowerCase() === name.toLowerCase() && p.firm === firm)) {
+                showToast('Party already exists in this firm');
                 return;
             }
             this.parties.push(party);
@@ -1329,14 +1260,22 @@ class App {
         const party = this.parties.find(p => p.id === id);
         if (!party) return;
         document.getElementById('edit_party_id').value = party.id;
+        document.getElementById('edit_party_firm').value = party.firm || '';
         document.getElementById('new_party_name').value = party.name;
         document.getElementById('new_party_phone').value = party.phone || '';
         document.getElementById('new_party_address').value = party.address || '';
+        document.getElementById('new_party_firm').value = party.firm || '';
         document.getElementById('partyModalTitle').innerHTML = '✏️ Edit Party';
         document.getElementById('addPartyModal').style.display = 'flex';
     }
 
     async deleteParty(id) {
+        // Check if party is used in any voucher
+        const used = this.db.some(v => v.party === this.parties.find(p => p.id === id)?.name);
+        if (used) {
+            showToast('❌ Cannot delete: Party is used in vouchers');
+            return;
+        }
         if (!confirm('Delete this party?')) return;
         this.parties = this.parties.filter(p => p.id !== id);
         await this.storage.save(STORAGE_KEYS.PARTIES, 
@@ -1347,16 +1286,59 @@ class App {
         showToast('✅ Party deleted');
     }
 
-    // ===== SIGNATORY FUNCTIONS =====
+    renderPartiesList() {
+        const container = document.getElementById('parties_list');
+        if (!container) return;
+        const firmFilter = document.getElementById('party_firm_filter')?.value || '';
+        let parties = this.parties;
+        if (firmFilter) {
+            parties = parties.filter(p => p.firm === firmFilter);
+        }
+        if (parties.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No parties found</p>';
+            return;
+        }
+        container.innerHTML = parties.map(p => `
+            <div class="party-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff; flex-wrap:wrap; gap:5px;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
+                    <span><strong>${p.name}</strong></span>
+                    ${p.phone ? `<span>📞 ${p.phone}</span>` : ''}
+                    ${p.address ? `<span>📍 ${p.address}</span>` : ''}
+                    <span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[p.firm]?.name || p.firm || 'No Firm'}</span>
+                </div>
+                <div>
+                    <button class="btn-action btn-edit" onclick="editParty('${p.id}')">✏️</button>
+                    <button class="btn-action btn-del" onclick="deleteParty('${p.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ============================================================
+    // SIGNATORY FUNCTIONS
+    // ============================================================
+
     openAddSignatoryModal() {
         if (!this.canAddSignatory()) {
             showToast('❌ No permission to add signatory');
             return;
         }
+        const firmKey = document.getElementById('firm_name_value')?.value || '';
         document.getElementById('edit_signatory_id').value = '';
+        document.getElementById('edit_signatory_firm').value = '';
         document.getElementById('new_signatory_name').value = '';
         document.getElementById('new_signatory_designation').value = '';
+        document.getElementById('new_signatory_firm').value = firmKey;
         document.getElementById('signatoryModalTitle').innerHTML = '✍️ Add New Signatory';
+        document.getElementById('addSignatoryModal').style.display = 'flex';
+    }
+
+    openAddSignatoryModalFromSettings() {
+        document.getElementById('edit_signatory_id').value = '';
+        document.getElementById('edit_signatory_firm').value = '';
+        document.getElementById('new_signatory_name').value = '';
+        document.getElementById('new_signatory_designation').value = '';
+        document.getElementById('signatoryModalTitle').innerHTML = '✍️ Add Signatory (Settings)';
         document.getElementById('addSignatoryModal').style.display = 'flex';
     }
 
@@ -1371,20 +1353,22 @@ class App {
         }
         const id = document.getElementById('edit_signatory_id').value;
         const name = document.getElementById('new_signatory_name').value.trim();
+        const firm = document.getElementById('new_signatory_firm').value || this.currentFirm;
         if (!name) { showToast('Signatory name required'); return; }
         
         const signatory = {
             id: id || generateId(),
             name: name,
-            designation: document.getElementById('new_signatory_designation').value.trim()
+            designation: document.getElementById('new_signatory_designation').value.trim(),
+            firm: firm
         };
         
         if (id) {
             const idx = this.signatories.findIndex(s => s.id === id);
             if (idx !== -1) this.signatories[idx] = signatory;
         } else {
-            if (this.signatories.find(s => s.name.toLowerCase() === name.toLowerCase())) {
-                showToast('Signatory already exists');
+            if (this.signatories.find(s => s.name.toLowerCase() === name.toLowerCase() && s.firm === firm)) {
+                showToast('Signatory already exists in this firm');
                 return;
             }
             this.signatories.push(signatory);
@@ -1404,13 +1388,21 @@ class App {
         const sig = this.signatories.find(s => s.id === id);
         if (!sig) return;
         document.getElementById('edit_signatory_id').value = sig.id;
+        document.getElementById('edit_signatory_firm').value = sig.firm || '';
         document.getElementById('new_signatory_name').value = sig.name;
         document.getElementById('new_signatory_designation').value = sig.designation || '';
+        document.getElementById('new_signatory_firm').value = sig.firm || '';
         document.getElementById('signatoryModalTitle').innerHTML = '✏️ Edit Signatory';
         document.getElementById('addSignatoryModal').style.display = 'flex';
     }
 
     async deleteSignatory(id) {
+        // Check if signatory is used in any voucher
+        const used = this.db.some(v => v.signatory === this.signatories.find(s => s.id === id)?.name);
+        if (used) {
+            showToast('❌ Cannot delete: Signatory is used in vouchers');
+            return;
+        }
         if (!confirm('Delete this signatory?')) return;
         this.signatories = this.signatories.filter(s => s.id !== id);
         await this.storage.save(STORAGE_KEYS.SIGNATORIES,
@@ -1421,35 +1413,63 @@ class App {
         showToast('✅ Signatory deleted');
     }
 
-    // ===== SETTINGS =====
+    renderSignatoriesList() {
+        const container = document.getElementById('signatories_list');
+        if (!container) return;
+        const firmFilter = document.getElementById('signatory_firm_filter')?.value || '';
+        let signatories = this.signatories;
+        if (firmFilter) {
+            signatories = signatories.filter(s => s.firm === firmFilter);
+        }
+        if (signatories.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No signatories found</p>';
+            return;
+        }
+        container.innerHTML = signatories.map(s => `
+            <div class="signatory-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff; flex-wrap:wrap; gap:5px;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
+                    <span><strong>✍️ ${s.name}</strong></span>
+                    ${s.designation ? `<span>📋 ${s.designation}</span>` : ''}
+                    <span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[s.firm]?.name || s.firm || 'No Firm'}</span>
+                </div>
+                <div>
+                    <button class="btn-action btn-edit" onclick="editSignatory('${s.id}')">✏️</button>
+                    <button class="btn-action btn-del" onclick="deleteSignatory('${s.id}')">✖</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+
     openSettings() {
         if (this.currentRole !== 'Admin') {
             showToast('❌ Only Admin can access settings');
             return;
         }
-        
-        console.log('⚙️ Opening Settings...');
         document.getElementById('settings-modal').style.display = 'flex';
-        
         this.renderFirmsList();
         this.renderUsersList();
         this.renderHeadsList();
         this.renderPartiesList();
         this.renderSignatoriesList();
-        
         this.updateFirmSelectInSettings();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
         this.loadBankAccounts();
-        
-        console.log('✅ Settings opened successfully');
+        this.updateFirmDropdownsInSettings();
     }
 
     closeSettings() {
         document.getElementById('settings-modal').style.display = 'none';
     }
 
-    // ===== FIRM MANAGEMENT =====
+    // ============================================================
+    // FIRM MANAGEMENT
+    // ============================================================
+
     renderFirmsList() {
         const container = document.getElementById('firms_list');
         if (!container) return;
@@ -1488,6 +1508,11 @@ class App {
         const name = document.getElementById('new_firm_name').value.trim();
         const short = document.getElementById('new_firm_short').value.trim().toUpperCase();
         const logo = document.getElementById('new_firm_logo').value.trim() || 'logo.jpeg';
+        const addr = document.getElementById('new_firm_addr').value.trim();
+        const mobile = document.getElementById('new_firm_mobile').value.trim();
+        const email = document.getElementById('new_firm_email').value.trim();
+        const gst = document.getElementById('new_firm_gst').value.trim();
+        const pan = document.getElementById('new_firm_pan').value.trim();
         
         if (!name) { showToast('Firm name required'); return; }
         if (!short) { showToast('Short code required'); return; }
@@ -1495,7 +1520,7 @@ class App {
         const key = name.replace(/\s/g, '');
         if (this.allFirms[key]) { showToast('Firm already exists'); return; }
         
-        this.allFirms[key] = { name, short, logo, addr: name, mobile: '', email: '', gst: '', pan: '' };
+        this.allFirms[key] = { name, short, logo, addr, mobile, email, gst, pan };
         
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
@@ -1511,9 +1536,16 @@ class App {
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
+        this.updateFirmDropdownsInSettings();
+        
         document.getElementById('new_firm_name').value = '';
         document.getElementById('new_firm_short').value = '';
         document.getElementById('new_firm_logo').value = '';
+        document.getElementById('new_firm_addr').value = '';
+        document.getElementById('new_firm_mobile').value = '';
+        document.getElementById('new_firm_email').value = '';
+        document.getElementById('new_firm_gst').value = '';
+        document.getElementById('new_firm_pan').value = '';
         showToast('✅ Firm added');
     }
 
@@ -1527,7 +1559,7 @@ class App {
         const newShort = prompt('📛 Short Code:', firm.short);
         if (newShort !== null && newShort.trim()) firm.short = newShort.trim().toUpperCase();
         
-        const newLogo = prompt('🖼️ Logo URL (logo.jpeg):', firm.logo || 'logo.jpeg');
+        const newLogo = prompt('🖼️ Logo URL:', firm.logo || 'logo.jpeg');
         if (newLogo !== null) firm.logo = newLogo.trim() || 'logo.jpeg';
         
         const newAddr = prompt('📍 Address:', firm.addr || '');
@@ -1539,10 +1571,10 @@ class App {
         const newEmail = prompt('✉ Email:', firm.email || '');
         if (newEmail !== null) firm.email = newEmail.trim();
         
-        const newGst = prompt('📄 GST No (optional):', firm.gst || '');
+        const newGst = prompt('📄 GST No:', firm.gst || '');
         if (newGst !== null) firm.gst = newGst.trim();
         
-        const newPan = prompt('📄 PAN No (optional):', firm.pan || '');
+        const newPan = prompt('📄 PAN No:', firm.pan || '');
         if (newPan !== null) firm.pan = newPan.trim();
         
         const firmObj = {};
@@ -1558,6 +1590,7 @@ class App {
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
+        this.updateFirmDropdownsInSettings();
         this.updateFirmHeader();
         showToast('✅ Firm updated successfully!');
     }
@@ -1568,14 +1601,12 @@ class App {
             showToast('Cannot delete default firm');
             return;
         }
-        
         const hasVouchers = this.db.some(v => v.firmKey === key) || 
                            this.deletedVouchers.some(v => v.firmKey === key);
         if (hasVouchers) {
             showToast('Cannot delete: vouchers exist');
             return;
         }
-        
         delete this.allFirms[key];
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
@@ -1584,17 +1615,20 @@ class App {
             }
         });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        
         this.renderFirmsList();
         this.populateFirmDropdown();
         this.updateFirmSelectInSettings();
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
+        this.updateFirmDropdownsInSettings();
         showToast('✅ Firm deleted');
     }
 
-    // ===== USER MANAGEMENT =====
+    // ============================================================
+    // USER MANAGEMENT
+    // ============================================================
+
     renderUsersList() {
         const container = document.getElementById('users_list');
         if (!container) return;
@@ -1604,6 +1638,7 @@ class App {
         }
         container.innerHTML = this.allUsers.map(u => {
             const perms = u.permissions || {};
+            const firmNames = u.firm ? (this.allFirms[u.firm]?.name || u.firm) : '🌐 All Firms';
             return `
             <div class="user-card" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#f8fafc;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -1611,7 +1646,7 @@ class App {
                         <span><strong>👤 ${u.id}</strong></span>
                         <span>🔒 ${u.password}</span>
                         <span><span class="badge" style="background:${u.role === 'Admin' ? '#2563eb' : '#10b981'}">${u.role}</span></span>
-                        <span><span class="firm-badge">${u.firm ? this.allFirms[u.firm]?.name || u.firm : '🌐 All Firms'}</span></span>
+                        <span><span class="firm-badge" style="background:#8b5cf6;">${firmNames}</span></span>
                     </div>
                     <div>
                         ${u.id !== 'Admin' ? 
@@ -1623,7 +1658,7 @@ class App {
                     <span>✏️ Edit: ${perms.edit ? '✅' : '❌'}</span>
                     <span>🗑️ Delete: ${perms.delete ? '✅' : '❌'}</span>
                     <span>💬 WhatsApp: ${perms.whatsapp ? '✅' : '❌'}</span>
-                    <span>📊 Reports: ${perms.reports ? '✅' : '❌'}</span>
+                    <span>📋 Voucher List: ${perms.reports ? '✅' : '❌'}</span>
                     <span>👁️ View All: ${perms.view_all ? '✅' : '❌'}</span>
                     <span>👤 Add Party: ${perms.party_add ? '✅' : '❌'}</span>
                     <span>✍️ Add Signatory: ${perms.signatory_add ? '✅' : '❌'}</span>
@@ -1640,18 +1675,14 @@ class App {
         const role = document.getElementById('new_user_role').value;
         const firm = document.getElementById('new_user_firm').value;
         
-        console.log('👤 Adding User:', { id, role, firm });
-        
         if (!id || !pass) { 
             showToast('❌ Enter ID and Password'); 
             return; 
         }
-        
         if (this.allUsers.find(u => u.id === id)) { 
             showToast('❌ User already exists'); 
             return; 
         }
-        
         if (role !== 'Admin' && !firm) { 
             showToast('❌ Please select a firm for Staff'); 
             return; 
@@ -1679,7 +1710,6 @@ class App {
         };
         
         this.allUsers.push(user);
-        
         await this.storage.save(STORAGE_KEYS.USERS,
             Object.fromEntries(this.allUsers.map(u => [u.id, u]))
         );
@@ -1693,7 +1723,6 @@ class App {
         document.getElementById('new_user_firm').value = '';
         
         showToast(`✅ ${role} User "${id}" added successfully!`);
-        console.log('✅ User added:', user);
     }
 
     async deleteUser(id) {
@@ -1709,18 +1738,27 @@ class App {
         showToast('✅ User deleted');
     }
 
-    // ===== EXPENSE HEADS =====
+    // ============================================================
+    // EXPENSE HEADS - FIRM WISE
+    // ============================================================
+
     renderHeadsList() {
         const container = document.getElementById('heads_list');
         if (!container) return;
-        const heads = Object.keys(this.expenseHeads);
+        const firm = document.getElementById('expense_head_firm')?.value || '';
+        let heads = Object.keys(this.expenseHeads);
+        if (firm) {
+            // Filter heads that belong to this firm
+            heads = heads.filter(h => this.expenseHeads[h]?.firm === firm);
+        }
         if (heads.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No expense heads added</p>';
+            container.innerHTML = '<p style="color:#999;">No expense heads added for this firm</p>';
             return;
         }
         container.innerHTML = heads.map(h => `
             <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
-                <span><strong>${h}</strong> → ${(this.expenseHeads[h] || []).join(', ')}</span>
+                <span><strong>${h}</strong> → ${(this.expenseHeads[h]?.subHeads || []).join(', ')} 
+                ${this.expenseHeads[h]?.firm ? `<span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[this.expenseHeads[h].firm]?.name || this.expenseHeads[h].firm}</span>` : ''}</span>
                 <button class="btn-action btn-del" onclick="deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
             </div>
         `).join('');
@@ -1731,12 +1769,18 @@ class App {
             showToast('❌ No permission to add expense head');
             return;
         }
+        const firm = document.getElementById('expense_head_firm').value;
         const head = document.getElementById('new_head_name').value.trim();
         const subHead = document.getElementById('new_subhead_name').value.trim();
+        
+        if (!firm) { showToast('❌ Please select a firm'); return; }
         if (!head) { showToast('Enter expense head name'); return; }
-        if (!this.expenseHeads[head]) this.expenseHeads[head] = [];
-        if (subHead && !this.expenseHeads[head].includes(subHead)) {
-            this.expenseHeads[head].push(subHead);
+        
+        if (!this.expenseHeads[head]) {
+            this.expenseHeads[head] = { firm: firm, subHeads: [] };
+        }
+        if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
+            this.expenseHeads[head].subHeads.push(subHead);
         }
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
         this.populateExpenseHeads();
@@ -1757,13 +1801,15 @@ class App {
         showToast('✅ Deleted');
     }
 
-    // ===== BANK MANAGEMENT - FIRM WISE =====
+    // ============================================================
+    // BANK MANAGEMENT
+    // ============================================================
+
     updateBankFirmSelect() {
         const select = document.getElementById('bank_firm_select');
         if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Firm --</option>';
-        
         Object.keys(this.allFirms).forEach(f => {
             if (this.allFirms[f]) {
                 select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
@@ -1785,13 +1831,11 @@ class App {
     renderBankAccountsList(firmKey) {
         const container = document.getElementById('bank_accounts_list');
         if (!container) return;
-        
         const banks = this.bankAccounts[firmKey] || [];
         if (banks.length === 0) {
             container.innerHTML = '<p style="color:#999;">No bank accounts added for this firm</p>';
             return;
         }
-        
         container.innerHTML = banks.map((b, index) => `
             <div class="bank-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff;">
                 <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
@@ -1809,7 +1853,6 @@ class App {
             showToast('❌ No permission to add bank');
             return;
         }
-        
         const firmKey = document.getElementById('bank_firm_select').value;
         const name = document.getElementById('new_bank_name').value.trim();
         const account = document.getElementById('new_bank_account').value.trim();
@@ -1821,7 +1864,6 @@ class App {
         
         if (!this.bankAccounts[firmKey]) this.bankAccounts[firmKey] = [];
         this.bankAccounts[firmKey].push({ name, account, ifsc });
-        
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
         
         this.renderBankAccountsList(firmKey);
@@ -1831,29 +1873,28 @@ class App {
         document.getElementById('new_bank_name').value = '';
         document.getElementById('new_bank_account').value = '';
         document.getElementById('new_bank_ifsc').value = '';
-        
         showToast('✅ Bank account added successfully!');
     }
 
     async deleteBankAccount(firmKey, index) {
         if (!confirm('Delete this bank account?')) return;
-        
         if (this.bankAccounts[firmKey]) {
             this.bankAccounts[firmKey].splice(index, 1);
             if (this.bankAccounts[firmKey].length === 0) {
                 delete this.bankAccounts[firmKey];
             }
         }
-        
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
         this.renderBankAccountsList(firmKey);
         this.updateBankDropdown();
         this.updateBankFirmSelect();
         showToast('✅ Bank account deleted');
     }
 
-    // ===== PERMISSION CHECKS =====
+    // ============================================================
+    // PERMISSION CHECKS
+    // ============================================================
+
     canAddParty() {
         return this.userPermissions.party_add || this.currentRole === 'Admin';
     }
@@ -1870,24 +1911,30 @@ class App {
         return this.userPermissions.expense_add || this.currentRole === 'Admin';
     }
 
-    // ===== BULK IMPORT FUNCTIONS =====
+    // ============================================================
+    // IMPORT/EXPORT FUNCTIONS
+    // ============================================================
+
     async importExpenseHeads() {
         const fileInput = document.getElementById('importHeadsFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
+            const firm = document.getElementById('expense_head_firm').value || this.currentFirm;
+            if (!firm) { showToast('❌ Please select a firm'); return; }
             let count = 0;
             data.forEach(row => {
                 const head = row.Head || row[0];
                 const subHead = row.SubHead || row[1];
                 if (head) {
-                    if (!this.expenseHeads[head]) this.expenseHeads[head] = [];
-                    if (subHead && !this.expenseHeads[head].includes(subHead)) {
-                        this.expenseHeads[head].push(subHead);
+                    if (!this.expenseHeads[head]) {
+                        this.expenseHeads[head] = { firm: firm, subHeads: [] };
+                    }
+                    if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
+                        this.expenseHeads[head].subHeads.push(subHead);
                         count++;
                     }
                 }
@@ -1908,16 +1955,16 @@ class App {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
+            const firm = document.getElementById('party_firm_filter')?.value || this.currentFirm;
             let count = 0;
             data.forEach(row => {
                 const name = row.PartyName || row[0];
                 const phone = row.Phone || row[1] || '';
                 const address = row.Address || row[2] || '';
-                if (name && !this.parties.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-                    this.parties.push({ id: generateId(), name, phone, address });
+                if (name && !this.parties.find(p => p.name.toLowerCase() === name.toLowerCase() && p.firm === firm)) {
+                    this.parties.push({ id: generateId(), name, phone, address, firm: firm || '' });
                     count++;
                 }
             });
@@ -1932,63 +1979,307 @@ class App {
         }
     }
 
-    async importVouchers() {
-        const fileInput = document.getElementById('importVouchersFile');
+    async importSignatories() {
+        const fileInput = document.getElementById('importSignatoriesFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
+            const firm = document.getElementById('signatory_firm_filter')?.value || this.currentFirm;
             let count = 0;
-            for (const row of data) {
-                const date = row.Date || row[0];
-                const vno = row.VoucherNo || row[1];
-                const head = row.Head || row[2];
-                const party = row.Party || row[3];
-                const amount = parseFloat(row.Amount || row[4]) || 0;
-                const mode = row.Mode || row[5] || 'Cash';
-                const narration = row.Narration || row[6] || '';
-                
-                if (date && head && party && amount > 0) {
-                    const voucher = {
-                        id: generateId(),
-                        vno: vno || `IMP/${String(count+1).padStart(4,'0')}`,
-                        date: date,
-                        firmKey: this.currentFirm || 'DevVidyalaya',
-                        firmName: this.allFirms[this.currentFirm]?.name || 'Dev Vidyalaya',
-                        head: head,
-                        subHead: row.SubHead || row[7] || '',
-                        party: party,
-                        amount: amount,
-                        mode: mode,
-                        bankName: row.BankName || row[8] || '',
-                        bankAccount: row.BankAccount || row[9] || '',
-                        bankIfsc: row.IFSC || row[10] || '',
-                        referenceNo: row.ReferenceNo || row[11] || '',
-                        signatory: row.Signatory || row[12] || '',
-                        narration: narration,
-                        type: 'EXP',
-                        status: 'active',
-                        createdBy: this.currentUser,
-                        createdAt: new Date().toISOString(),
-                        timestamp: Date.now()
-                    };
-                    await this.storage.saveVoucher(voucher);
-                    this.db.push(voucher);
+            data.forEach(row => {
+                const name = row.Name || row[0];
+                const designation = row.Designation || row[1] || '';
+                if (name && !this.signatories.find(s => s.name.toLowerCase() === name.toLowerCase() && s.firm === firm)) {
+                    this.signatories.push({ id: generateId(), name, designation, firm: firm || '' });
                     count++;
                 }
-            }
-            this.renderAll();
-            this.updateStats();
-            this.generateVoucherNo();
-            this.updateHeadFilter();
-            showToast(`✅ ${count} Vouchers imported!`);
+            });
+            await this.storage.save(STORAGE_KEYS.SIGNATORIES,
+                Object.fromEntries(this.signatories.map(s => [s.id, s]))
+            );
+            this.populateSignatoryDropdown();
+            this.renderSignatoriesList();
+            showToast(`✅ ${count} Signatories imported!`);
         } catch (error) {
             showToast('❌ Import failed: ' + error.message);
         }
     }
+
+    exportExpenseHeads() {
+        const data = Object.keys(this.expenseHeads).map(head => ({
+            Head: head,
+            SubHead: (this.expenseHeads[head]?.subHeads || []).join(', '),
+            Firm: this.allFirms[this.expenseHeads[head]?.firm]?.name || this.expenseHeads[head]?.firm || ''
+        }));
+        this.exportToExcel(data, 'Expense_Heads_Export');
+    }
+
+    exportParties() {
+        const data = this.parties.map(p => ({
+            PartyName: p.name,
+            Phone: p.phone || '',
+            Address: p.address || '',
+            Firm: this.allFirms[p.firm]?.name || p.firm || ''
+        }));
+        this.exportToExcel(data, 'Parties_Export');
+    }
+
+    exportSignatories() {
+        const data = this.signatories.map(s => ({
+            Name: s.name,
+            Designation: s.designation || '',
+            Firm: this.allFirms[s.firm]?.name || s.firm || ''
+        }));
+        this.exportToExcel(data, 'Signatories_Export');
+    }
+
+    // ============================================================
+    // VOUCHER EXPORT FUNCTIONS
+    // ============================================================
+
+    exportToExcel(data, filename) {
+        if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
+        const ws = XLSX.utils.json_to_sheet(data.map(v => ({
+            'Date': v.date || v.Date || '',
+            'Voucher No': v.vno || v['Voucher No'] || '',
+            'Firm': v.firmName || v.Firm || v.firmKey || '',
+            'Head': v.head || v.Head || '',
+            'Sub Head': v.subHead || v['Sub Head'] || '',
+            'Party': v.party || v.Party || '',
+            'Amount': v.amount || v.Amount || 0,
+            'Mode': v.mode || v.Mode || '',
+            'UPI App': v.upiApp || v['UPI App'] || '',
+            'Bank Name': v.bankName || v['Bank Name'] || '',
+            'Bank Account': v.bankAccount || v['Bank Account'] || '',
+            'IFSC': v.bankIfsc || v.IFSC || '',
+            'Reference No': v.referenceNo || v['Reference No'] || '',
+            'Signatory': v.signatory || v.Signatory || '',
+            'Narration': v.narration || v.Narration || '',
+            'Created By': v.createdBy || v['Created By'] || '',
+            'Status': v.status || v.Status || 'active'
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
+        XLSX.writeFile(wb, filename + '.xlsx');
+        showToast('📎 Exported: ' + filename);
+    }
+
+    exportAllVouchers() {
+        const allVouchers = [...this.db.filter(v => v.status !== 'deleted'), ...this.deletedVouchers];
+        const unique = [];
+        const seen = new Set();
+        allVouchers.forEach(v => {
+            if (!seen.has(v.id)) { seen.add(v.id); unique.push(v); }
+        });
+        this.exportToExcel(unique, 'All_Vouchers_Report');
+    }
+
+    exportActiveVouchers() {
+        this.exportToExcel(this.db.filter(v => v.status !== 'deleted'), 'Active_Vouchers');
+    }
+
+    exportDeletedVouchers() {
+        this.exportToExcel(this.deletedVouchers, 'Deleted_Vouchers');
+    }
+
+    exportEditedVouchers() {
+        const editedIds = new Set(this.editLogs.map(e => e.voucherId));
+        const editedVouchers = this.db.filter(v => editedIds.has(v.id));
+        this.exportToExcel(editedVouchers, 'Edited_Vouchers');
+    }
+
+    exportFilteredVouchers() {
+        const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
+        const start = document.getElementById('r_start')?.value || '';
+        const end = document.getElementById('r_end')?.value || '';
+        const status = document.getElementById('r_status')?.value || 'ALL';
+        const headFilter = document.getElementById('r_head_filter')?.value || '';
+        const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
+        const modeFilter = document.getElementById('r_mode_filter')?.value || '';
+        const firmFilter = document.getElementById('r_firm_filter')?.value || '';
+        const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
+        const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
+        
+        let allVouchers = [];
+        if (status === 'ALL' || status === 'active') {
+            allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
+        }
+        if (status === 'ALL' || status === 'deleted') {
+            allVouchers = allVouchers.concat(this.deletedVouchers);
+        }
+        const seen = new Set();
+        allVouchers = allVouchers.filter(v => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+        });
+        const filtered = allVouchers.filter(v => {
+            let match = true;
+            if (search) {
+                match = match && (
+                    v.party?.toLowerCase().includes(search) ||
+                    v.head?.toLowerCase().includes(search) ||
+                    v.narration?.toLowerCase().includes(search) ||
+                    v.vno?.toLowerCase().includes(search) ||
+                    v.subHead?.toLowerCase().includes(search) ||
+                    v.createdBy?.toLowerCase().includes(search)
+                );
+            }
+            if (start) match = match && v.date >= start;
+            if (end) match = match && v.date <= end;
+            if (amountMin > 0) match = match && v.amount >= amountMin;
+            if (amountMax < Infinity) match = match && v.amount <= amountMax;
+            if (headFilter) match = match && v.head === headFilter;
+            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+            if (modeFilter) match = match && v.mode === modeFilter;
+            if (firmFilter) match = match && v.firmKey === firmFilter;
+            return match;
+        });
+        this.exportToExcel(filtered, 'Filtered_Vouchers_Export');
+    }
+
+    // ============================================================
+    // SHARE VOUCHER
+    // ============================================================
+
+    shareVoucher(id) {
+        if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to share');
+            return;
+        }
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Voucher not found'); return; }
+        const message = `*${v.firmName}*\nVoucher: ${v.vno}\nDate: ${v.date}\nHead: ${v.head}\nParty: ${v.party}\nAmount: ₹${v.amount.toFixed(2)}\n\nThank you!`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
+
+    shareInvoiceViaWhatsApp() {
+        const voucher = this.db[this.db.length - 1];
+        if (!voucher) { showToast('No voucher to share'); return; }
+        this.shareVoucher(voucher.id);
+    }
+
+    // ============================================================
+    // SAVE ALL SETTINGS
+    // ============================================================
+
+    async saveAllSettings() {
+        const firmObj = {};
+        Object.keys(this.allFirms).forEach(k => {
+            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
+                firmObj[k] = this.allFirms[k];
+            }
+        });
+        await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
+        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
+        await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
+        await this.storage.save(STORAGE_KEYS.USERS,
+            Object.fromEntries(this.allUsers.map(u => [u.id, u]))
+        );
+        
+        const perms = {
+            print: document.getElementById('perm_print').checked,
+            edit: document.getElementById('perm_edit').checked,
+            delete: document.getElementById('perm_delete').checked,
+            whatsapp: document.getElementById('perm_whatsapp').checked,
+            reports: document.getElementById('perm_reports').checked,
+            view_all: document.getElementById('perm_view_all').checked,
+            party_add: document.getElementById('perm_party_add').checked,
+            signatory_add: document.getElementById('perm_signatory_add').checked,
+            bank_add: document.getElementById('perm_bank_add').checked,
+            expense_add: document.getElementById('perm_expense_add').checked
+        };
+        await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
+        this.userPermissions = perms;
+        
+        showToast('✅ All settings saved!');
+        this.closeSettings();
+        this.populateFirmDropdown();
+        this.updateLoginRoleDropdown();
+        this.updateSettingsRoleDropdown();
+        this.updateHeadFilter();
+        this.updateUI();
+        this.renderAll();
+    }
+
+    // ============================================================
+    // MODULE SWITCH
+    // ============================================================
+
+    switchModule(module) {
+        document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+        const pane = document.getElementById('module-' + module);
+        if (pane) pane.classList.add('active');
+        document.querySelectorAll('.module-tab').forEach(t => {
+            if (t.textContent.toLowerCase().includes(module === 'transactions' ? 'create' : 'list')) {
+                t.classList.add('active');
+            }
+        });
+        if (module === 'reports') this.renderReports();
+    }
+
+    // ============================================================
+    // UI UPDATE
+    // ============================================================
+
+    updateUI() {
+        let firmName = 'All Firms (Admin)';
+        if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
+        else if (this.currentFirm && this.allFirms[this.currentFirm]) {
+            firmName = this.allFirms[this.currentFirm].name;
+        }
+        document.getElementById('header_firm_name').innerText = firmName;
+    }
+
+    // ============================================================
+    // REAL-TIME LISTENER
+    // ============================================================
+
+    setupRealtimeListener() {
+        this.storage.onVoucherChange((db) => {
+            this.db = db;
+            this.renderAll();
+            this.updateStats();
+            this.generateVoucherNo();
+            this.updateHeadFilter();
+        });
+    }
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+
+    setupEventListeners() {
+        document.getElementById('loginBtn').addEventListener('click', () => this.doLogin());
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (document.getElementById('login-screen').style.display !== 'none') {
+                    this.doLogin();
+                }
+            }
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
+            }
+        });
+        
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
+            });
+        });
+
+        // Payment mode change listener for UPI sub-options
+        document.getElementById('v_mode_value')?.addEventListener('change', () => this.toggleBankField());
+    }
+
+    // ============================================================
+    // UTILITY - READ FILE
+    // ============================================================
 
     async _readFile(file) {
         return new Promise((resolve, reject) => {
@@ -2021,107 +2312,11 @@ class App {
                 }
             };
             reader.onerror = reject;
-            
             if (file.name.endsWith('.xlsx')) {
                 reader.readAsArrayBuffer(file);
             } else {
                 reader.readAsText(file);
             }
-        });
-    }
-
-    // ===== SAVE ALL SETTINGS =====
-    async saveAllSettings() {
-        const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
-        });
-        await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
-        await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.id, u]))
-        );
-        
-        const perms = {
-            print: document.getElementById('perm_print').checked,
-            edit: document.getElementById('perm_edit').checked,
-            delete: document.getElementById('perm_delete').checked,
-            whatsapp: document.getElementById('perm_whatsapp').checked,
-            reports: document.getElementById('perm_reports').checked,
-            view_all: document.getElementById('perm_view_all').checked,
-            party_add: document.getElementById('perm_party_add').checked,
-            signatory_add: document.getElementById('perm_signatory_add').checked,
-            bank_add: document.getElementById('perm_bank_add').checked,
-            expense_add: document.getElementById('perm_expense_add').checked
-        };
-        await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
-        this.userPermissions = perms;
-        
-        showToast('✅ All settings saved!');
-        this.closeSettings();
-        this.populateFirmDropdown();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        this.updateHeadFilter();
-        this.updateUI();
-    }
-
-    // ===== MODULE SWITCH =====
-    switchModule(module) {
-        document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
-        const pane = document.getElementById('module-' + module);
-        if (pane) pane.classList.add('active');
-        document.querySelectorAll('.module-tab').forEach(t => {
-            if (t.textContent.toLowerCase().includes(module)) t.classList.add('active');
-        });
-        if (module === 'reports') this.renderReports();
-    }
-
-    // ===== UI UPDATE =====
-    updateUI() {
-        let firmName = 'All Firms (Admin)';
-        if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
-        else if (this.currentFirm && this.allFirms[this.currentFirm]) {
-            firmName = this.allFirms[this.currentFirm].name;
-        }
-        document.getElementById('header_firm_name').innerText = firmName;
-    }
-
-    // ===== REAL-TIME LISTENER =====
-    setupRealtimeListener() {
-        this.storage.onVoucherChange((db) => {
-            this.db = db;
-            this.renderAll();
-            this.updateStats();
-            this.generateVoucherNo();
-            this.updateHeadFilter();
-        });
-    }
-
-    // ===== EVENT LISTENERS =====
-    setupEventListeners() {
-        document.getElementById('loginBtn').addEventListener('click', () => this.doLogin());
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                if (document.getElementById('login-screen').style.display !== 'none') {
-                    this.doLogin();
-                }
-            }
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
-            }
-        });
-        
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) this.style.display = 'none';
-            });
         });
     }
 }
