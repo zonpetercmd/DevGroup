@@ -27,7 +27,6 @@ export const DEFAULT_FIRMS = {
     }
 };
 
-// ✅ Updated Permissions - New Options Added
 export const DEFAULT_PERMISSIONS = {
     print: true,
     edit: true,
@@ -35,15 +34,14 @@ export const DEFAULT_PERMISSIONS = {
     whatsapp: true,
     reports: true,
     view_all: true,
-    party_add: true,        // 👤 Add Party
-    signatory_add: true,    // ✍️ Add Signatory
-    bank_add: true,         // 🏦 Add Bank
-    expense_add: true,      // 📂 Add Expense Head
-    multi_firm: false       // 🏢 Multiple Firms Access
+    party_add: true,
+    signatory_add: true,
+    bank_add: true,
+    expense_add: true,
+    multi_firm: false
 };
 
 export const STORAGE_KEYS = {
-    // Main Data
     FIRMS: 'firms',
     VOUCHERS: 'vouchers',
     DELETED: 'deletedVouchers',
