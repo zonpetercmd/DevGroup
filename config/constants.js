@@ -2,7 +2,7 @@
 
 export const DEFAULT_FIRMS = {
     'DevVidyalaya': {
-        name: 'DEV विद्यालय',
+        name: 'DEV Vidyalaya',
         short: 'DV',
         logo: 'logo.jpeg',
         addr: 'Dev Vidyalaya, Near RTO Choraha, Sikar, Rajasthan',
