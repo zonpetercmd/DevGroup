@@ -11,7 +11,6 @@
     --border: #e2e8f0;
 }
 
-/* Dark Theme - बाद में Enable कर सकते हैं */
 [data-theme="dark"] {
     --bg: #0f172a;
     --dark: #f8fafc;
