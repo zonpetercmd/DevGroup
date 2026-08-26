@@ -65,7 +65,11 @@
         </div>
 
         <!-- Tabs -->
-        <div class="module-tabs" id="moduleTabsContainer"></div>
+        <div class="module-tabs" id="moduleTabsContainer">
+            <button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>
+            <button class="module-tab" onclick="switchModule('receipts')">🧾 Receipts</button>
+            <button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>
+        </div>
 
         <!-- ===== TRANSACTIONS ===== -->
         <div id="module-transactions" class="module-pane active">
@@ -83,10 +87,8 @@
                 
                 <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
-                    <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
-                    <!-- Expense Head - Search + Dropdown -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
@@ -96,7 +98,6 @@
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
-                    <!-- Sub Head - Search + Dropdown -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
@@ -106,7 +107,6 @@
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Firm - Search + Dropdown -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
@@ -116,7 +116,6 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
-                    <!-- Party - Search + Dropdown -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
@@ -127,7 +126,6 @@
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
-                    <!-- Payment Mode - Search + Dropdown -->
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
@@ -137,16 +135,13 @@
                         <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Bank Account -->
                     <div id="bank_account_field">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <!-- Reference No -->
                     <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
                     
-                    <!-- Signatory - Search + Dropdown -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
@@ -157,13 +152,10 @@
                         <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
-                    <!-- Amount -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
                     
-                    <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <!-- Narration - Full Width -->
                     <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
@@ -231,12 +223,126 @@
             </div>
         </div>
 
+        <!-- ===== RECEIPTS MODULE ===== -->
+        <div id="module-receipts" class="module-pane">
+            <div class="form-card">
+                <h4 id="r_form_title">🧾 Add Receipt Voucher</h4>
+                <input type="hidden" id="r_edit_id">
+                
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
+                    <div><label>📅 Date</label><input type="date" id="r_date"></div>
+                    
+                    <div>
+                        <label>📂 Head</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="r_head_input" placeholder="Search or select head..." oninput="window.receipts.filterHeads(this.value)" onfocus="window.receipts.populateHeads();" autocomplete="off">
+                            <div id="r_headDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="r_head_value">
+                    </div>
+                    
+                    <div>
+                        <label>🏢 Firm</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="r_firm_name_input" placeholder="Search or select firm..." oninput="window.receipts.filterFirms(this.value)" onfocus="window.receipts.populateFirms();" autocomplete="off">
+                            <div id="r_firmDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="r_firm_name_value">
+                    </div>
+                    
+                    <div>
+                        <label>👤 Received From</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="r_party_input" placeholder="Search or select party..." oninput="window.receipts.filterParties(this.value)" onfocus="window.receipts.populateParties();" autocomplete="off">
+                            <div id="r_partyDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="r_party_value">
+                        <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
+                    </div>
+                    
+                    <div>
+                        <label>💳 Payment Mode</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="r_mode_input" placeholder="Search or select mode..." oninput="window.receipts.filterModes(this.value)" onfocus="window.receipts.populateModes();" autocomplete="off">
+                            <div id="r_modeDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="r_mode_value">
+                    </div>
+                    
+                    <div><label>🔢 Reference No.</label><input type="text" id="r_reference_no"></div>
+                    
+                    <div>
+                        <label>✍️ Signatory</label>
+                        <div class="search-wrapper">
+                            <input type="text" id="r_signatory_input" placeholder="Search or select signatory..." oninput="window.receipts.filterSignatories(this.value)" onfocus="window.receipts.populateSignatories();" autocomplete="off">
+                            <div id="r_signatoryDropdown" class="dropdown-list"></div>
+                        </div>
+                        <input type="hidden" id="r_signatory_value">
+                        <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
+                    </div>
+                    
+                    <div><label>💰 Amount (₹)</label><input type="number" id="r_amt" value="0"></div>
+                    
+                    <div><label>📋 Receipt No.</label><input type="text" id="r_no" readonly></div>
+                    
+                    <div style="grid-column: 1 / -1;">
+                        <label>📝 Narration</label>
+                        <textarea id="r_narration" placeholder="Enter details..."></textarea>
+                    </div>
+                </div>
+                
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="window.receipts.save()">💾 Save Receipt</button>
+                    <button class="btn-action" style="background:#64748b; color:white;" onclick="window.receipts.resetForm()">🔄 Reset</button>
+                </div>
+            </div>
+            
+            <!-- Receipts Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-box"><p>Today's Receipts</p><h3 id="r_stat_today">0</h3></div>
+                <div class="stat-box"><p>Total Receipts</p><h3 id="r_stat_total">0</h3></div>
+                <div class="stat-box"><p>Total Amount</p><h3 id="r_stat_amount">₹ 0</h3></div>
+                <div class="stat-box"><p>Deleted</p><h3 id="r_stat_deleted">0</h3></div>
+            </div>
+            
+            <!-- Receipts Filter -->
+            <div class="filter-card">
+                <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
+                    <div><label>🔍 Search</label><input type="text" id="r_search" oninput="window.receipts.renderTable()" placeholder="Party, Head, Receipt No..."></div>
+                    <div><label>📅 From</label><input type="date" id="r_start" onchange="window.receipts.renderTable()"></div>
+                    <div><label>📅 To</label><input type="date" id="r_end" onchange="window.receipts.renderTable()"></div>
+                    <div><label>Status</label>
+                        <select id="r_status" onchange="window.receipts.renderTable()">
+                            <option value="ALL">All</option>
+                            <option value="active">Active</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Receipts Table -->
+            <div class="table-res">
+                <table>
+                    <thead><tr>
+                        <th>Date</th><th>Receipt No</th>
+                        <th>Head</th>
+                        <th>Received From</th>
+                        <th>Amount</th>
+                        <th>Mode</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr></thead>
+                    <tbody id="r_list"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- ===== REPORTS ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
                 <h4>📊 Reports</h4>
                 
-                <!-- ✅ Enhanced Filters for Reports -->
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
                     <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
                     <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
@@ -425,6 +531,7 @@
 <!-- ===== MAIN SCRIPT ===== -->
 <script type="module">
     import App from './js/app.js';
+    import ReceiptsModule from './js/receipts.js';
     
     console.log('🚀 Starting App...');
     const app = new App();
@@ -436,7 +543,7 @@
     window.saveVoucher = () => app.saveVoucher();
     window.editVoucher = (id) => app.editVoucher(id);
     window.deleteVoucher = (id) => app.deleteVoucher(id);
-    window.recoverVoucher = (id) => app.recoverVoucher(id);  // ✅ Recover Function
+    window.recoverVoucher = (id) => app.recoverVoucher(id);
     window.generateA4Print = (v) => app.printVoucher(v);
     window.shareVoucher = (id) => app.shareVoucher(id);
     window.openAddPartyModal = () => app.openAddPartyModal();
@@ -450,7 +557,6 @@
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
     
-    // ✅ Search + Dropdown Functions
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
     window.filterSubHeads = (v) => app.filterSubHeads(v);
     window.filterFirms = (v) => app.filterFirms(v);
@@ -485,6 +591,17 @@
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
 
+    // ===== RECEIPTS MODULE =====
+    const receipts = new ReceiptsModule(app);
+    window.receipts = receipts;
+    
+    // Expose Receipts Functions
+    window.saveReceipt = () => receipts.save();
+    window.printReceipt = (id) => receipts.printById(id);
+    window.editReceipt = (id) => receipts.edit(id);
+    window.deleteReceipt = (id) => receipts.deleteReceipt(id);
+    window.recoverReceipt = (id) => receipts.recover(id);
+    
     // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.dropdown-list').forEach(dropdown => {
@@ -510,7 +627,8 @@
     });
 
     // Start App
-    app.init().then(() => {
+    app.init().then(async () => {
+        await receipts.load();
         console.log('✅ App Ready!');
     }).catch(err => {
         console.error('❌ App Error:', err);
