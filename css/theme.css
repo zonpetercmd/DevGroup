@@ -1,4 +1,4 @@
-/* css/theme.css - Theme Colors */
+/* css/theme.css - Theme Colors with Dark Mode */
 
 :root {
     --primary: #2563eb;
@@ -9,10 +9,167 @@
     --danger: #ef4444;
     --warning: #f59e0b;
     --border: #e2e8f0;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --input-bg: #ffffff;
 }
 
+/* ===== DARK MODE ===== */
 [data-theme="dark"] {
     --bg: #0f172a;
     --dark: #f8fafc;
     --border: #334155;
+    --card-bg: #1e293b;
+    --text-color: #f8fafc;
+    --input-bg: #0f172a;
 }
+
+/* Dark Mode - Cards */
+[data-theme="dark"] .form-card,
+[data-theme="dark"] .filter-card,
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .stat-box,
+[data-theme="dark"] .table-res,
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .modal-content {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] header {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .dropdown-list {
+    background: var(--card-bg);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .dropdown-list div {
+    color: var(--text-color);
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .dropdown-list div:hover {
+    background: #334155;
+}
+
+[data-theme="dark"] th {
+    background: #334155;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] td {
+    border-bottom-color: var(--border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .firm-header {
+    background: var(--card-bg);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .firm-header .firm-info .name {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .login-card h2 {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .login-card p {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .login-card input,
+[data-theme="dark"] .login-card select {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .btn-action {
+    color: white;
+}
+
+[data-theme="dark"] .search-wrapper input {
+    background: var(--input-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .permission-grid {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .permission-grid label {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .user-card,
+[data-theme="dark"] .firm-card,
+[data-theme="dark"] .party-card,
+[data-theme="dark"] .signatory-card,
+[data-theme="dark"] .bank-card {
+    background: var(--card-bg);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .user-card .user-info span,
+[data-theme="dark"] .firm-card .firm-info span,
+[data-theme="dark"] .party-card .party-info span,
+[data-theme="dark"] .signatory-card .signatory-info span,
+[data-theme="dark"] .bank-card span {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .toast-msg {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+[data-theme="dark"] .no-print button {
+    background: var(--primary);
+}
+
+[data-theme="dark"] .bank-card {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] #recent_activity {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] #recent_activity div {
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .status-active { color: #34d399; }
+[data-theme="dark"] .status-deleted { color: #f87171; }
+[data-theme="dark"] .status-edited { color: #fbbf24; }
