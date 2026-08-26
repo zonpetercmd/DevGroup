@@ -81,7 +81,9 @@
                 <h4 id="form-title">📝 Add Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
+                <!-- ✅ Fixed Grid - Same Level for Party & Signatory -->
                 <div class="grid">
+                    <!-- Row 1 -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
                     <div>
@@ -111,14 +113,15 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
+                    <!-- Row 2: Party + Payment Mode + Bank + Reference -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
-                            <input type="text" id="party_input" placeholder="Search party..." oninput="filterParties(this.value)">
+                            <input type="text" id="party_input" placeholder="Search or select party..." oninput="filterParties(this.value)">
                             <div id="partyDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="party_value">
-                        <button class="btn-add" onclick="openAddPartyModal()">+ New Party</button>
+                        <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
                     <div>
@@ -139,21 +142,23 @@
                     
                     <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
                     
+                    <!-- Row 3: Signatory + Amount + Voucher No -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Search signatory..." oninput="filterSignatories(this.value)">
+                            <input type="text" id="signatory_input" placeholder="Search or select signatory..." oninput="filterSignatories(this.value)">
                             <div id="signatoryDropdown" class="dropdown-list"></div>
                         </div>
                         <input type="hidden" id="signatory_value">
-                        <button class="btn-add" onclick="openAddSignatoryModal()">+ Add Signatory</button>
+                        <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
                     
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <div style="grid-column:1/-1;">
+                    <!-- Row 4: Narration (Full Width) -->
+                    <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
                     </div>
@@ -183,24 +188,23 @@
             </div>
             
             <!-- Table -->
-           <!-- Table - Updated with Created By Column -->
-<div class="table-res">
-    <table>
-        <thead><tr>
-            <th>Date</th>
-            <th>Voucher No</th>
-            <th>Head</th>
-            <th>Sub Head</th>
-            <th>Party</th>
-            <th>Amount</th>
-            <th>Mode</th>
-            <th>Created By</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr></thead>
-        <tbody id="v_list"></tbody>
-    </table>
-</div>
+            <div class="table-res">
+                <table>
+                    <thead><tr>
+                        <th>Date</th>
+                        <th>Voucher No</th>
+                        <th>Head</th>
+                        <th>Sub Head</th>
+                        <th>Party</th>
+                        <th>Amount</th>
+                        <th>Mode</th>
+                        <th>Created By</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr></thead>
+                    <tbody id="v_list"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- ===== REPORTS ===== -->
@@ -289,7 +293,7 @@
             <button class="btn-add" onclick="addUser()">+ Add</button>
         </div>
         
-        <!-- ===== PERMISSIONS - UPDATED ===== -->
+        <!-- ===== PERMISSIONS ===== -->
         <h4>🔐 Permissions</h4>
         <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
             <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
@@ -313,7 +317,7 @@
             <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
         </div>
         
-        <!-- ===== BANK MANAGEMENT - NEW ===== -->
+        <!-- ===== BANK MANAGEMENT ===== -->
         <h4>🏦 Bank Management (Firm Wise)</h4>
         <div style="margin-bottom:10px;">
             <label style="font-size:12px;">Select Firm</label>
