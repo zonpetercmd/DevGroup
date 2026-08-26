@@ -639,106 +639,112 @@ class App {
     }
 
     // ===== RENDER TABLE =====
-    renderTable() {
-        const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
-        const start = document.getElementById('f_start')?.value || '';
-        const end = document.getElementById('f_end')?.value || '';
-        const status = document.getElementById('f_status')?.value || 'ALL';
-        const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
-        const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
-        const headFilter = document.getElementById('f_head_filter')?.value || '';
-        const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
-        const modeFilter = document.getElementById('f_mode_filter')?.value || '';
-        
-        let dataToShow = [];
-        if (status === 'ALL' || status === 'active') {
-            dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
-        }
-        if (status === 'ALL' || status === 'deleted') {
-            dataToShow = dataToShow.concat(this.deletedVouchers);
-        }
-        
-        const seen = new Set();
-        dataToShow = dataToShow.filter(v => {
-            if (seen.has(v.id)) return false;
-            seen.add(v.id);
-            return true;
-        });
-        
-        const filtered = dataToShow.filter(v => {
-            let match = true;
-            if (search) {
-                match = match && (
-                    v.party?.toLowerCase().includes(search) ||
-                    v.head?.toLowerCase().includes(search) ||
-                    v.narration?.toLowerCase().includes(search) ||
-                    v.vno?.toLowerCase().includes(search) ||
-                    v.subHead?.toLowerCase().includes(search) ||
-                    v.createdBy?.toLowerCase().includes(search)
-                );
-            }
-            if (start) match = match && v.date >= start;
-            if (end) match = match && v.date <= end;
-            if (amountMin > 0) match = match && v.amount >= amountMin;
-            if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            if (headFilter) match = match && v.head === headFilter;
-            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-            if (modeFilter) match = match && v.mode === modeFilter;
-            return match;
-        });
-        
-        const tbody = document.getElementById('v_list');
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.slice().reverse().map(v => {
-            const isDeleted = v.status === 'deleted';
-            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-            const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
-            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-            
-            let actions = '';
-            if (!isDeleted) {
-                if (this.userPermissions.print || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-                }
-                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-                }
-                if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-                }
-                if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-                }
-            } else {
-                actions = `
-                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                `;
-            }
-            
-            const createdBy = v.createdBy || 'Unknown';
-            const creatorBadge = this.currentRole === 'Admin' ? 
-                `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
-                `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
-            
-            return `<tr>
-                <td>${v.date}</td>
-                <td><b>${v.vno}</b></td>
-                <td>${v.head}</td>
-                <td>${v.subHead || '-'}</td>
-                <td>${v.party || '-'}</td>
-                <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
-                <td>${creatorBadge}</td>
-                <td><span class="${statusClass}">${statusText}</span></td>
-                <td>${actions}</td>
-            </tr>`;
-        }).join('');
+renderTable() {
+    const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
+    const start = document.getElementById('f_start')?.value || '';
+    const end = document.getElementById('f_end')?.value || '';
+    const status = document.getElementById('f_status')?.value || 'ALL';
+    const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
+    const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
+    const headFilter = document.getElementById('f_head_filter')?.value || '';
+    const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
+    const modeFilter = document.getElementById('f_mode_filter')?.value || '';
+    
+    let dataToShow = [];
+    if (status === 'ALL' || status === 'active') {
+        dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
     }
-
+    if (status === 'ALL' || status === 'deleted') {
+        dataToShow = dataToShow.concat(this.deletedVouchers);
+    }
+    
+    const seen = new Set();
+    dataToShow = dataToShow.filter(v => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+    });
+    
+    // ✅ STAFF FILTER - Only show current firm's vouchers
+    const filtered = dataToShow.filter(v => {
+        let match = true;
+        
+        // ✅ If Staff (not Admin), filter by current firm
+        if (this.currentRole !== 'Admin' && this.currentFirm) {
+            match = match && v.firmKey === this.currentFirm;
+        }
+        
+        if (search) {
+            match = match && (
+                v.party?.toLowerCase().includes(search) ||
+                v.head?.toLowerCase().includes(search) ||
+                v.narration?.toLowerCase().includes(search) ||
+                v.vno?.toLowerCase().includes(search) ||
+                v.subHead?.toLowerCase().includes(search) ||
+                v.createdBy?.toLowerCase().includes(search)
+            );
+        }
+        if (start) match = match && v.date >= start;
+        if (end) match = match && v.date <= end;
+        if (amountMin > 0) match = match && v.amount >= amountMin;
+        if (amountMax < Infinity) match = match && v.amount <= amountMax;
+        if (headFilter) match = match && v.head === headFilter;
+        if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+        if (modeFilter) match = match && v.mode === modeFilter;
+        return match;
+    });
+    
+    const tbody = document.getElementById('v_list');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.slice().reverse().map(v => {
+        const isDeleted = v.status === 'deleted';
+        const isEdited = this.editLogs.some(e => e.voucherId === v.id);
+        const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
+        const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
+        
+        let actions = '';
+        if (!isDeleted) {
+            if (this.userPermissions.print || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+            }
+            if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+            }
+            if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+            }
+            if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+            }
+        } else {
+            actions = `
+                <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+            `;
+        }
+        
+        const createdBy = v.createdBy || 'Unknown';
+        const creatorBadge = this.currentRole === 'Admin' ? 
+            `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
+            `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
+        
+        return `<tr>
+            <td>${v.date}</td>
+            <td><b>${v.vno}</b></td>
+            <td>${v.head}</td>
+            <td>${v.subHead || '-'}</td>
+            <td>${v.party || '-'}</td>
+            <td>₹${v.amount.toLocaleString()}</td>
+            <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+            <td>${creatorBadge}</td>
+            <td><span class="${statusClass}">${statusText}</span></td>
+            <td>${actions}</td>
+        </tr>`;
+    }).join('');
+}
     updateStats() {
         const today = getToday();
         const active = this.db.filter(v => v.status !== 'deleted');
@@ -753,148 +759,154 @@ class App {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS / VOUCHER LIST =====
-    renderReports() {
-        const div = document.getElementById('report_content');
-        if (!div) return;
+   // ===== REPORTS / VOUCHER LIST =====
+renderReports() {
+    const div = document.getElementById('report_content');
+    if (!div) return;
+    
+    const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
+    const start = document.getElementById('r_start')?.value || '';
+    const end = document.getElementById('r_end')?.value || '';
+    const status = document.getElementById('r_status')?.value || 'ALL';
+    const headFilter = document.getElementById('r_head_filter')?.value || '';
+    const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
+    const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
+    const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
+    const modeFilter = document.getElementById('r_mode_filter')?.value || '';
+    const firmFilter = document.getElementById('r_firm_filter')?.value || '';
+    
+    let allVouchers = [];
+    if (status === 'ALL' || status === 'active') {
+        allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
+    }
+    if (status === 'ALL' || status === 'deleted') {
+        allVouchers = allVouchers.concat(this.deletedVouchers);
+    }
+    
+    const seen = new Set();
+    allVouchers = allVouchers.filter(v => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+    });
+    
+    const filtered = allVouchers.filter(v => {
+        let match = true;
         
-        const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
-        const start = document.getElementById('r_start')?.value || '';
-        const end = document.getElementById('r_end')?.value || '';
-        const status = document.getElementById('r_status')?.value || 'ALL';
-        const headFilter = document.getElementById('r_head_filter')?.value || '';
-        const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
-        const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
-        const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
-        const modeFilter = document.getElementById('r_mode_filter')?.value || '';
-        const firmFilter = document.getElementById('r_firm_filter')?.value || '';
-        
-        let allVouchers = [];
-        if (status === 'ALL' || status === 'active') {
-            allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
-        }
-        if (status === 'ALL' || status === 'deleted') {
-            allVouchers = allVouchers.concat(this.deletedVouchers);
-        }
-        
-        const seen = new Set();
-        allVouchers = allVouchers.filter(v => {
-            if (seen.has(v.id)) return false;
-            seen.add(v.id);
-            return true;
-        });
-        
-        const filtered = allVouchers.filter(v => {
-            let match = true;
-            if (search) {
-                match = match && (
-                    v.party?.toLowerCase().includes(search) ||
-                    v.head?.toLowerCase().includes(search) ||
-                    v.narration?.toLowerCase().includes(search) ||
-                    v.vno?.toLowerCase().includes(search) ||
-                    v.subHead?.toLowerCase().includes(search) ||
-                    v.createdBy?.toLowerCase().includes(search)
-                );
-            }
-            if (start) match = match && v.date >= start;
-            if (end) match = match && v.date <= end;
-            if (amountMin > 0) match = match && v.amount >= amountMin;
-            if (amountMax < Infinity) match = match && v.amount <= amountMax;
-            if (headFilter) match = match && v.head === headFilter;
-            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-            if (modeFilter) match = match && v.mode === modeFilter;
-            if (firmFilter) match = match && v.firmKey === firmFilter;
-            return match;
-        });
-        
-        if (filtered.length === 0) {
-            div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
-            return;
+        // ✅ STAFF FILTER - Only show current firm's vouchers
+        if (this.currentRole !== 'Admin' && this.currentFirm) {
+            match = match && v.firmKey === this.currentFirm;
         }
         
-        div.innerHTML = `
-            <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
-                <span>Total: <strong>${filtered.length}</strong></span>
-                <span>Active: <strong style="color:var(--success)">${filtered.filter(v => v.status !== 'deleted').length}</strong></span>
-                <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
-                <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
-            </div>
+        if (search) {
+            match = match && (
+                v.party?.toLowerCase().includes(search) ||
+                v.head?.toLowerCase().includes(search) ||
+                v.narration?.toLowerCase().includes(search) ||
+                v.vno?.toLowerCase().includes(search) ||
+                v.subHead?.toLowerCase().includes(search) ||
+                v.createdBy?.toLowerCase().includes(search)
+            );
+        }
+        if (start) match = match && v.date >= start;
+        if (end) match = match && v.date <= end;
+        if (amountMin > 0) match = match && v.amount >= amountMin;
+        if (amountMax < Infinity) match = match && v.amount <= amountMax;
+        if (headFilter) match = match && v.head === headFilter;
+        if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+        if (modeFilter) match = match && v.mode === modeFilter;
+        if (firmFilter) match = match && v.firmKey === firmFilter;
+        return match;
+    });
+    
+    if (filtered.length === 0) {
+        div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
+        return;
+    }
+    
+    div.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
+            <span>Total: <strong>${filtered.length}</strong></span>
+            <span>Active: <strong style="color:var(--success)">${filtered.filter(v => v.status !== 'deleted').length}</strong></span>
+            <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
+            <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
+        </div>
+        <div class="table-res">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Voucher No</th><th>Firm</th>
+                        <th>Head</th><th>Sub Head</th><th>Party</th>
+                        <th>Amount</th><th>Mode</th>
+                        <th>Created By</th>
+                        <th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filtered.slice().reverse().map(v => {
+                        const isDeleted = v.status === 'deleted';
+                        const isEdited = this.editLogs.some(e => e.voucherId === v.id);
+                        const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
+                        const createdBy = v.createdBy || 'Unknown';
+                        
+                        let actions = '';
+                        if (!isDeleted) {
+                            if (this.userPermissions.print || this.currentRole === 'Admin') {
+                                actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+                            }
+                            if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                                actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+                            }
+                            if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                                actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+                            }
+                            if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
+                                actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+                            }
+                        } else {
+                            actions = `
+                                <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+                            `;
+                        }
+                        
+                        return `<tr>
+                            <td>${v.date}</td>
+                            <td><b>${v.vno}</b></td>
+                            <td>${v.firmName || v.firmKey || '-'}</td>
+                            <td>${v.head}</td>
+                            <td>${v.subHead || '-'}</td>
+                            <td>${v.party || '-'}</td>
+                            <td>₹${v.amount.toLocaleString()}</td>
+                            <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+                            <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
+                            <td>${statusText}</td>
+                            <td>${actions}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+        ${this.editLogs.length > 0 ? `
+        <div style="margin-top:20px;">
+            <h5>📝 Edit Logs</h5>
             <div class="table-res">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th><th>Voucher No</th><th>Firm</th>
-                            <th>Head</th><th>Sub Head</th><th>Party</th>
-                            <th>Amount</th><th>Mode</th>
-                            <th>Created By</th>
-                            <th>Status</th><th>Actions</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Voucher</th><th>Edited By</th><th>Edited At</th></tr></thead>
                     <tbody>
-                        ${filtered.slice().reverse().map(v => {
-                            const isDeleted = v.status === 'deleted';
-                            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-                            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-                            const createdBy = v.createdBy || 'Unknown';
-                            
-                            let actions = '';
-                            if (!isDeleted) {
-                                if (this.userPermissions.print || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-                                }
-                                if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-                                }
-                                if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-                                }
-                                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-                                }
-                            } else {
-                                actions = `
-                                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                                `;
-                            }
-                            
-                            return `<tr>
-                                <td>${v.date}</td>
-                                <td><b>${v.vno}</b></td>
-                                <td>${v.firmName || v.firmKey || '-'}</td>
-                                <td>${v.head}</td>
-                                <td>${v.subHead || '-'}</td>
-                                <td>${v.party || '-'}</td>
-                                <td>₹${v.amount.toLocaleString()}</td>
-                                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
-                                <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
-                                <td>${statusText}</td>
-                                <td>${actions}</td>
-                            </tr>`;
-                        }).join('')}
+                        ${this.editLogs.slice().reverse().map(log => `
+                            <tr>
+                                <td>${log.vno}</td>
+                                <td><span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${log.editedBy}</span></td>
+                                <td>${new Date(log.editedAt).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             </div>
-            ${this.editLogs.length > 0 ? `
-            <div style="margin-top:20px;">
-                <h5>📝 Edit Logs</h5>
-                <div class="table-res">
-                    <table>
-                        <thead><tr><th>Voucher</th><th>Edited By</th><th>Edited At</th></tr></thead>
-                        <tbody>
-                            ${this.editLogs.slice().reverse().map(log => `
-                                <tr>
-                                    <td>${log.vno}</td>
-                                    <td><span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${log.editedBy}</span></td>
-                                    <td>${new Date(log.editedAt).toLocaleString()}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            ` : ''}
-        `;
-    }
+        </div>
+        ` : ''}
+    `;
+}
 
     // ===== UPDATE HEAD FILTER =====
     updateHeadFilter() {
@@ -999,24 +1011,29 @@ class App {
     }
 
     populateFirmDropdown() {
-        const dropdown = document.getElementById('firmDropdown');
-        if (!dropdown) return;
-        let firms = [];
-        if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
-        else if (this.currentFirm) firms = [this.currentFirm];
-        
-        if (firms.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No firms available</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = firms.map(f => 
-            `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
+    const dropdown = document.getElementById('firmDropdown');
+    if (!dropdown) return;
+    let firms = [];
+    
+    // ✅ STAFF - Only show their firm
+    if (this.currentRole === 'Admin') {
+        firms = Object.keys(this.allFirms);
+    } else if (this.currentFirm) {
+        firms = [this.currentFirm];
     }
+    
+    if (firms.length === 0) {
+        dropdown.innerHTML = '<div class="no-result">No firms available</div>';
+        dropdown.style.display = 'block';
+        return;
+    }
+    dropdown.innerHTML = firms.map(f => 
+        `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
+    ).join('');
+    dropdown.style.display = 'block';
+    const firstItem = dropdown.querySelector('div');
+    if (firstItem) firstItem.classList.add('selected');
+}
 
     populatePartyDropdown() {
         const dropdown = document.getElementById('partyDropdown');
