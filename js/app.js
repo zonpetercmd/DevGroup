@@ -819,9 +819,11 @@ renderReports() {
     `;
 }
 
-    updateHeadFilter() {
-        const select = document.getElementById('r_head');
-        if (!select) return;
+    // ===== UPDATE HEAD FILTER =====
+updateHeadFilter() {
+    // 1️⃣ Report Head Filter (पुराना - r_head)
+    const select = document.getElementById('r_head');
+    if (select) {
         const currentVal = select.value;
         const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
         select.innerHTML = '<option value="">All Heads</option>';
@@ -830,6 +832,31 @@ renderReports() {
         });
         if (currentVal) select.value = currentVal;
     }
+    
+    // 2️⃣ Transaction Head Filter (नया - f_head_filter)
+    const selectFilter = document.getElementById('f_head_filter');
+    if (selectFilter) {
+        const currentVal = selectFilter.value;
+        const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
+        selectFilter.innerHTML = '<option value="">All Heads</option>';
+        heads.forEach(h => {
+            selectFilter.innerHTML += `<option value="${h}">${h}</option>`;
+        });
+        if (currentVal) selectFilter.value = currentVal;
+    }
+    
+    // 3️⃣ Report Head Filter (नया - r_head_filter)
+    const selectR = document.getElementById('r_head_filter');
+    if (selectR) {
+        const currentVal = selectR.value;
+        const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
+        selectR.innerHTML = '<option value="">All Heads</option>';
+        heads.forEach(h => {
+            selectR.innerHTML += `<option value="${h}">${h}</option>`;
+        });
+        if (currentVal) selectR.value = currentVal;
+    }
+}
 
     // ===== EXPORT FUNCTIONS =====
     exportToExcel(data, filename) {
