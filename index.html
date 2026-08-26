@@ -227,31 +227,49 @@
         </div>
 
         <!-- ===== REPORTS ===== -->
-        <div id="module-reports" class="module-pane">
-            <div class="report-card">
-                <h4>📊 Reports</h4>
-                <div class="grid-3">
-                    <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()"></div>
-                    <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
-                    <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
-                    <div><label>Status</label>
-                        <select id="r_status" onchange="renderReports()">
-                            <option value="ALL">All</option>
-                            <option value="active">Active</option>
-                            <option value="deleted">Deleted</option>
-                        </select>
-                    </div>
-                    <div><label>Head</label><select id="r_head" onchange="renderReports()"><option value="">All Heads</option></select></div>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
-                    <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
-                    <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
-                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
-                    <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
-                </div>
-                <div id="report_content"></div>
+<div id="module-reports" class="module-pane">
+    <div class="report-card">
+        <h4>📊 Reports</h4>
+        
+        <!-- ✅ Enhanced Filters for Reports -->
+        <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
+            <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
+            <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
+            <div><label>📅 To</label><input type="date" id="r_end" onchange="renderReports()"></div>
+            <div><label>💰 Amount Min</label><input type="number" id="r_amount_min" onchange="renderReports()" placeholder="Min"></div>
+            <div><label>💰 Amount Max</label><input type="number" id="r_amount_max" onchange="renderReports()" placeholder="Max"></div>
+            <div><label>📂 Head</label>
+                <select id="r_head_filter" onchange="renderReports()">
+                    <option value="">All Heads</option>
+                </select>
+            </div>
+            <div><label>👤 Party</label><input type="text" id="r_party_filter" oninput="renderReports()" placeholder="Party name..."></div>
+            <div><label>💳 Mode</label>
+                <select id="r_mode_filter" onchange="renderReports()">
+                    <option value="">All Modes</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank">Bank</option>
+                    <option value="Paytm">Paytm</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Cheque">Cheque</option>
+                </select>
+            </div>
+            <div><label>📌 Status</label>
+                <select id="r_status" onchange="renderReports()">
+                    <option value="ALL">All</option>
+                    <option value="active">Active</option>
+                    <option value="deleted">Deleted</option>
+                </select>
             </div>
         </div>
+        
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
+            <button class="btn-xlsx" onclick="exportAllVouchers()">📎 All</button>
+            <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
+            <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
+            <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
+        </div>
+        <div id="report_content"></div>
     </div>
 </div>
 
