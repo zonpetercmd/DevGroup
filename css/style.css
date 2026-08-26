@@ -505,3 +505,61 @@ td {
     .permission-grid { grid-template-columns: 1fr 1fr; }
     .firm-header { flex-direction: column; text-align: center; }
 }
+/* Dashboard Styles */
+
+#module-dashboard .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+#module-dashboard .stat-box {
+    cursor: default;
+}
+
+/* Keyboard Shortcut Display */
+kbd {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    border: 1px solid #e2e8f0;
+}
+
+[data-theme="dark"] kbd {
+    background: #334155;
+    border-color: #475569;
+    color: #f8fafc;
+}
+
+/* Activity Logs */
+#activity_logs {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+}
+
+#recent_activity {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+/* Dark Mode Chart Fix */
+[data-theme="dark"] .chart-container {
+    background: var(--card-bg);
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+    #module-dashboard .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    #module-dashboard > div > div {
+        grid-template-columns: 1fr !important;
+    }
+}
