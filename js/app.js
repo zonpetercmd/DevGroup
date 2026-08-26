@@ -908,21 +908,20 @@ class App {
     // POPULATE FUNCTIONS - SEARCH + DROPDOWN (All Fields)
     // ============================================================
 
-    // Example - populateExpenseHeads
-populateExpenseHeads() {
-    const dropdown = document.getElementById('expenseHeadDropdown');
-    if (!dropdown) return;
-    const heads = Object.keys(this.expenseHeads);
-    if (heads.length === 0) {
-        dropdown.innerHTML = '<div class="no-result">No heads added. Add in Settings.</div>';
+    populateExpenseHeads() {
+        const dropdown = document.getElementById('expenseHeadDropdown');
+        if (!dropdown) return;
+        const heads = Object.keys(this.expenseHeads);
+        if (heads.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">No heads added. Add in Settings.</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        dropdown.innerHTML = heads.map(h => 
+            `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
+        ).join('');
         dropdown.style.display = 'block';
-        return;
     }
-    dropdown.innerHTML = heads.map(h => 
-        `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
-    ).join('');
-    dropdown.style.display = 'block';  // ✅ यह Line जोड़ें
-}
 
     populateSubHeads(head) {
         const dropdown = document.getElementById('subHeadDropdown');
