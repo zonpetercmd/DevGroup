@@ -1,4 +1,4 @@
-// js/app.js - Main Application (With Search + Dropdown + Recover)
+// js/app.js - Main Application (Complete)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
@@ -13,7 +13,6 @@ class App {
         this.storage = new Storage();
         this.printEngine = new PrintEngine();
         
-        // Data
         this.db = [];
         this.deletedVouchers = [];
         this.editLogs = [];
@@ -26,14 +25,12 @@ class App {
         this.bankAccounts = {};
         this.userPermissions = { ...DEFAULT_PERMISSIONS };
         
-        // Session
         this.currentUser = '';
         this.currentRole = '';
         this.currentFirm = '';
         this.loaded = false;
     }
 
-    // ===== INIT =====
     async init() {
         console.log('🚀 App Initializing...');
         await this.loadAllData();
@@ -43,7 +40,6 @@ class App {
         console.log('✅ App Ready!');
     }
 
-    // ===== LOAD DATA =====
     async loadAllData() {
         const data = await this.storage.loadAllData();
         this.allFirms = data.allFirms;
@@ -59,10 +55,8 @@ class App {
         this.userPermissions = data.userPermissions || DEFAULT_PERMISSIONS;
         this.loaded = true;
         console.log('✅ Data loaded. Firms:', Object.keys(this.allFirms).length);
-        console.log('🏢 Firms:', Object.keys(this.allFirms));
     }
 
-    // ===== SESSION =====
     checkSession() {
         this.updateLoginRoleDropdown();
         
@@ -110,7 +104,6 @@ class App {
         this.generateVoucherNo();
     }
 
-    // ===== LOGIN - FIXED FOR STAFF =====
     async doLogin() {
         const userId = document.getElementById('user_id').value.trim();
         const pass = document.getElementById('user_pass').value.trim();
@@ -169,7 +162,6 @@ class App {
         showToast('✅ Login successful!');
     }
 
-    // ===== LOGOUT =====
     logout() {
         sessionStorage.clear();
         this.currentUser = '';
@@ -179,7 +171,6 @@ class App {
         showToast('👋 Logged out');
     }
 
-    // ===== UPDATE DROPDOWNS =====
     updateLoginRoleDropdown() {
         const select = document.getElementById('login_role');
         if (!select) return;
@@ -200,18 +191,12 @@ class App {
 
     updateSettingsRoleDropdown() {
         const select = document.getElementById('new_user_role');
-        if (!select) {
-            console.warn('⚠️ new_user_role element not found');
-            return;
-        }
+        if (!select) return;
         const currentVal = select.value;
-        
         select.innerHTML = '';
         select.innerHTML += '<option value="Admin">Admin</option>';
         
         const firms = Object.keys(this.allFirms);
-        console.log('🏢 Updating settings roles with firms:', firms);
-        
         if (firms.length > 0) {
             firms.forEach(f => {
                 if (this.allFirms[f]) {
@@ -219,25 +204,16 @@ class App {
                 }
             });
         }
-        
-        if (currentVal) {
-            select.value = currentVal;
-        }
-        console.log('✅ Settings Role dropdown updated. Options:', select.options.length);
+        if (currentVal) select.value = currentVal;
     }
 
     updateFirmSelectInSettings() {
         const select = document.getElementById('new_user_firm');
-        if (!select) {
-            console.warn('⚠️ new_user_firm element not found');
-            return;
-        }
+        if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Firm --</option>';
         
         const firms = Object.keys(this.allFirms);
-        console.log('🏢 Loading firms for settings:', firms);
-        
         if (firms.length === 0) {
             select.innerHTML += '<option value="" disabled>No firms available</option>';
             return;
@@ -248,12 +224,9 @@ class App {
                 select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
             }
         });
-        
         if (currentVal) select.value = currentVal;
-        console.log('✅ Firm dropdown updated with', firms.length, 'firms');
     }
 
-    // ===== FIRM HEADER =====
     updateFirmHeader() {
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         const firm = this.allFirms[firmKey] || this.allFirms['DevVidyalaya'];
@@ -266,7 +239,6 @@ class App {
         this.updateBankDropdown();
     }
 
-    // ===== BANK DROPDOWN - FIRM WISE =====
     updateBankDropdown() {
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         const select = document.getElementById('bank_account');
@@ -287,7 +259,6 @@ class App {
             (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
     }
 
-    // ===== VOUCHER NUMBER =====
     generateVoucherNo() {
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         const firm = this.allFirms[firmKey];
@@ -302,17 +273,13 @@ class App {
         document.getElementById('v_no').value = `${firm.short}/EXP/${fy}/${String(count).padStart(3, '0')}`;
     }
 
-    // ===== SAVE VOUCHER (Updated for Search Dropdowns) =====
     async saveVoucher() {
         const firmKey = document.getElementById('firm_name_value').value;
         const head = document.getElementById('expense_head_value').value;
         const subHead = document.getElementById('sub_head_value').value;
         const party = document.getElementById('party_value').value;
         const amount = parseFloat(document.getElementById('v_amt').value) || 0;
-        
-        // ✅ Mode - Search Dropdown से Value लें
         const mode = document.getElementById('v_mode_value').value || document.getElementById('v_mode_input')?.value || 'Cash';
-        
         const date = document.getElementById('v_date').value;
         const referenceNo = document.getElementById('reference_no').value.trim();
         const signatory = document.getElementById('signatory_value').value;
@@ -406,7 +373,6 @@ class App {
         setTimeout(() => this.printVoucher(voucher), 500);
     }
 
-    // ===== PRINT VOUCHER =====
     async printVoucher(voucher) {
         try {
             if (!voucher) {
@@ -438,7 +404,6 @@ class App {
         }
     }
 
-    // ===== RESET FORM (Updated) =====
     resetForm() {
         document.getElementById('edit_id').value = '';
         document.getElementById('expense_head_input').value = '';
@@ -455,7 +420,6 @@ class App {
         document.getElementById('signatory_value').value = '';
         document.getElementById('v_narration').value = '';
         
-        // ✅ Mode Reset
         document.getElementById('v_mode_input').value = '';
         document.getElementById('v_mode_value').value = 'Cash';
         document.getElementById('modeDropdown').style.display = 'none';
@@ -469,7 +433,6 @@ class App {
         showToast('🔄 Form reset');
     }
 
-    // ===== EDIT VOUCHER (Updated) =====
     editVoucher(id) {
         if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
             showToast('❌ No permission to edit');
@@ -490,7 +453,6 @@ class App {
         document.getElementById('party_value').value = v.party;
         document.getElementById('v_amt').value = v.amount;
         
-        // ✅ Mode Set
         document.getElementById('v_mode_input').value = v.mode;
         document.getElementById('v_mode_value').value = v.mode;
         
@@ -514,7 +476,6 @@ class App {
         showToast('✏️ Edit mode - Modify and save');
     }
 
-    // ===== DELETE VOUCHER =====
     async deleteVoucher(id) {
         if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
             showToast('❌ No permission to delete');
@@ -539,16 +500,13 @@ class App {
         showToast('✅ Voucher deleted');
     }
 
-    // ===== RECOVER DELETED VOUCHER =====
     async recoverVoucher(id) {
         if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
             showToast('❌ No permission to recover');
             return;
         }
-        
         if (!confirm('Are you sure you want to recover this voucher?')) return;
         
-        // Deleted Vouchers से ढूंढें
         const index = this.deletedVouchers.findIndex(v => v.id === id);
         if (index === -1) {
             showToast('❌ Deleted voucher not found');
@@ -556,19 +514,12 @@ class App {
         }
         
         const voucher = this.deletedVouchers[index];
-        
-        // Status को Active करें
         voucher.status = 'active';
         delete voucher.deletedBy;
         delete voucher.deletedAt;
-        
-        // Deleted List से Remove करें
         this.deletedVouchers.splice(index, 1);
-        
-        // Active Vouchers में Add करें
         this.db.push(voucher);
         
-        // Firebase Save करें
         await this.storage.saveVoucher(voucher);
         await this.storage.save(STORAGE_KEYS.DELETED, 
             Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
@@ -581,14 +532,12 @@ class App {
         showToast(`✅ Voucher ${voucher.vno} recovered successfully!`);
     }
 
-    // ===== RENDER ALL =====
     renderAll() {
         this.renderTable();
         this.updateStats();
         this.renderReports();
     }
 
-    // ===== RENDER TABLE - WITH RECOVER BUTTON =====
     renderTable() {
         const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('f_start')?.value || '';
@@ -670,7 +619,6 @@ class App {
                     actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                 }
             } else {
-                // ✅ Deleted Vouchers में Recover Button
                 actions = `
                     <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
                 `;
@@ -710,7 +658,6 @@ class App {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS - WITH ENHANCED FILTERS =====
     renderReports() {
         const div = document.getElementById('report_content');
         if (!div) return;
@@ -860,9 +807,7 @@ class App {
         `;
     }
 
-    // ===== UPDATE HEAD FILTER =====
     updateHeadFilter() {
-        // 1️⃣ Report Head Filter (पुराना - r_head)
         const select = document.getElementById('r_head');
         if (select) {
             const currentVal = select.value;
@@ -874,7 +819,6 @@ class App {
             if (currentVal) select.value = currentVal;
         }
         
-        // 2️⃣ Transaction Head Filter (नया - f_head_filter)
         const selectFilter = document.getElementById('f_head_filter');
         if (selectFilter) {
             const currentVal = selectFilter.value;
@@ -886,7 +830,6 @@ class App {
             if (currentVal) selectFilter.value = currentVal;
         }
         
-        // 3️⃣ Report Head Filter (नया - r_head_filter)
         const selectR = document.getElementById('r_head_filter');
         if (selectR) {
             const currentVal = selectR.value;
@@ -899,10 +842,6 @@ class App {
         }
     }
 
-    // ============================================================
-    // MODE DROPDOWN FUNCTIONS (Payment Mode - Search + Dropdown)
-    // ============================================================
-
     getModeOptions() {
         return ['Cash', 'Bank', 'Paytm', 'UPI', 'Cheque'];
     }
@@ -910,7 +849,6 @@ class App {
     populateModes() {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
-        
         const modes = this.getModeOptions();
         dropdown.innerHTML = modes.map(m => 
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
@@ -921,23 +859,17 @@ class App {
     filterModes(search) {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
-        
         if (!search || search.length < 1) { 
             this.populateModes();
             return; 
         }
-        
         const modes = this.getModeOptions();
-        const filtered = modes.filter(m => 
-            m.toLowerCase().includes(search.toLowerCase())
-        );
-        
+        const filtered = modes.filter(m => m.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No mode found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        
         dropdown.innerHTML = filtered.map(m => 
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
@@ -950,10 +882,6 @@ class App {
         document.getElementById('modeDropdown').style.display = 'none';
         this.toggleBankField();
     }
-
-    // ============================================================
-    // POPULATE FUNCTIONS - SEARCH + DROPDOWN (All Fields)
-    // ============================================================
 
     populateExpenseHeads() {
         const dropdown = document.getElementById('expenseHeadDropdown');
@@ -991,7 +919,6 @@ class App {
         let firms = [];
         if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
         else if (this.currentFirm) firms = [this.currentFirm];
-        
         if (firms.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firms available</div>';
             dropdown.style.display = 'block';
@@ -1031,22 +958,15 @@ class App {
         dropdown.style.display = 'block';
     }
 
-    // ============================================================
-    // FILTER FUNCTIONS - SEARCH + DROPDOWN (All Fields)
-    // ============================================================
-
     filterExpenseHeads(search) {
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
-        
         if (!search || search.length < 1) { 
             this.populateExpenseHeads();
             return; 
         }
-        
         const heads = Object.keys(this.expenseHeads);
         const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No head found</div>';
             dropdown.style.display = 'block';
@@ -1068,12 +988,10 @@ class App {
             return;
         }
         const subHeads = this.expenseHeads[head] || [];
-        
         if (!search || search.length < 1) {
             this.populateSubHeads(head);
             return;
         }
-        
         const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
@@ -1089,20 +1007,16 @@ class App {
     filterFirms(search) {
         const dropdown = document.getElementById('firmDropdown');
         if (!dropdown) return;
-        
         if (!search || search.length < 1) { 
             this.populateFirmDropdown();
             return; 
         }
-        
         let firms = [];
         if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
         else if (this.currentFirm) firms = [this.currentFirm];
-        
         const filtered = firms.filter(f => 
             (this.allFirms[f]?.name || f).toLowerCase().includes(search.toLowerCase())
         );
-        
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firm found</div>';
             dropdown.style.display = 'block';
@@ -1117,16 +1031,11 @@ class App {
     filterParties(search) {
         const dropdown = document.getElementById('partyDropdown');
         if (!dropdown) return;
-        
         if (!search || search.length < 1) { 
             this.populatePartyDropdown();
             return; 
         }
-        
-        const filtered = this.parties.filter(p => 
-            p.name.toLowerCase().includes(search.toLowerCase())
-        );
-        
+        const filtered = this.parties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No party found</div>';
             dropdown.style.display = 'block';
@@ -1141,16 +1050,11 @@ class App {
     filterSignatories(search) {
         const dropdown = document.getElementById('signatoryDropdown');
         if (!dropdown) return;
-        
         if (!search || search.length < 1) { 
             this.populateSignatoryDropdown();
             return; 
         }
-        
-        const filtered = this.signatories.filter(s => 
-            s.name.toLowerCase().includes(search.toLowerCase())
-        );
-        
+        const filtered = this.signatories.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No signatory found</div>';
             dropdown.style.display = 'block';
@@ -1161,10 +1065,6 @@ class App {
         ).join('');
         dropdown.style.display = 'block';
     }
-
-    // ============================================================
-    // SELECT FUNCTIONS
-    // ============================================================
 
     selectExpenseHead(head) {
         document.getElementById('expense_head_input').value = head;
@@ -1200,7 +1100,6 @@ class App {
         document.getElementById('signatoryDropdown').style.display = 'none';
     }
 
-    // ===== EXPORT FUNCTIONS =====
     exportToExcel(data, filename) {
         if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
         const ws = XLSX.utils.json_to_sheet(data.map(v => ({
@@ -1252,7 +1151,6 @@ class App {
         this.exportToExcel(editedVouchers, 'Edited_Vouchers');
     }
 
-    // ===== SHARE VOUCHER =====
     shareVoucher(id) {
         if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') {
             showToast('❌ No permission to share');
@@ -1270,7 +1168,6 @@ class App {
         this.shareVoucher(voucher.id);
     }
 
-    // ===== PARTY FUNCTIONS =====
     openAddPartyModal() {
         if (!this.canAddParty()) {
             showToast('❌ No permission to add party');
@@ -1347,7 +1244,6 @@ class App {
         showToast('✅ Party deleted');
     }
 
-    // ===== SIGNATORY FUNCTIONS =====
     openAddSignatoryModal() {
         if (!this.canAddSignatory()) {
             showToast('❌ No permission to add signatory');
@@ -1421,35 +1317,27 @@ class App {
         showToast('✅ Signatory deleted');
     }
 
-    // ===== SETTINGS =====
     openSettings() {
         if (this.currentRole !== 'Admin') {
             showToast('❌ Only Admin can access settings');
             return;
         }
-        
-        console.log('⚙️ Opening Settings...');
         document.getElementById('settings-modal').style.display = 'flex';
-        
         this.renderFirmsList();
         this.renderUsersList();
         this.renderHeadsList();
         this.renderPartiesList();
         this.renderSignatoriesList();
-        
         this.updateFirmSelectInSettings();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
         this.loadBankAccounts();
-        
-        console.log('✅ Settings opened successfully');
     }
 
     closeSettings() {
         document.getElementById('settings-modal').style.display = 'none';
     }
 
-    // ===== FIRM MANAGEMENT =====
     renderFirmsList() {
         const container = document.getElementById('firms_list');
         if (!container) return;
@@ -1568,14 +1456,12 @@ class App {
             showToast('Cannot delete default firm');
             return;
         }
-        
         const hasVouchers = this.db.some(v => v.firmKey === key) || 
                            this.deletedVouchers.some(v => v.firmKey === key);
         if (hasVouchers) {
             showToast('Cannot delete: vouchers exist');
             return;
         }
-        
         delete this.allFirms[key];
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
@@ -1584,7 +1470,6 @@ class App {
             }
         });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        
         this.renderFirmsList();
         this.populateFirmDropdown();
         this.updateFirmSelectInSettings();
@@ -1594,7 +1479,6 @@ class App {
         showToast('✅ Firm deleted');
     }
 
-    // ===== USER MANAGEMENT =====
     renderUsersList() {
         const container = document.getElementById('users_list');
         if (!container) return;
@@ -1640,18 +1524,14 @@ class App {
         const role = document.getElementById('new_user_role').value;
         const firm = document.getElementById('new_user_firm').value;
         
-        console.log('👤 Adding User:', { id, role, firm });
-        
         if (!id || !pass) { 
             showToast('❌ Enter ID and Password'); 
             return; 
         }
-        
         if (this.allUsers.find(u => u.id === id)) { 
             showToast('❌ User already exists'); 
             return; 
         }
-        
         if (role !== 'Admin' && !firm) { 
             showToast('❌ Please select a firm for Staff'); 
             return; 
@@ -1677,23 +1557,17 @@ class App {
             firm: role === 'Admin' ? null : firm, 
             permissions 
         };
-        
         this.allUsers.push(user);
-        
         await this.storage.save(STORAGE_KEYS.USERS,
             Object.fromEntries(this.allUsers.map(u => [u.id, u]))
         );
-        
         this.renderUsersList();
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
-        
         document.getElementById('new_user_id').value = '';
         document.getElementById('new_user_pass').value = '';
         document.getElementById('new_user_firm').value = '';
-        
         showToast(`✅ ${role} User "${id}" added successfully!`);
-        console.log('✅ User added:', user);
     }
 
     async deleteUser(id) {
@@ -1709,7 +1583,6 @@ class App {
         showToast('✅ User deleted');
     }
 
-    // ===== EXPENSE HEADS =====
     renderHeadsList() {
         const container = document.getElementById('heads_list');
         if (!container) return;
@@ -1757,13 +1630,11 @@ class App {
         showToast('✅ Deleted');
     }
 
-    // ===== BANK MANAGEMENT - FIRM WISE =====
     updateBankFirmSelect() {
         const select = document.getElementById('bank_firm_select');
         if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Firm --</option>';
-        
         Object.keys(this.allFirms).forEach(f => {
             if (this.allFirms[f]) {
                 select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
@@ -1785,13 +1656,11 @@ class App {
     renderBankAccountsList(firmKey) {
         const container = document.getElementById('bank_accounts_list');
         if (!container) return;
-        
         const banks = this.bankAccounts[firmKey] || [];
         if (banks.length === 0) {
             container.innerHTML = '<p style="color:#999;">No bank accounts added for this firm</p>';
             return;
         }
-        
         container.innerHTML = banks.map((b, index) => `
             <div class="bank-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff;">
                 <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
@@ -1809,51 +1678,40 @@ class App {
             showToast('❌ No permission to add bank');
             return;
         }
-        
         const firmKey = document.getElementById('bank_firm_select').value;
         const name = document.getElementById('new_bank_name').value.trim();
         const account = document.getElementById('new_bank_account').value.trim();
         const ifsc = document.getElementById('new_bank_ifsc').value.trim();
-        
         if (!firmKey) { showToast('❌ Please select a firm first'); return; }
         if (!name) { showToast('❌ Please enter bank name'); return; }
         if (!account) { showToast('❌ Please enter account number'); return; }
-        
         if (!this.bankAccounts[firmKey]) this.bankAccounts[firmKey] = [];
         this.bankAccounts[firmKey].push({ name, account, ifsc });
-        
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
         this.renderBankAccountsList(firmKey);
         this.updateBankDropdown();
         this.updateBankFirmSelect();
-        
         document.getElementById('new_bank_name').value = '';
         document.getElementById('new_bank_account').value = '';
         document.getElementById('new_bank_ifsc').value = '';
-        
         showToast('✅ Bank account added successfully!');
     }
 
     async deleteBankAccount(firmKey, index) {
         if (!confirm('Delete this bank account?')) return;
-        
         if (this.bankAccounts[firmKey]) {
             this.bankAccounts[firmKey].splice(index, 1);
             if (this.bankAccounts[firmKey].length === 0) {
                 delete this.bankAccounts[firmKey];
             }
         }
-        
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
         this.renderBankAccountsList(firmKey);
         this.updateBankDropdown();
         this.updateBankFirmSelect();
         showToast('✅ Bank account deleted');
     }
 
-    // ===== PERMISSION CHECKS =====
     canAddParty() {
         return this.userPermissions.party_add || this.currentRole === 'Admin';
     }
@@ -1870,14 +1728,12 @@ class App {
         return this.userPermissions.expense_add || this.currentRole === 'Admin';
     }
 
-    // ===== BULK IMPORT FUNCTIONS =====
     async importExpenseHeads() {
         const fileInput = document.getElementById('importHeadsFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
             let count = 0;
@@ -1908,7 +1764,6 @@ class App {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
             let count = 0;
@@ -1938,7 +1793,6 @@ class App {
             showToast('❌ Please select a file');
             return;
         }
-        
         try {
             const data = await this._readFile(fileInput.files[0]);
             let count = 0;
@@ -1950,7 +1804,6 @@ class App {
                 const amount = parseFloat(row.Amount || row[4]) || 0;
                 const mode = row.Mode || row[5] || 'Cash';
                 const narration = row.Narration || row[6] || '';
-                
                 if (date && head && party && amount > 0) {
                     const voucher = {
                         id: generateId(),
@@ -2021,7 +1874,6 @@ class App {
                 }
             };
             reader.onerror = reject;
-            
             if (file.name.endsWith('.xlsx')) {
                 reader.readAsArrayBuffer(file);
             } else {
@@ -2030,7 +1882,6 @@ class App {
         });
     }
 
-    // ===== SAVE ALL SETTINGS =====
     async saveAllSettings() {
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
@@ -2041,11 +1892,9 @@ class App {
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
         await this.storage.save(STORAGE_KEYS.USERS,
             Object.fromEntries(this.allUsers.map(u => [u.id, u]))
         );
-        
         const perms = {
             print: document.getElementById('perm_print').checked,
             edit: document.getElementById('perm_edit').checked,
@@ -2060,7 +1909,6 @@ class App {
         };
         await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
         this.userPermissions = perms;
-        
         showToast('✅ All settings saved!');
         this.closeSettings();
         this.populateFirmDropdown();
@@ -2070,7 +1918,6 @@ class App {
         this.updateUI();
     }
 
-    // ===== MODULE SWITCH =====
     switchModule(module) {
         document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
@@ -2082,7 +1929,6 @@ class App {
         if (module === 'reports') this.renderReports();
     }
 
-    // ===== UI UPDATE =====
     updateUI() {
         let firmName = 'All Firms (Admin)';
         if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
@@ -2092,7 +1938,6 @@ class App {
         document.getElementById('header_firm_name').innerText = firmName;
     }
 
-    // ===== REAL-TIME LISTENER =====
     setupRealtimeListener() {
         this.storage.onVoucherChange((db) => {
             this.db = db;
@@ -2103,10 +1948,8 @@ class App {
         });
     }
 
-    // ===== EVENT LISTENERS =====
     setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', () => this.doLogin());
-        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 if (document.getElementById('login-screen').style.display !== 'none') {
@@ -2117,7 +1960,6 @@ class App {
                 document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
             }
         });
-        
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) this.style.display = 'none';
