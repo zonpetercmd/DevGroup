@@ -54,3 +54,8 @@ export const STORAGE_KEYS = {
     BANK_ACCOUNTS: 'bankAccounts',
     PERMISSIONS: 'userPermissions'
 };
+
+// ✅ Added exports for storage.js and app.js
+export const PROTECTED_FIRMS = ['DevVidyalaya', 'DevGas', 'Rama'];
+export const PAYMENT_MODES = ['Cash', 'Bank', 'UPI', 'Cheque'];
+export const UPI_APPS = ['PhonePe', 'GooglePay', 'Paytm', 'AmazonPay', 'Other'];
