@@ -1,10 +1,25 @@
-// js/storage.js - LOCAL STORAGE ONLY (Firebase disabled for now)
+// js/storage.js - Firebase + Local Storage (Updated)
+
+import { FIREBASE_CONFIG, STORAGE_MODE } from '../config/firebase-config.js';
 import { DEFAULT_FIRMS, STORAGE_KEYS } from '../config/constants.js';
 
 class Storage {
     constructor() {
-        this.mode = 'local'; // Only Local Storage
-        console.log('📦 Storage initialized with LOCAL mode');
+        // ✅ Firebase Config से Mode लें
+        this.mode = STORAGE_MODE.current || 'local';
+        this.rtdb = null;
+        this._initFirebase();
+        console.log(`📦 Storage initialized with ${this.mode} mode`);
+    }
+
+    _initFirebase() {
+        if (this.mode === 'firebase' && typeof firebase !== 'undefined') {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                console.log('🔥 Firebase initialized');
+            }
+            this.rtdb = firebase.database();
+        }
     }
 
     // ===== LOCAL STORAGE =====
@@ -26,16 +41,59 @@ class Storage {
         return true;
     }
 
+    // ===== FIREBASE =====
+    async _getFirebase(key) {
+        if (!this.rtdb) return {};
+        try {
+            const snap = await this.rtdb.ref(key).once('value');
+            return snap.val() || {};
+        } catch (error) {
+            console.error(`❌ Firebase load error (${key}):`, error);
+            return {};
+        }
+    }
+
+    async _setFirebase(key, data) {
+        if (!this.rtdb) return data;
+        try {
+            await this.rtdb.ref(key).set(data);
+            console.log(`✅ Firebase saved: ${key}`);
+            return data;
+        } catch (error) {
+            console.error(`❌ Firebase save error (${key}):`, error);
+            return data;
+        }
+    }
+
+    async _removeFirebase(key) {
+        if (!this.rtdb) return true;
+        try {
+            await this.rtdb.ref(key).remove();
+            return true;
+        } catch {
+            return true;
+        }
+    }
+
     // ===== MAIN METHODS =====
     async load(key) {
+        if (this.mode === 'firebase') {
+            return await this._getFirebase(key);
+        }
         return this._getLocal(key);
     }
 
     async save(key, data) {
+        if (this.mode === 'firebase') {
+            return await this._setFirebase(key, data);
+        }
         return this._setLocal(key, data);
     }
 
     async remove(key) {
+        if (this.mode === 'firebase') {
+            return await this._removeFirebase(key);
+        }
         return this._removeLocal(key);
     }
 
@@ -58,6 +116,7 @@ class Storage {
         const results = {};
         for (const key of keys) {
             results[key] = await this.load(key);
+            console.log(`📥 Loaded ${key}:`, Object.keys(results[key]).length);
         }
 
         return {
@@ -92,18 +151,27 @@ class Storage {
         return true;
     }
 
-    // ===== REAL-TIME LISTENER (Local Storage Polling) =====
+    // ===== REAL-TIME LISTENER =====
     onVoucherChange(callback) {
-        let lastData = '';
-        setInterval(() => {
-            const current = this._getLocal(STORAGE_KEYS.VOUCHERS);
-            const currentStr = JSON.stringify(current);
-            if (currentStr !== lastData) {
-                lastData = currentStr;
-                const db = Object.values(current).filter(v => v.status !== 'deleted');
+        if (this.mode === 'firebase' && this.rtdb) {
+            console.log('🔥 Firebase Realtime Listener started');
+            this.rtdb.ref(STORAGE_KEYS.VOUCHERS).on('value', (snap) => {
+                const data = snap.val() || {};
+                const db = Object.values(data).filter(v => v.status !== 'deleted');
                 callback(db);
-            }
-        }, 3000);
+            });
+        } else {
+            let lastData = '';
+            setInterval(() => {
+                const current = this._getLocal(STORAGE_KEYS.VOUCHERS);
+                const currentStr = JSON.stringify(current);
+                if (currentStr !== lastData) {
+                    lastData = currentStr;
+                    const db = Object.values(current).filter(v => v.status !== 'deleted');
+                    callback(db);
+                }
+            }, 3000);
+        }
     }
 }
 
