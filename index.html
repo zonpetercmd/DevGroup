@@ -46,10 +46,12 @@
             <div style="font-weight:600; font-size:14px;" id="header_firm_name">Dev Vidyalaya</div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
+            <!-- Dark Mode Toggle -->
+            <button onclick="toggleTheme()" id="themeToggle" style="background:none; border:none; font-size:20px; cursor:pointer; padding:4px 8px; border-radius:6px;" title="Toggle Theme">🌙</button>
             <span id="display_role"></span>
             <span id="display_user"></span>
             <button id="admin_settings_btn" onclick="openSettings()" style="display:none;">⚙️ Settings</button>
-            <button onclick="logout()">Logout</button>
+            <button onclick="logout()" style="border:1px solid red; color:red; background:none; padding:5px 12px; cursor:pointer; border-radius:5px;">Logout</button>
         </div>
     </header>
 
@@ -67,10 +69,11 @@
         <!-- Tabs -->
         <div class="module-tabs" id="moduleTabsContainer">
             <button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>
-            <button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>
+            <button class="module-tab" onclick="switchModule('dashboard')">📊 Dashboard</button>
+            <button class="module-tab" onclick="switchModule('reports')">📈 Reports</button>
         </div>
 
-        <!-- ===== TRANSACTIONS ===== -->
+        <!-- ===== TRANSACTIONS MODULE ===== -->
         <div id="module-transactions" class="module-pane active">
             <div class="form-card">
                 <div class="firm-header" id="firmHeader">
@@ -164,10 +167,13 @@
                     <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">💾 Save</button>
                     <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">🔄 Reset</button>
                     <button id="whatsappShareBtn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
+                    <span style="font-size:11px; color:#64748b; margin-left:auto; display:flex; gap:10px; align-items:center;">
+                        <kbd style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:11px;">Ctrl+N</kbd> New
+                        <kbd style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:11px;">Ctrl+S</kbd> Save
+                    </span>
                 </div>
             </div>
             
-            <!-- ===== FILTER ===== -->
             <div class="filter-card">
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
                     <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Search..."></div>
@@ -201,30 +207,62 @@
                 </div>
             </div>
             
-            <!-- Table -->
             <div class="table-res">
                 <table>
                     <thead><tr>
-                        <th>Date</th>
-                        <th>Voucher No</th>
-                        <th>Head</th>
-                        <th>Sub Head</th>
-                        <th>Party</th>
-                        <th>Amount</th>
-                        <th>Mode</th>
-                        <th>Created By</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>Date</th><th>Voucher No</th><th>Head</th>
+                        <th>Sub Head</th><th>Party</th><th>Amount</th>
+                        <th>Mode</th><th>Created By</th><th>Status</th><th>Actions</th>
                     </tr></thead>
                     <tbody id="v_list"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ===== REPORTS ===== -->
+        <!-- ===== DASHBOARD MODULE ===== -->
+        <div id="module-dashboard" class="module-pane">
+            <div class="report-card">
+                <h4>📊 Analytics Dashboard</h4>
+                
+                <!-- Quick Stats -->
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom:20px;">
+                    <div class="stat-box"><p>Total Revenue</p><h3 id="dash_revenue">₹ 0</h3></div>
+                    <div class="stat-box"><p>Avg Per Voucher</p><h3 id="dash_avg">₹ 0</h3></div>
+                    <div class="stat-box"><p>This Month</p><h3 id="dash_month">₹ 0</h3></div>
+                    <div class="stat-box"><p>Unique Parties</p><h3 id="dash_parties">0</h3></div>
+                </div>
+                
+                <!-- Charts -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+                    <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">📊 Voucher Status</p>
+                        <canvas id="chartVouchers" height="200"></canvas>
+                    </div>
+                    <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">💰 Amount by Mode</p>
+                        <canvas id="chartAmounts" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <div style="margin-top:20px; background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                    <p style="font-size:12px; color:#64748b; margin-bottom:10px;">📈 Monthly Revenue Trend</p>
+                    <canvas id="chartMonthly" height="100"></canvas>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div style="margin-top:20px; background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                    <p style="font-size:12px; color:#64748b; margin-bottom:10px;">🕐 Recent Activity</p>
+                    <div id="recent_activity" style="max-height:150px; overflow-y:auto; font-size:13px;">
+                        <p style="color:#999; text-align:center; padding:20px;">No recent activity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTS MODULE ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
-                <h4>📊 Reports</h4>
+                <h4>📈 Reports</h4>
                 
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
                     <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
@@ -262,6 +300,7 @@
                     <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Active</button>
                     <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Deleted</button>
                     <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Edited</button>
+                    <button class="btn-xlsx" style="background:#8b5cf6;" onclick="app.backupData()">💾 Backup</button>
                 </div>
                 <div id="report_content"></div>
             </div>
@@ -394,6 +433,20 @@
             </div>
         </div>
         
+        <h4>💾 Backup & Restore</h4>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <button class="btn-add" onclick="app.backupData()">📥 Download Backup</button>
+            <button class="btn-add" onclick="document.getElementById('restoreFile').click()">📤 Restore Backup</button>
+            <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="app.restoreData(event)">
+            <span style="font-size:11px; color:#64748b;">Backup includes all vouchers, parties, signatories, firms, users</span>
+        </div>
+        
+        <h4>📝 Activity Logs</h4>
+        <div id="activity_logs" style="max-height:200px; overflow-y:auto; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+            <p style="color:#999; text-align:center; padding:10px;">No activity logs yet</p>
+        </div>
+        <button class="btn-add" onclick="app.clearActivityLogs()" style="margin-top:5px;">🗑️ Clear Logs</button>
+        
         <div style="display:flex; gap:10px; margin-top:15px;">
             <button class="btn-login" onclick="saveAllSettings()">💾 Save All</button>
             <button class="btn-action" style="background:#64748b; color:white;" onclick="closeSettings()">Cancel</button>
@@ -411,6 +464,7 @@
     const app = new App();
     window.app = app;
     
+    // Expose functions
     window.openSettings = () => app.openSettings();
     window.logout = () => app.logout();
     window.saveVoucher = () => app.saveVoucher();
@@ -429,6 +483,7 @@
     window.resetForm = () => app.resetForm();
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
+    window.toggleTheme = () => app.toggleTheme();
     
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
     window.filterSubHeads = (v) => app.filterSubHeads(v);
@@ -464,6 +519,7 @@
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
 
+    // Close dropdown on outside click
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.dropdown-list').forEach(dropdown => {
             if (!dropdown.contains(e.target)) {
