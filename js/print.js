@@ -24,21 +24,21 @@ class PrintEngine {
         const firm = allFirms[voucher.firmKey] || allFirms['DevVidyalaya'];
         
         const data = {
-            vno: voucher.vno,
-            date: formatDate(voucher.date),
-            head: voucher.head,
+            vno: voucher.vno || '',
+            date: formatDate(voucher.date) || '',
+            head: voucher.head || '',
             subHead: voucher.subHead || '-',
-            party: voucher.party,
+            party: voucher.party || '',
             narration: voucher.narration || '-',
-            mode: voucher.mode,
+            mode: voucher.mode || '',
             bankName: voucher.bankName || '',
             bankAccount: voucher.bankAccount || '',
             referenceNo: voucher.referenceNo || '',
             signatory: voucher.signatory || '',
-            amount: formatCurrency(voucher.amount),
-            amountWords: numberToWords(voucher.amount) + ' Rupees Only',
-            createdBy: voucher.createdBy,
-            companyName: firm?.name || voucher.firmName,
+            amount: formatCurrency(voucher.amount || 0),
+            amountWords: numberToWords(voucher.amount || 0) + ' Rupees Only',
+            createdBy: voucher.createdBy || '',
+            companyName: firm?.name || voucher.firmName || '',
             address: firm?.addr || '',
             phone: firm?.mobile || '',
             email: firm?.email || '',
@@ -92,7 +92,7 @@ class PrintEngine {
             </div>
             <div class="amount">
                 <p>TOTAL: {{amount}}</p>
-                <p>{{amountWords}} Rupees Only</p>
+                <p>{{amountWords}}</p>
             </div>
             <div class="signatures">
                 <div>Prepared By: {{createdBy}}</div>
