@@ -120,7 +120,6 @@ class Storage {
 
         // ✅ Expense Heads - New Structure Support (firm-wise)
         const expenseHeads = results[STORAGE_KEYS.EXPENSE_HEADS] || {};
-        // Convert old format to new format if needed
         const formattedExpenseHeads = {};
         Object.keys(expenseHeads).forEach(key => {
             const value = expenseHeads[key];
@@ -130,7 +129,7 @@ class Storage {
                     firm: 'DevVidyalaya',
                     subHeads: value
                 };
-            } else if (typeof value === 'object' && value.subHeads) {
+            } else if (typeof value === 'object' && value.subHeads !== undefined) {
                 // New format: { "Head": { firm: "xxx", subHeads: [] } }
                 formattedExpenseHeads[key] = value;
             } else {
@@ -144,9 +143,12 @@ class Storage {
         // ✅ Bank Accounts - Keep as is
         const bankAccounts = results[STORAGE_KEYS.BANK_ACCOUNTS] || {};
 
+        // ✅ Get firms (merge default + saved)
+        const allFirms = { ...DEFAULT_FIRMS, ...results[STORAGE_KEYS.FIRMS] };
+
         return {
-            allFirms: { ...DEFAULT_FIRMS, ...results[STORAGE_KEYS.FIRMS] },
-            db: Object.values(results[STORAGE_KEYS.VOUCHERS] || {}).filter(v => v.status !== 'deleted'),
+            allFirms: allFirms,
+            db: Object.values(results[STORAGE_KEYS.VOUCHERS] || {}).filter(v => v && v.status !== 'deleted'),
             deletedVouchers: Object.values(results[STORAGE_KEYS.DELETED] || {}),
             editLogs: Object.values(results[STORAGE_KEYS.EDIT_LOGS] || {}),
             parties: Object.values(results[STORAGE_KEYS.PARTIES] || {}),
@@ -194,7 +196,7 @@ class Storage {
             console.log('🔥 Firebase Realtime Listener started');
             this.rtdb.ref(STORAGE_KEYS.VOUCHERS).on('value', (snap) => {
                 const data = snap.val() || {};
-                const db = Object.values(data).filter(v => v.status !== 'deleted');
+                const db = Object.values(data).filter(v => v && v.status !== 'deleted');
                 callback(db);
             });
         } else {
@@ -205,7 +207,7 @@ class Storage {
                 const currentStr = JSON.stringify(current);
                 if (currentStr !== lastData) {
                     lastData = currentStr;
-                    const db = Object.values(current).filter(v => v.status !== 'deleted');
+                    const db = Object.values(current).filter(v => v && v.status !== 'deleted');
                     callback(db);
                 }
             }, 3000);
