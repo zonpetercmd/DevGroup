@@ -65,7 +65,10 @@
         </div>
 
         <!-- Tabs -->
-        <div class="module-tabs" id="moduleTabsContainer"></div>
+        <div class="module-tabs" id="moduleTabsContainer">
+            <button class="module-tab active" onclick="switchModule('transactions')">📋 Transactions</button>
+            <button class="module-tab" onclick="switchModule('reports')">📊 Reports</button>
+        </div>
 
         <!-- ===== TRANSACTIONS ===== -->
         <div id="module-transactions" class="module-pane active">
@@ -81,12 +84,9 @@
                 <h4 id="form-title">📝 Add Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
-                <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
-                    <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
-                    <!-- Expense Head - Search + Dropdown -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
@@ -96,7 +96,6 @@
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
-                    <!-- Sub Head - Search + Dropdown -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
@@ -106,7 +105,6 @@
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Firm - Search + Dropdown -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
@@ -116,7 +114,6 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
-                    <!-- Party - Search + Dropdown -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
@@ -127,7 +124,6 @@
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
-                    <!-- Payment Mode - Search + Dropdown -->
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
@@ -137,16 +133,13 @@
                         <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Bank Account -->
                     <div id="bank_account_field">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <!-- Reference No -->
                     <div><label>🔢 Reference No.</label><input type="text" id="reference_no"></div>
                     
-                    <!-- Signatory - Search + Dropdown -->
                     <div>
                         <label>✍️ Signatory</label>
                         <div class="search-wrapper">
@@ -157,13 +150,10 @@
                         <button class="btn-add" onclick="openAddSignatoryModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ Add Signatory</button>
                     </div>
                     
-                    <!-- Amount -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0"></div>
                     
-                    <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <!-- Narration - Full Width -->
                     <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
@@ -177,7 +167,7 @@
                 </div>
             </div>
             
-            <!-- ===== FILTER - ENHANCED ===== -->
+            <!-- ===== FILTER ===== -->
             <div class="filter-card">
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
                     <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Search..."></div>
@@ -236,7 +226,6 @@
             <div class="report-card">
                 <h4>📊 Reports</h4>
                 
-                <!-- ✅ Enhanced Filters for Reports -->
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
                     <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
                     <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
@@ -316,7 +305,6 @@
     <div class="modal-content">
         <h3>⚙️ Admin Settings</h3>
         
-        <!-- ===== FIRMS ===== -->
         <h4>🏢 Firms</h4>
         <div id="firms_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -326,7 +314,6 @@
             <button class="btn-add" onclick="addFirm()">+ Add</button>
         </div>
         
-        <!-- ===== USERS ===== -->
         <h4>👤 Users</h4>
         <div id="users_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -337,7 +324,6 @@
             <button class="btn-add" onclick="addUser()">+ Add</button>
         </div>
         
-        <!-- ===== PERMISSIONS ===== -->
         <h4>🔐 Permissions</h4>
         <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
             <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
@@ -352,7 +338,6 @@
             <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
         </div>
         
-        <!-- ===== EXPENSE HEADS ===== -->
         <h4>📂 Expense Heads</h4>
         <div id="heads_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -361,7 +346,6 @@
             <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
         </div>
         
-        <!-- ===== BANK MANAGEMENT ===== -->
         <h4>🏦 Bank Management (Firm Wise)</h4>
         <div style="margin-bottom:10px;">
             <label style="font-size:12px;">Select Firm</label>
@@ -380,17 +364,14 @@
             📌 Select Firm first, then add bank details for that firm
         </div>
         
-        <!-- ===== PARTIES ===== -->
         <h4>👤 Parties</h4>
         <div id="parties_list"></div>
         
-        <!-- ===== SIGNATORIES ===== -->
         <h4>✍️ Signatories</h4>
         <div id="signatories_list"></div>
         
-        <!-- ===== BULK IMPORT ===== -->
+        <h4>📥 Bulk Import</h4>
         <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
-            <h4>📥 Bulk Import</h4>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                 <div>
                     <label style="font-size:11px;">Import Expense Heads</label>
@@ -430,13 +411,12 @@
     const app = new App();
     window.app = app;
     
-    // Expose functions to window
     window.openSettings = () => app.openSettings();
     window.logout = () => app.logout();
     window.saveVoucher = () => app.saveVoucher();
     window.editVoucher = (id) => app.editVoucher(id);
     window.deleteVoucher = (id) => app.deleteVoucher(id);
-    window.recoverVoucher = (id) => app.recoverVoucher(id);  // ✅ Recover Function
+    window.recoverVoucher = (id) => app.recoverVoucher(id);
     window.generateA4Print = (v) => app.printVoucher(v);
     window.shareVoucher = (id) => app.shareVoucher(id);
     window.openAddPartyModal = () => app.openAddPartyModal();
@@ -450,7 +430,6 @@
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
     
-    // ✅ Search + Dropdown Functions
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
     window.filterSubHeads = (v) => app.filterSubHeads(v);
     window.filterFirms = (v) => app.filterFirms(v);
@@ -485,7 +464,6 @@
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
 
-    // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.dropdown-list').forEach(dropdown => {
             if (!dropdown.contains(e.target)) {
@@ -500,7 +478,6 @@
         });
     });
 
-    // ===== CLOSE DROPDOWN ON ESC KEY =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.dropdown-list').forEach(dropdown => {
@@ -509,7 +486,6 @@
         }
     });
 
-    // Start App
     app.init().then(() => {
         console.log('✅ App Ready!');
     }).catch(err => {
