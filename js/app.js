@@ -1,4 +1,4 @@
-// js/app.js - Main Application (With Search + Dropdown for All Fields)
+// js/app.js - Main Application (With Search + Dropdown + Recover)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
@@ -539,6 +539,48 @@ class App {
         showToast('✅ Voucher deleted');
     }
 
+    // ===== RECOVER DELETED VOUCHER =====
+    async recoverVoucher(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to recover');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to recover this voucher?')) return;
+        
+        // Deleted Vouchers से ढूंढें
+        const index = this.deletedVouchers.findIndex(v => v.id === id);
+        if (index === -1) {
+            showToast('❌ Deleted voucher not found');
+            return;
+        }
+        
+        const voucher = this.deletedVouchers[index];
+        
+        // Status को Active करें
+        voucher.status = 'active';
+        delete voucher.deletedBy;
+        delete voucher.deletedAt;
+        
+        // Deleted List से Remove करें
+        this.deletedVouchers.splice(index, 1);
+        
+        // Active Vouchers में Add करें
+        this.db.push(voucher);
+        
+        // Firebase Save करें
+        await this.storage.saveVoucher(voucher);
+        await this.storage.save(STORAGE_KEYS.DELETED, 
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+        
+        this.renderAll();
+        this.updateStats();
+        this.generateVoucherNo();
+        this.updateHeadFilter();
+        showToast(`✅ Voucher ${voucher.vno} recovered successfully!`);
+    }
+
     // ===== RENDER ALL =====
     renderAll() {
         this.renderTable();
@@ -546,7 +588,7 @@ class App {
         this.renderReports();
     }
 
-    // ===== RENDER TABLE - WITH ENHANCED FILTERS =====
+    // ===== RENDER TABLE - WITH RECOVER BUTTON =====
     renderTable() {
         const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('f_start')?.value || '';
@@ -628,7 +670,10 @@ class App {
                     actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                 }
             } else {
-                actions = `<span style="color:#999; font-size:11px;">Deleted</span>`;
+                // ✅ Deleted Vouchers में Recover Button
+                actions = `
+                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+                `;
             }
             
             const createdBy = v.createdBy || 'Unknown';
@@ -771,7 +816,9 @@ class App {
                                     actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
                                 }
                             } else {
-                                actions = `<span style="color:#999; font-size:11px;">Deleted</span>`;
+                                actions = `
+                                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+                                `;
                             }
                             
                             return `<tr>
