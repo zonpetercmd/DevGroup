@@ -4,7 +4,7 @@ export const DEFAULT_FIRMS = {
     'DevVidyalaya': {
         name: 'DEV Vidyalaya',
         short: 'DV',
-        logo: 'logo.jpeg',
+        logo: 'logo.png',
         addr: 'Dev Vidyalaya, Near RTO Choraha, Sikar, Rajasthan',
         email: 'devvidyalayasikar@gmail.com',
         mobile: '01572-251021'
@@ -12,7 +12,7 @@ export const DEFAULT_FIRMS = {
     'DevGas': {
         name: 'Dev Gas Agency',
         short: 'DG',
-        logo: 'logo.jpeg',
+        logo: 'logo.png',
         addr: 'Dev Gas Agency, Sikar Rajasthan',
         email: 'info@devgas.com',
         mobile: '9414037764'
@@ -20,7 +20,7 @@ export const DEFAULT_FIRMS = {
     'Rama': {
         name: 'Rama Enterprises',
         short: 'RE',
-        logo: 'logo.jpeg',
+        logo: 'logo.png',
         addr: 'Rama Enterprises, Sikar Rajasthan',
         email: 'info@rama.com',
         mobile: '9414037764'
