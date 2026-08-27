@@ -175,12 +175,12 @@
             color: #000;
         }
         
-        /* ===== SIGNATURES - 7 IN ONE LINE ===== */
+        /* ===== SIGNATURES - 7 IN ONE LINE (NO BLACK LINE) ===== */
         .sign-section {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
-            padding-top: 6px;
+            padding-top: 10px;
             border-top: 2px solid #000;
             margin-top: auto;
             flex-shrink: 0;
@@ -193,13 +193,7 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            min-height: 70px;
-        }
-        .sign-box .sign-line {
-            border-top: 1.5px solid #000;
-            margin-top: 0px;
-            padding-top: 0px;
-            min-height: 35px;
+            min-height: 75px;
         }
         .sign-box .sign-label {
             font-weight: bold;
@@ -210,7 +204,7 @@
             align-items: center;
             justify-content: center;
             color: #000;
-            margin-top: 2px;
+            margin-top: auto;
         }
         .sign-box .sign-name {
             font-weight: normal;
@@ -218,6 +212,11 @@
             min-height: 20px;
             line-height: 1.2;
             color: #000;
+        }
+        /* Signature space - empty area above name */
+        .sign-box .sign-space {
+            min-height: 40px;
+            width: 100%;
         }
         
         .footer-text {
@@ -275,9 +274,6 @@
             }
             .watermark-logo {
                 opacity: 0.08 !important;
-            }
-            .sign-box .sign-line {
-                min-height: 35px !important;
             }
         }
     </style>
@@ -341,53 +337,53 @@
         </div>
         <div class="amount-words">{{amountWords}}</div>
         
-        <!-- ===== 7 SIGNATURES - LINE KE UPAR SIGNATURE, NICHE NAME ===== -->
+        <!-- ===== 7 SIGNATURES - NO BLACK LINE ===== -->
         <div class="sign-section">
             <!-- 1. Prepared By -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Prepared By</div>
                 <div class="sign-name">{{createdBy}}</div>
             </div>
             
             <!-- 2. Accountant -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Accountant</div>
                 <div class="sign-name"></div>
             </div>
             
             <!-- 3. Received -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Received</div>
                 <div class="sign-name"></div>
             </div>
             
             <!-- 4. Incharge -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Incharge</div>
                 <div class="sign-name"></div>
             </div>
             
             <!-- 5. COO -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">COO</div>
                 <div class="sign-name"></div>
             </div>
             
             <!-- 6. Principal -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Principal</div>
                 <div class="sign-name"></div>
             </div>
             
             <!-- 7. Convenor -->
             <div class="sign-box">
-                <div class="sign-line"></div>
+                <div class="sign-space"></div>
                 <div class="sign-label">Convenor</div>
                 <div class="sign-name"></div>
             </div>
