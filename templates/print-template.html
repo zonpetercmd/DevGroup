@@ -78,18 +78,11 @@
             object-fit: contain;
         }
 
-        .firm-header-print .dev-text {
+        .firm-header-print .firm-heading {
             font-size: 28px;
             font-weight: bold;
-            letter-spacing: 8px;
+            letter-spacing: 4px;
             color: #000;
-        }
-
-        .firm-header-print .dev-hindi {
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
-            letter-spacing: 2px;
         }
 
         .firm-header-print .firm-info {
@@ -301,12 +294,11 @@
         
         <div class="copy-label copy-original">◆◆ ORIGINAL COPY ◆◆</div>
         
-        <!-- ===== HEADER - LOGO + D E V विद्यालय (ONLY ONCE) ===== -->
+        <!-- ===== HEADER - LOGO + FIRM HEADING (DYNAMIC) ===== -->
         <div class="firm-header-print">
             <div class="logo-dev-row">
                 <img src="{{logo}}" class="logo-img" onerror="this.style.display='none'">
-                <span class="dev-text">D E V</span>
-                <span class="dev-hindi">विद्यालय</span>
+                <span class="firm-heading">{{companyName}}</span>
             </div>
             <div class="firm-info">
                 <div class="firm-addr">{{address}}</div>
