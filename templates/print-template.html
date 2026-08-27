@@ -96,21 +96,14 @@
             text-align: center;
         }
 
-        .firm-header-print .firm-name {
-            font-size: 20px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            line-height: 1.2;
-        }
-
         .firm-header-print .firm-addr { 
             font-size: 10px;
-            color: #444; 
+            color: #000; 
         }
 
         .firm-header-print .firm-contact { 
             font-size: 9px;
-            color: #555; 
+            color: #000; 
         }
         
         .header-title {
@@ -124,6 +117,7 @@
             flex-shrink: 0;
             position: relative;
             z-index: 1;
+            color: #000;
         }
         
         .voucher-details {
@@ -132,6 +126,7 @@
             flex: 0 0 auto;
             position: relative;
             z-index: 1;
+            color: #000;
         }
         .voucher-details .row {
             display: flex;
@@ -152,11 +147,13 @@
             font-size: 16px;
             font-weight: bold;
             margin-right: 8px;
+            color: #000;
         }
         .party-row .party-value {
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
+            color: #000;
         }
         
         .amount-row {
@@ -170,6 +167,7 @@
             flex-shrink: 0;
             position: relative;
             z-index: 1;
+            color: #000;
         }
         .amount-words {
             font-size: 12px;
@@ -179,6 +177,7 @@
             flex-shrink: 0;
             position: relative;
             z-index: 1;
+            color: #000;
         }
         
         /* ===== SIGNATURES - PERFECT ALIGNMENT ===== */
@@ -208,12 +207,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #000;
         }
         .sign-box .sign-name {
             font-weight: bold;
             font-size: 12px;
             min-height: 18px;
             line-height: 1.2;
+            color: #000;
         }
         .sign-box .sign-line {
             border-top: 1.5px solid #000;
@@ -249,6 +250,7 @@
             flex-shrink: 0;
             position: relative;
             z-index: 1;
+            color: #1a7a1a;
         }
         .copy-original { color: #1a7a1a; border-bottom: 2px solid #1a7a1a; }
         
@@ -299,7 +301,7 @@
         
         <div class="copy-label copy-original">◆◆ ORIGINAL COPY ◆◆</div>
         
-        <!-- ===== HEADER - LOGO + D E V विद्यालय CENTER ===== -->
+        <!-- ===== HEADER - LOGO + D E V विद्यालय (ONLY ONCE) ===== -->
         <div class="firm-header-print">
             <div class="logo-dev-row">
                 <img src="{{logo}}" class="logo-img" onerror="this.style.display='none'">
@@ -307,7 +309,6 @@
                 <span class="dev-hindi">विद्यालय</span>
             </div>
             <div class="firm-info">
-                <div class="firm-name">{{companyName}}</div>
                 <div class="firm-addr">{{address}}</div>
                 <div class="firm-contact">📞 {{phone}} | ✉ {{email}}</div>
             </div>
