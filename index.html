@@ -21,190 +21,8 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/print.css">
-    
-    <!-- ===== IMPROVEMENTS: Loading Spinner, Toast, Animations ===== -->
-    <style>
-        /* Loading Spinner */
-        #loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.85);
-            z-index: 99999;
-            align-items: center;
-            justify-content: center;
-        }
-        .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #2563eb;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Smooth Animations */
-        .fade-in {
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Toast - Better */
-        #toastMsg {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 99999;
-            padding: 14px 28px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-            transform: translateY(120px);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            max-width: 450px;
-            pointer-events: none;
-            font-family: 'Inter', sans-serif;
-        }
-        #toastMsg.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        #toastMsg.hide {
-            transform: translateY(120px);
-            opacity: 0;
-        }
-        #toastMsg.toast-success { background: #10b981; color: #fff; }
-        #toastMsg.toast-error { background: #ef4444; color: #fff; }
-        #toastMsg.toast-info { background: #3b82f6; color: #fff; }
-        #toastMsg.toast-warning { background: #f59e0b; color: #fff; }
-        
-        /* Shortcut Hint */
-        .shortcut-hint {
-            font-size: 10px;
-            color: #94a3b8;
-            display: inline-block;
-            margin-left: 4px;
-            background: #f1f5f9;
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-weight: 400;
-        }
-        
-        /* Mobile Responsive - Enhanced */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 8px !important;
-            }
-            .stat-box {
-                padding: 10px !important;
-            }
-            .stat-box h3 {
-                font-size: 16px !important;
-            }
-            .stat-box p {
-                font-size: 10px !important;
-            }
-            .grid[style*="grid-template-columns: repeat(3, 1fr)"] {
-                grid-template-columns: 1fr 1fr !important;
-            }
-            .grid-3 {
-                grid-template-columns: 1fr 1fr !important;
-            }
-            .firm-header-print {
-                flex-direction: column !important;
-                text-align: center !important;
-            }
-            .sign-section {
-                grid-template-columns: repeat(4, 1fr) !important;
-            }
-            .modal-content {
-                margin: 10px !important;
-                padding: 15px !important;
-                max-width: 100% !important;
-            }
-            header {
-                flex-wrap: wrap !important;
-                padding: 10px !important;
-            }
-            header > div:first-child {
-                width: 100% !important;
-                justify-content: center !important;
-            }
-            header > div:last-child {
-                width: 100% !important;
-                justify-content: center !important;
-                flex-wrap: wrap !important;
-            }
-            .module-tabs {
-                flex-wrap: wrap !important;
-                gap: 5px !important;
-            }
-            .module-tab {
-                padding: 6px 12px !important;
-                font-size: 12px !important;
-            }
-            .table-res {
-                overflow-x: auto !important;
-            }
-            .table-res table {
-                font-size: 11px !important;
-                min-width: 800px !important;
-            }
-            .form-card {
-                padding: 12px !important;
-            }
-            .filter-card .grid-3 {
-                grid-template-columns: 1fr 1fr !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-            .grid[style*="grid-template-columns: repeat(3, 1fr)"] {
-                grid-template-columns: 1fr !important;
-            }
-            .grid-3 {
-                grid-template-columns: 1fr !important;
-            }
-            .sign-section {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            .firm-header-print .logo-dev-row {
-                flex-wrap: wrap !important;
-                justify-content: center !important;
-            }
-            #toastMsg {
-                bottom: 15px;
-                right: 15px;
-                left: 15px;
-                max-width: 100%;
-                font-size: 13px;
-                padding: 12px 18px;
-            }
-        }
-    </style>
 </head>
 <body>
-
-<!-- ===== LOADING SPINNER ===== -->
-<div id="loading-overlay">
-    <div class="spinner"></div>
-</div>
 
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
@@ -260,7 +78,7 @@
                     </div>
                 </div>
                 
-                <h4 id="form-title">📝 Create Payment Voucher <span class="shortcut-hint">Ctrl+S</span></h4>
+                <h4 id="form-title">📝 Create Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
                 <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
@@ -355,7 +173,7 @@
                 </div>
                 
                 <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">📤 Submit Voucher <span class="shortcut-hint">Ctrl+S</span></button>
+                    <button class="btn-login" style="width:auto; padding:10px 25px;" onclick="saveVoucher()">📤 Submit Voucher</button>
                     <button class="btn-action" style="background:#64748b; color:white;" onclick="resetForm()">🔄 Reset</button>
                     <button id="whatsappShareBtn" style="display:none; background:#25D366; color:white; padding:10px 20px; border-radius:6px; border:none; cursor:pointer;" onclick="shareInvoiceViaWhatsApp()"><i class="fab fa-whatsapp"></i> Share</button>
                 </div>
@@ -686,32 +504,6 @@
     window.deleteFirm = (k) => app.deleteFirm(k);
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
-
-    // ===== KEYBOARD SHORTCUTS =====
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+S - Save Voucher
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            if (document.getElementById('main-app').style.display !== 'none') {
-                saveVoucher();
-            }
-        }
-        // Ctrl+P - Print
-        if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-            // Let browser handle print
-        }
-        // Escape - Close modals
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal').forEach(m => { 
-                if (m.style.display === 'flex') {
-                    m.style.display = 'none';
-                }
-            });
-            document.querySelectorAll('.dropdown-list').forEach(d => {
-                d.style.display = 'none';
-            });
-        }
-    });
 
     // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
