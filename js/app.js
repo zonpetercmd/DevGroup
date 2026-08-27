@@ -273,6 +273,9 @@ class App {
             if (!select) return;
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- Select Firm --</option>';
+            if (id === 'expense_head_firm') {
+                select.innerHTML += '<option value="all">🌐 All Firms</option>';
+            }
             Object.keys(this.allFirms).forEach(f => {
                 if (this.allFirms[f]) {
                     select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
@@ -959,13 +962,23 @@ class App {
     }
 
     // ============================================================
-    // POPULATE FUNCTIONS - SEARCH + DROPDOWN
+    // EXPENSE HEADS - FIRM WISE (UPDATED)
     // ============================================================
 
     populateExpenseHeads() {
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
-        const heads = Object.keys(this.expenseHeads);
+        
+        const currentFirmKey = document.getElementById('firm_name_value')?.value || this.currentFirm || '';
+        let heads = Object.keys(this.expenseHeads);
+        
+        if (currentFirmKey) {
+            heads = heads.filter(h => {
+                const headFirm = this.expenseHeads[h]?.firm || '';
+                return headFirm === '' || headFirm === currentFirmKey;
+            });
+        }
+        
         if (heads.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No heads added. Add in Settings.</div>';
             dropdown.style.display = 'block';
@@ -995,6 +1008,135 @@ class App {
         const firstItem = dropdown.querySelector('div');
         if (firstItem) firstItem.classList.add('selected');
     }
+
+    filterExpenseHeads(search) {
+        const dropdown = document.getElementById('expenseHeadDropdown');
+        if (!dropdown) return;
+        if (!search || search.length < 1) {
+            this.populateExpenseHeads();
+            return;
+        }
+        
+        const currentFirmKey = document.getElementById('firm_name_value')?.value || this.currentFirm || '';
+        let heads = Object.keys(this.expenseHeads);
+        if (currentFirmKey) {
+            heads = heads.filter(h => {
+                const headFirm = this.expenseHeads[h]?.firm || '';
+                return headFirm === '' || headFirm === currentFirmKey;
+            });
+        }
+        
+        const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">No head found</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        dropdown.innerHTML = filtered.map(h => 
+            `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
+        ).join('');
+        dropdown.style.display = 'block';
+    }
+
+    filterSubHeads(search) {
+        const dropdown = document.getElementById('subHeadDropdown');
+        if (!dropdown) return;
+        const head = document.getElementById('expense_head_value').value;
+        if (!head) {
+            dropdown.innerHTML = '<div class="no-result">Select a head first</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        const subHeads = this.expenseHeads[head]?.subHeads || [];
+        if (!search || search.length < 1) {
+            this.populateSubHeads(head);
+            return;
+        }
+        const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        dropdown.innerHTML = filtered.map(sh => 
+            `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
+        ).join('');
+        dropdown.style.display = 'block';
+    }
+
+    // ============================================================
+    // EXPENSE HEADS - SETTINGS (UPDATED)
+    // ============================================================
+
+    renderHeadsList() {
+        const container = document.getElementById('heads_list');
+        if (!container) return;
+        const firm = document.getElementById('expense_head_firm')?.value || '';
+        let heads = Object.keys(this.expenseHeads);
+        if (firm && firm !== 'all') {
+            heads = heads.filter(h => this.expenseHeads[h]?.firm === firm);
+        }
+        if (heads.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No expense heads found</p>';
+            return;
+        }
+        container.innerHTML = heads.map(h => `
+            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
+                <span><strong>${h}</strong> → ${(this.expenseHeads[h]?.subHeads || []).join(', ')} 
+                ${this.expenseHeads[h]?.firm ? `<span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[this.expenseHeads[h].firm]?.name || this.expenseHeads[h].firm}</span>` : '<span style="background:#8b5cf6; color:white; padding:2px 8px; border-radius:4px; font-size:10px;">All Firms</span>'}</span>
+                <button class="btn-action btn-del" onclick="deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
+            </div>
+        `).join('');
+    }
+
+    async addExpenseHead() {
+        if (!this.canAddExpense()) {
+            showToast('❌ No permission to add expense head');
+            return;
+        }
+        const firm = document.getElementById('expense_head_firm').value;
+        const head = document.getElementById('new_head_name').value.trim();
+        const subHead = document.getElementById('new_subhead_name').value.trim();
+        
+        if (!firm) { showToast('❌ Please select a firm'); return; }
+        if (!head) { showToast('Enter expense head name'); return; }
+        
+        if (this.expenseHeads[head]) {
+            if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
+                this.expenseHeads[head].subHeads.push(subHead);
+            } else if (!subHead) {
+                showToast('✅ Head already exists! Add a Sub Head instead.');
+                return;
+            }
+        } else {
+            this.expenseHeads[head] = { 
+                firm: firm === 'all' ? '' : firm, 
+                subHeads: subHead ? [subHead] : [] 
+            };
+        }
+        
+        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
+        this.populateExpenseHeads();
+        this.renderHeadsList();
+        this.updateHeadFilter();
+        document.getElementById('new_head_name').value = '';
+        document.getElementById('new_subhead_name').value = '';
+        showToast('✅ Head added successfully!');
+    }
+
+    async deleteExpenseHead(head) {
+        if (!confirm('Delete head: ' + head + '?')) return;
+        delete this.expenseHeads[head];
+        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
+        this.populateExpenseHeads();
+        this.renderHeadsList();
+        this.updateHeadFilter();
+        showToast('✅ Deleted');
+    }
+
+    // ============================================================
+    // POPULATE FUNCTIONS - SEARCH + DROPDOWN
+    // ============================================================
 
     populateFirmDropdown() {
         const dropdown = document.getElementById('firmDropdown');
@@ -1040,52 +1182,6 @@ class App {
     // ============================================================
     // FILTER FUNCTIONS
     // ============================================================
-
-    filterExpenseHeads(search) {
-        const dropdown = document.getElementById('expenseHeadDropdown');
-        if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populateExpenseHeads();
-            return;
-        }
-        const heads = Object.keys(this.expenseHeads);
-        const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
-        if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No head found</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = filtered.map(h => 
-            `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
-    filterSubHeads(search) {
-        const dropdown = document.getElementById('subHeadDropdown');
-        if (!dropdown) return;
-        const head = document.getElementById('expense_head_value').value;
-        if (!head) {
-            dropdown.innerHTML = '<div class="no-result">Select a head first</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        const subHeads = this.expenseHeads[head]?.subHeads || [];
-        if (!search || search.length < 1) {
-            this.populateSubHeads(head);
-            return;
-        }
-        const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
-        if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = filtered.map(sh => 
-            `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
 
     filterFirms(search) {
         const dropdown = document.getElementById('firmDropdown');
@@ -1385,7 +1481,6 @@ class App {
         
         this.allFirms[key] = { name, short, logo, addr, mobile, email, gst, pan };
         
-        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
             firmObj[k] = this.allFirms[k];
@@ -1439,7 +1534,6 @@ class App {
         const newPan = prompt('📄 PAN No:', firm.pan || '');
         if (newPan !== null) firm.pan = newPan.trim();
         
-        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
             firmObj[k] = this.allFirms[k];
@@ -1467,7 +1561,6 @@ class App {
         }
         delete this.allFirms[key];
         
-        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
             firmObj[k] = this.allFirms[k];
@@ -1596,68 +1689,6 @@ class App {
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
         showToast('✅ User deleted');
-    }
-
-    // ============================================================
-    // EXPENSE HEADS - FIRM WISE
-    // ============================================================
-
-    renderHeadsList() {
-        const container = document.getElementById('heads_list');
-        if (!container) return;
-        const firm = document.getElementById('expense_head_firm')?.value || '';
-        let heads = Object.keys(this.expenseHeads);
-        if (firm) {
-            heads = heads.filter(h => this.expenseHeads[h]?.firm === firm);
-        }
-        if (heads.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No expense heads added for this firm</p>';
-            return;
-        }
-        container.innerHTML = heads.map(h => `
-            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
-                <span><strong>${h}</strong> → ${(this.expenseHeads[h]?.subHeads || []).join(', ')} 
-                ${this.expenseHeads[h]?.firm ? `<span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[this.expenseHeads[h].firm]?.name || this.expenseHeads[h].firm}</span>` : ''}</span>
-                <button class="btn-action btn-del" onclick="deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
-            </div>
-        `).join('');
-    }
-
-    async addExpenseHead() {
-        if (!this.canAddExpense()) {
-            showToast('❌ No permission to add expense head');
-            return;
-        }
-        const firm = document.getElementById('expense_head_firm').value;
-        const head = document.getElementById('new_head_name').value.trim();
-        const subHead = document.getElementById('new_subhead_name').value.trim();
-        
-        if (!firm) { showToast('❌ Please select a firm'); return; }
-        if (!head) { showToast('Enter expense head name'); return; }
-        
-        if (!this.expenseHeads[head]) {
-            this.expenseHeads[head] = { firm: firm, subHeads: [] };
-        }
-        if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
-            this.expenseHeads[head].subHeads.push(subHead);
-        }
-        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
-        this.populateExpenseHeads();
-        this.renderHeadsList();
-        this.updateHeadFilter();
-        document.getElementById('new_head_name').value = '';
-        document.getElementById('new_subhead_name').value = '';
-        showToast('✅ Head added');
-    }
-
-    async deleteExpenseHead(head) {
-        if (!confirm('Delete head: ' + head + '?')) return;
-        delete this.expenseHeads[head];
-        await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
-        this.populateExpenseHeads();
-        this.renderHeadsList();
-        this.updateHeadFilter();
-        showToast('✅ Deleted');
     }
 
     // ============================================================
@@ -1798,7 +1829,7 @@ class App {
                 const subHead = row.SubHead || row[1];
                 if (head) {
                     if (!this.expenseHeads[head]) {
-                        this.expenseHeads[head] = { firm: firm, subHeads: [] };
+                        this.expenseHeads[head] = { firm: firm === 'all' ? '' : firm, subHeads: [] };
                     }
                     if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
                         this.expenseHeads[head].subHeads.push(subHead);
@@ -1865,7 +1896,6 @@ class App {
             return;
         }
         
-        // Show firm selection dialog
         const firmSelect = document.getElementById('import_firm_select');
         if (!firmSelect) {
             showToast('❌ Please select a firm first');
@@ -1989,7 +2019,7 @@ class App {
         const data = Object.keys(this.expenseHeads).map(head => ({
             Head: head,
             SubHead: (this.expenseHeads[head]?.subHeads || []).join(', '),
-            Firm: this.allFirms[this.expenseHeads[head]?.firm]?.name || this.expenseHeads[head]?.firm || ''
+            Firm: this.allFirms[this.expenseHeads[head]?.firm]?.name || this.expenseHeads[head]?.firm || 'All Firms'
         }));
         this.exportToExcel(data, 'Expense_Heads_Export');
     }
