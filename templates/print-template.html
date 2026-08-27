@@ -173,11 +173,11 @@
             color: #000;
         }
         
-        /* ===== SIGNATURES - 7 SIGNATURES ===== */
+        /* ===== SIGNATURES - 7 IN ONE LINE ===== */
         .sign-section {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
             padding-top: 10px;
             border-top: 2px solid #000;
             margin-top: auto;
@@ -187,16 +187,17 @@
         }
         .sign-box {
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
+            min-height: 70px;
         }
         .sign-box .sign-label {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 8px;
             line-height: 1.2;
-            min-height: 22px;
+            min-height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -204,21 +205,21 @@
         }
         .sign-box .sign-name {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
             min-height: 16px;
             line-height: 1.2;
             color: #000;
         }
         .sign-box .sign-line {
             border-top: 1.5px solid #000;
-            margin-top: 3px;
-            padding-top: 2px;
-            min-height: 16px;
+            margin-top: 4px;
+            padding-top: 4px;
+            min-height: 30px;
         }
         .sign-box .sign-hint {
             font-size: 6px;
             color: #666;
-            margin-top: 1px;
+            margin-top: 2px;
         }
         
         .footer-text {
@@ -278,7 +279,7 @@
                 opacity: 0.08 !important;
             }
             .sign-box .sign-line {
-                min-height: 20px !important;
+                min-height: 30px !important;
             }
         }
     </style>
@@ -342,62 +343,62 @@
         </div>
         <div class="amount-words">{{amountWords}}</div>
         
-        <!-- ===== 7 SIGNATURES ===== -->
+        <!-- ===== 7 SIGNATURES IN ONE LINE ===== -->
         <div class="sign-section">
             <!-- 1. Prepared By -->
             <div class="sign-box">
                 <div class="sign-label">Prepared By</div>
                 <div class="sign-name">{{createdBy}}</div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 2. Incharge Signature -->
+            <!-- 2. Incharge -->
             <div class="sign-box">
-                <div class="sign-label">Incharge Signature</div>
+                <div class="sign-label">Incharge</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 3. Accountant Signature -->
+            <!-- 3. Accountant -->
             <div class="sign-box">
-                <div class="sign-label">Accountant Signature</div>
+                <div class="sign-label">Accountant</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 4. Principal Signature -->
+            <!-- 4. Principal -->
             <div class="sign-box">
-                <div class="sign-label">Principal Signature</div>
+                <div class="sign-label">Principal</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 5. COO Signature -->
+            <!-- 5. COO -->
             <div class="sign-box">
-                <div class="sign-label">COO Signature</div>
+                <div class="sign-label">COO</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 6. Convenor Signature -->
+            <!-- 6. Convenor -->
             <div class="sign-box">
-                <div class="sign-label">Convenor Signature</div>
+                <div class="sign-label">Convenor</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 7. Receiver's Signature -->
+            <!-- 7. Receiver -->
             <div class="sign-box">
-                <div class="sign-label">Receiver's Signature</div>
+                <div class="sign-label">Receiver</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Signature &amp; Date)</div>
+                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
         </div>
         
