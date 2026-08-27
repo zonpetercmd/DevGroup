@@ -173,11 +173,11 @@
             color: #000;
         }
         
-        /* ===== SIGNATURES - PERFECT ALIGNMENT ===== */
+        /* ===== SIGNATURES - 7 SIGNATURES ===== */
         .sign-section {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
             padding-top: 10px;
             border-top: 2px solid #000;
             margin-top: auto;
@@ -187,16 +187,16 @@
         }
         .sign-box {
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
         }
         .sign-box .sign-label {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
             line-height: 1.2;
-            min-height: 24px;
+            min-height: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -204,19 +204,19 @@
         }
         .sign-box .sign-name {
             font-weight: bold;
-            font-size: 12px;
-            min-height: 18px;
+            font-size: 10px;
+            min-height: 16px;
             line-height: 1.2;
             color: #000;
         }
         .sign-box .sign-line {
             border-top: 1.5px solid #000;
-            margin-top: 4px;
+            margin-top: 3px;
             padding-top: 2px;
-            min-height: 18px;
+            min-height: 16px;
         }
         .sign-box .sign-hint {
-            font-size: 7px;
+            font-size: 6px;
             color: #666;
             margin-top: 1px;
         }
@@ -278,7 +278,7 @@
                 opacity: 0.08 !important;
             }
             .sign-box .sign-line {
-                min-height: 22px !important;
+                min-height: 20px !important;
             }
         }
     </style>
@@ -308,7 +308,7 @@
         
         <div class="header-title">{{title}}</div>
         
-        <!-- ===== VOUCHER DETAILS WITH CHANGED LABELS ===== -->
+        <!-- ===== VOUCHER DETAILS ===== -->
         <div class="voucher-details">
             <div class="row">
                 <span><span class="label">Voucher No:</span> {{vno}}</span>
@@ -342,9 +342,9 @@
         </div>
         <div class="amount-words">{{amountWords}}</div>
         
-        <!-- ===== SIGNATURES - PERFECT ALIGNMENT ===== -->
+        <!-- ===== 7 SIGNATURES ===== -->
         <div class="sign-section">
-            <!-- Prepared By -->
+            <!-- 1. Prepared By -->
             <div class="sign-box">
                 <div class="sign-label">Prepared By</div>
                 <div class="sign-name">{{createdBy}}</div>
@@ -352,15 +352,47 @@
                 <div class="sign-hint">(Signature &amp; Date)</div>
             </div>
             
-            <!-- Authorised Signatory -->
+            <!-- 2. Incharge Signature -->
             <div class="sign-box">
-                <div class="sign-label">Authorised Signatory</div>
-                <div class="sign-name">{{signatory}}</div>
+                <div class="sign-label">Incharge Signature</div>
+                <div class="sign-name"></div>
                 <div class="sign-line"></div>
                 <div class="sign-hint">(Signature &amp; Date)</div>
             </div>
             
-            <!-- Receiver's Signature -->
+            <!-- 3. Accountant Signature -->
+            <div class="sign-box">
+                <div class="sign-label">Accountant Signature</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- 4. Principal Signature -->
+            <div class="sign-box">
+                <div class="sign-label">Principal Signature</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- 5. COO Signature -->
+            <div class="sign-box">
+                <div class="sign-label">COO Signature</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- 6. Convenor Signature -->
+            <div class="sign-box">
+                <div class="sign-label">Convenor Signature</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+                <div class="sign-hint">(Signature &amp; Date)</div>
+            </div>
+            
+            <!-- 7. Receiver's Signature -->
             <div class="sign-box">
                 <div class="sign-label">Receiver's Signature</div>
                 <div class="sign-name"></div>
