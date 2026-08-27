@@ -306,7 +306,7 @@ class App {
             document.getElementById('form_firm_name').innerText = firm.name;
             document.getElementById('form_firm_addr').innerText = 
                 (firm.addr || '📍 ' + firm.name) + ' | 📞 ' + (firm.mobile || '');
-            document.getElementById('form_logo').src = firm.logo || 'logo.jpeg';
+            document.getElementById('form_logo').src = firm.logo || 'logo.png';
         }
         this.updateBankDropdown();
     }
@@ -1563,7 +1563,7 @@ renderReports() {
     async addFirm() {
         const name = document.getElementById('new_firm_name').value.trim();
         const short = document.getElementById('new_firm_short').value.trim().toUpperCase();
-        const logo = document.getElementById('new_firm_logo').value.trim() || 'logo.jpeg';
+        const logo = document.getElementById('new_firm_logo').value.trim() || 'logo.png';
         const addr = document.getElementById('new_firm_addr').value.trim();
         const mobile = document.getElementById('new_firm_mobile').value.trim();
         const email = document.getElementById('new_firm_email').value.trim();
@@ -1615,8 +1615,8 @@ renderReports() {
         const newShort = prompt('📛 Short Code:', firm.short);
         if (newShort !== null && newShort.trim()) firm.short = newShort.trim().toUpperCase();
         
-        const newLogo = prompt('🖼️ Logo URL:', firm.logo || 'logo.jpeg');
-        if (newLogo !== null) firm.logo = newLogo.trim() || 'logo.jpeg';
+        const newLogo = prompt('🖼️ Logo URL:', firm.logo || 'logo.png');
+        if (newLogo !== null) firm.logo = newLogo.trim() || 'logo.png';
         
         const newAddr = prompt('📍 Address:', firm.addr || '');
         if (newAddr !== null) firm.addr = newAddr.trim();
