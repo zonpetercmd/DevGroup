@@ -267,7 +267,7 @@ class App {
     }
 
     updateFirmDropdownsInSettings() {
-        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'new_party_firm', 'r_firm_filter'];
+        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'new_party_firm', 'r_firm_filter', 'import_firm_select'];
         firmSelects.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
@@ -814,6 +814,7 @@ class App {
                 <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Export Edited</button>
                 <button class="btn-xlsx" style="background:#8b5cf6;" onclick="exportFilteredVouchers()">📎 Export Filtered</button>
                 <button class="btn-xlsx" style="background:#8b5cf6;" onclick="document.getElementById('importVouchersFile').click()">📥 Import Vouchers</button>
+                <button class="btn-xlsx" style="background:#f59e0b;" onclick="app.downloadVoucherTemplate()">📄 Template</button>
                 <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importVouchers()">
             </div>
             <div class="table-res">
@@ -1520,6 +1521,8 @@ class App {
                     <span>👤 Add Party: ${perms.party_add ? '✅' : '❌'}</span>
                     <span>🏦 Add Bank: ${perms.bank_add ? '✅' : '❌'}</span>
                     <span>📂 Add Expense: ${perms.expense_add ? '✅' : '❌'}</span>
+                    <span>📎 Export/Import: ${perms.export_import ? '✅' : '❌'}</span>
+                    <span>✏️ Edit Firm: ${perms.edit_firm ? '✅' : '❌'}</span>
                 </div>
             </div>
         `}).join('');
@@ -1553,7 +1556,9 @@ class App {
             view_all: document.getElementById('perm_view_all').checked,
             party_add: document.getElementById('perm_party_add').checked,
             bank_add: document.getElementById('perm_bank_add').checked,
-            expense_add: document.getElementById('perm_expense_add').checked
+            expense_add: document.getElementById('perm_expense_add').checked,
+            export_import: document.getElementById('perm_export_import').checked,
+            edit_firm: document.getElementById('perm_edit_firm').checked
         };
         
         const user = { 
@@ -1761,11 +1766,23 @@ class App {
         return this.userPermissions.expense_add || this.currentRole === 'Admin';
     }
 
+    canExportImport() {
+        return this.userPermissions.export_import || this.currentRole === 'Admin';
+    }
+
+    canEditFirm() {
+        return this.userPermissions.edit_firm || this.currentRole === 'Admin';
+    }
+
     // ============================================================
     // IMPORT/EXPORT FUNCTIONS
     // ============================================================
 
     async importExpenseHeads() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to import');
+            return;
+        }
         const fileInput = document.getElementById('importHeadsFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
@@ -1800,6 +1817,10 @@ class App {
     }
 
     async importParties() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to import');
+            return;
+        }
         const fileInput = document.getElementById('importPartiesFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
@@ -1834,24 +1855,39 @@ class App {
     // ============================================================
 
     async importVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to import');
+            return;
+        }
         const fileInput = document.getElementById('importVouchersFile');
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('❌ Please select a file');
             return;
         }
+        
+        // Show firm selection dialog
+        const firmSelect = document.getElementById('import_firm_select');
+        if (!firmSelect) {
+            showToast('❌ Please select a firm first');
+            return;
+        }
+        const firmKey = firmSelect.value;
+        if (!firmKey) {
+            showToast('❌ Please select a firm for import');
+            return;
+        }
+        const firm = this.allFirms[firmKey];
+        if (!firm) {
+            showToast('❌ Invalid firm selected');
+            return;
+        }
+        
         try {
             const data = await this._readFile(fileInput.files[0]);
             let count = 0;
             let skipped = 0;
             
             for (const row of data) {
-                const firmKey = row.FirmKey || row.Firm || row.firmKey || '';
-                const firm = this.allFirms[firmKey];
-                if (!firm) {
-                    skipped++;
-                    continue;
-                }
-                
                 const date = row.Date || row.date || getToday();
                 const head = row.Head || row.head || '';
                 const subHead = row.SubHead || row.subHead || '';
@@ -1928,8 +1964,8 @@ class App {
     }
 
     downloadVoucherTemplate() {
-        const headers = ['Date', 'FirmKey', 'Head', 'SubHead', 'Party', 'Amount', 'Mode', 'ReferenceNo', 'Narration', 'CreatedBy'];
-        const csv = headers.join(',') + '\n' + '2026-08-27,DevVidyalaya,Tea & Canteen,Rashan Exp,SHREE RAM RASHAN WALA,5000,Cash,BILL123,Payment for canteen,Admin';
+        const headers = ['Date', 'Head', 'SubHead', 'Party', 'Amount', 'Mode', 'ReferenceNo', 'Narration', 'CreatedBy'];
+        const csv = headers.join(',') + '\n' + '2026-08-27,Tea & Canteen,Rashan Exp,SHREE RAM RASHAN WALA,5000,Cash,BILL123,Payment for canteen,Admin';
         this._downloadFile(csv, 'Voucher_Import_Template.csv');
         showToast('📎 Template downloaded!');
     }
@@ -1946,6 +1982,10 @@ class App {
     }
 
     exportExpenseHeads() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         const data = Object.keys(this.expenseHeads).map(head => ({
             Head: head,
             SubHead: (this.expenseHeads[head]?.subHeads || []).join(', '),
@@ -1955,6 +1995,10 @@ class App {
     }
 
     exportParties() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         const data = this.parties.map(p => ({
             PartyName: p.name,
             Phone: p.phone || '',
@@ -1969,6 +2013,10 @@ class App {
     // ============================================================
 
     exportToExcel(data, filename) {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
         const ws = XLSX.utils.json_to_sheet(data.map(v => ({
             'Date': v.date || v.Date || '',
@@ -1995,6 +2043,10 @@ class App {
     }
 
     exportAllVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         const allVouchers = [...this.db.filter(v => v.status !== 'deleted'), ...this.deletedVouchers];
         const unique = [];
         const seen = new Set();
@@ -2005,20 +2057,36 @@ class App {
     }
 
     exportActiveVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         this.exportToExcel(this.db.filter(v => v.status !== 'deleted'), 'Active_Vouchers');
     }
 
     exportDeletedVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         this.exportToExcel(this.deletedVouchers, 'Deleted_Vouchers');
     }
 
     exportEditedVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         const editedIds = new Set(this.editLogs.map(e => e.voucherId));
         const editedVouchers = this.db.filter(v => editedIds.has(v.id));
         this.exportToExcel(editedVouchers, 'Edited_Vouchers');
     }
 
     exportFilteredVouchers() {
+        if (!this.canExportImport()) {
+            showToast('❌ No permission to export');
+            return;
+        }
         const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('r_start')?.value || '';
         const end = document.getElementById('r_end')?.value || '';
@@ -2114,7 +2182,9 @@ class App {
             view_all: document.getElementById('perm_view_all').checked,
             party_add: document.getElementById('perm_party_add').checked,
             bank_add: document.getElementById('perm_bank_add').checked,
-            expense_add: document.getElementById('perm_expense_add').checked
+            expense_add: document.getElementById('perm_expense_add').checked,
+            export_import: document.getElementById('perm_export_import').checked,
+            edit_firm: document.getElementById('perm_edit_firm').checked
         };
         await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
         this.userPermissions = perms;
