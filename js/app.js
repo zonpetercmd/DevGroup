@@ -18,7 +18,6 @@ class App {
         this.deletedVouchers = [];
         this.editLogs = [];
         this.parties = [];
-        this.signatories = [];
         this.expenseHeads = {};
         this.allUsers = [];
         this.allFirms = {};
@@ -54,7 +53,6 @@ class App {
         this.deletedVouchers = data.deletedVouchers || [];
         this.editLogs = data.editLogs || [];
         this.parties = data.parties || [];
-        this.signatories = data.signatories || [];
         this.expenseHeads = data.expenseHeads || {};
         this.allUsers = data.allUsers || [];
         this.voucherCounter = data.voucherCounter || {};
@@ -66,14 +64,12 @@ class App {
 
     // ===== SESSION =====
     checkSession() {
-        // ✅ Ensure data is loaded first
         if (!this.loaded) {
             console.log('⏳ Data loading in progress, retrying...');
             setTimeout(() => this.checkSession(), 300);
             return;
         }
         
-        // ✅ Update dropdown with loaded data
         this.updateLoginRoleDropdown();
         
         if (sessionStorage.getItem('auth') === 'ok') {
@@ -120,7 +116,6 @@ class App {
         this.generateVoucherNo();
         this.updateFirmDropdownsInSettings();
         this.renderPartiesList();
-        this.renderSignatoriesList();
     }
 
     // ===== LOGIN =====
@@ -192,7 +187,7 @@ class App {
         showToast('👋 Logged out');
     }
 
-    // ===== UPDATE LOGIN ROLE DROPDOWN - FIXED =====
+    // ===== UPDATE LOGIN ROLE DROPDOWN =====
     updateLoginRoleDropdown() {
         const select = document.getElementById('login_role');
         if (!select) {
@@ -201,16 +196,10 @@ class App {
         }
         
         const currentVal = select.value;
-        
-        // ✅ Always show at least Admin option
         let html = '<option value="">-- Select Role --</option>';
         html += '<option value="Admin">Admin (Full Access)</option>';
         
-        // ✅ Get firms from loaded data
         const firms = Object.keys(this.allFirms || {});
-        console.log('🏢 Updating login roles, firms found:', firms.length);
-        console.log('📋 Firms:', firms);
-        
         if (firms.length > 0) {
             firms.forEach(f => {
                 const firm = this.allFirms[f];
@@ -221,8 +210,6 @@ class App {
                 }
             });
         } else {
-            // 🔥 FALLBACK - Hardcoded default firms
-            console.warn('⚠️ No firms in data, using hardcoded fallback');
             const fallbackFirms = [
                 { key: 'DevVidyalaya', name: 'Dev Vidyalaya' },
                 { key: 'DevGas', name: 'Dev Gas Agency' },
@@ -234,9 +221,6 @@ class App {
         }
         
         select.innerHTML = html;
-        console.log('✅ Login role dropdown updated. Total options:', select.options.length);
-        
-        // ✅ Restore previous value if it exists
         if (currentVal) {
             const optionExists = Array.from(select.options).some(opt => opt.value === currentVal);
             if (optionExists) {
@@ -283,7 +267,7 @@ class App {
     }
 
     updateFirmDropdownsInSettings() {
-        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'signatory_firm_filter', 'new_party_firm', 'new_signatory_firm', 'r_firm_filter'];
+        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'new_party_firm', 'r_firm_filter'];
         firmSelects.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
@@ -365,7 +349,6 @@ class App {
         const mode = document.getElementById('v_mode_value').value || 'Cash';
         const date = document.getElementById('v_date').value;
         const referenceNo = document.getElementById('reference_no').value.trim();
-        const signatory = document.getElementById('signatory_value').value;
         const narration = document.getElementById('v_narration').value.trim();
         const vno = document.getElementById('v_no').value;
         const editId = document.getElementById('edit_id').value;
@@ -411,7 +394,6 @@ class App {
             bankIfsc: bankIfsc,
             upiApp: upiApp,
             referenceNo: referenceNo,
-            signatory: signatory,
             narration: narration,
             type: 'EXP',
             status: 'active',
@@ -508,8 +490,6 @@ class App {
         document.getElementById('party_value').value = '';
         document.getElementById('v_amt').value = '0';
         document.getElementById('reference_no').value = '';
-        document.getElementById('signatory_input').value = '';
-        document.getElementById('signatory_value').value = '';
         document.getElementById('v_narration').value = '';
         document.getElementById('v_mode_input').value = '';
         document.getElementById('v_mode_value').value = 'Cash';
@@ -548,8 +528,6 @@ class App {
         document.getElementById('v_mode_input').value = v.mode;
         document.getElementById('v_mode_value').value = v.mode;
         document.getElementById('reference_no').value = v.referenceNo || '';
-        document.getElementById('signatory_input').value = v.signatory || '';
-        document.getElementById('signatory_value').value = v.signatory || '';
         document.getElementById('v_narration').value = v.narration || '';
         document.getElementById('v_no').value = v.vno;
         document.getElementById('form-title').innerHTML = '✏️ Edit Voucher: ' + v.vno;
@@ -639,112 +617,111 @@ class App {
     }
 
     // ===== RENDER TABLE =====
-renderTable() {
-    const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
-    const start = document.getElementById('f_start')?.value || '';
-    const end = document.getElementById('f_end')?.value || '';
-    const status = document.getElementById('f_status')?.value || 'ALL';
-    const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
-    const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
-    const headFilter = document.getElementById('f_head_filter')?.value || '';
-    const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
-    const modeFilter = document.getElementById('f_mode_filter')?.value || '';
-    
-    let dataToShow = [];
-    if (status === 'ALL' || status === 'active') {
-        dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
-    }
-    if (status === 'ALL' || status === 'deleted') {
-        dataToShow = dataToShow.concat(this.deletedVouchers);
-    }
-    
-    const seen = new Set();
-    dataToShow = dataToShow.filter(v => {
-        if (seen.has(v.id)) return false;
-        seen.add(v.id);
-        return true;
-    });
-    
-    // ✅ STAFF FILTER - Only show current firm's vouchers
-    const filtered = dataToShow.filter(v => {
-        let match = true;
+    renderTable() {
+        const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
+        const start = document.getElementById('f_start')?.value || '';
+        const end = document.getElementById('f_end')?.value || '';
+        const status = document.getElementById('f_status')?.value || 'ALL';
+        const amountMin = parseFloat(document.getElementById('f_amount_min')?.value) || 0;
+        const amountMax = parseFloat(document.getElementById('f_amount_max')?.value) || Infinity;
+        const headFilter = document.getElementById('f_head_filter')?.value || '';
+        const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
+        const modeFilter = document.getElementById('f_mode_filter')?.value || '';
         
-        // ✅ If Staff (not Admin), filter by current firm
-        if (this.currentRole !== 'Admin' && this.currentFirm) {
-            match = match && v.firmKey === this.currentFirm;
+        let dataToShow = [];
+        if (status === 'ALL' || status === 'active') {
+            dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
+        }
+        if (status === 'ALL' || status === 'deleted') {
+            dataToShow = dataToShow.concat(this.deletedVouchers);
         }
         
-        if (search) {
-            match = match && (
-                v.party?.toLowerCase().includes(search) ||
-                v.head?.toLowerCase().includes(search) ||
-                v.narration?.toLowerCase().includes(search) ||
-                v.vno?.toLowerCase().includes(search) ||
-                v.subHead?.toLowerCase().includes(search) ||
-                v.createdBy?.toLowerCase().includes(search)
-            );
+        const seen = new Set();
+        dataToShow = dataToShow.filter(v => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+        });
+        
+        const filtered = dataToShow.filter(v => {
+            let match = true;
+            
+            if (this.currentRole !== 'Admin' && this.currentFirm) {
+                match = match && v.firmKey === this.currentFirm;
+            }
+            
+            if (search) {
+                match = match && (
+                    v.party?.toLowerCase().includes(search) ||
+                    v.head?.toLowerCase().includes(search) ||
+                    v.narration?.toLowerCase().includes(search) ||
+                    v.vno?.toLowerCase().includes(search) ||
+                    v.subHead?.toLowerCase().includes(search) ||
+                    v.createdBy?.toLowerCase().includes(search)
+                );
+            }
+            if (start) match = match && v.date >= start;
+            if (end) match = match && v.date <= end;
+            if (amountMin > 0) match = match && v.amount >= amountMin;
+            if (amountMax < Infinity) match = match && v.amount <= amountMax;
+            if (headFilter) match = match && v.head === headFilter;
+            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+            if (modeFilter) match = match && v.mode === modeFilter;
+            return match;
+        });
+        
+        const tbody = document.getElementById('v_list');
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
+            return;
         }
-        if (start) match = match && v.date >= start;
-        if (end) match = match && v.date <= end;
-        if (amountMin > 0) match = match && v.amount >= amountMin;
-        if (amountMax < Infinity) match = match && v.amount <= amountMax;
-        if (headFilter) match = match && v.head === headFilter;
-        if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-        if (modeFilter) match = match && v.mode === modeFilter;
-        return match;
-    });
-    
-    const tbody = document.getElementById('v_list');
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
-        return;
+        
+        tbody.innerHTML = filtered.slice().reverse().map(v => {
+            const isDeleted = v.status === 'deleted';
+            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
+            const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
+            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
+            
+            let actions = '';
+            if (!isDeleted) {
+                if (this.userPermissions.print || this.currentRole === 'Admin') {
+                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+                }
+                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
+                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+                }
+                if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+                }
+                if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+                }
+            } else {
+                actions = `
+                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+                `;
+            }
+            
+            const createdBy = v.createdBy || 'Unknown';
+            const creatorBadge = this.currentRole === 'Admin' ? 
+                `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
+                `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
+            
+            return `<tr>
+                <td>${v.date}</td>
+                <td><b>${v.vno}</b></td>
+                <td>${v.head}</td>
+                <td>${v.subHead || '-'}</td>
+                <td>${v.party || '-'}</td>
+                <td>₹${v.amount.toLocaleString()}</td>
+                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+                <td>${creatorBadge}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td>${actions}</td>
+            </tr>`;
+        }).join('');
     }
-    
-    tbody.innerHTML = filtered.slice().reverse().map(v => {
-        const isDeleted = v.status === 'deleted';
-        const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-        const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
-        const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-        
-        let actions = '';
-        if (!isDeleted) {
-            if (this.userPermissions.print || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-            }
-            if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-            }
-            if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-            }
-            if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-            }
-        } else {
-            actions = `
-                <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-            `;
-        }
-        
-        const createdBy = v.createdBy || 'Unknown';
-        const creatorBadge = this.currentRole === 'Admin' ? 
-            `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
-            `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
-        
-        return `<tr>
-            <td>${v.date}</td>
-            <td><b>${v.vno}</b></td>
-            <td>${v.head}</td>
-            <td>${v.subHead || '-'}</td>
-            <td>${v.party || '-'}</td>
-            <td>₹${v.amount.toLocaleString()}</td>
-            <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
-            <td>${creatorBadge}</td>
-            <td><span class="${statusClass}">${statusText}</span></td>
-            <td>${actions}</td>
-        </tr>`;
-    }).join('');
-}
+
     updateStats() {
         const today = getToday();
         const active = this.db.filter(v => v.status !== 'deleted');
@@ -759,154 +736,153 @@ renderTable() {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-   // ===== REPORTS / VOUCHER LIST =====
-renderReports() {
-    const div = document.getElementById('report_content');
-    if (!div) return;
-    
-    const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
-    const start = document.getElementById('r_start')?.value || '';
-    const end = document.getElementById('r_end')?.value || '';
-    const status = document.getElementById('r_status')?.value || 'ALL';
-    const headFilter = document.getElementById('r_head_filter')?.value || '';
-    const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
-    const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
-    const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
-    const modeFilter = document.getElementById('r_mode_filter')?.value || '';
-    const firmFilter = document.getElementById('r_firm_filter')?.value || '';
-    
-    let allVouchers = [];
-    if (status === 'ALL' || status === 'active') {
-        allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
-    }
-    if (status === 'ALL' || status === 'deleted') {
-        allVouchers = allVouchers.concat(this.deletedVouchers);
-    }
-    
-    const seen = new Set();
-    allVouchers = allVouchers.filter(v => {
-        if (seen.has(v.id)) return false;
-        seen.add(v.id);
-        return true;
-    });
-    
-    const filtered = allVouchers.filter(v => {
-        let match = true;
+    // ===== REPORTS / VOUCHER LIST =====
+    renderReports() {
+        const div = document.getElementById('report_content');
+        if (!div) return;
         
-        // ✅ STAFF FILTER - Only show current firm's vouchers
-        if (this.currentRole !== 'Admin' && this.currentFirm) {
-            match = match && v.firmKey === this.currentFirm;
+        const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
+        const start = document.getElementById('r_start')?.value || '';
+        const end = document.getElementById('r_end')?.value || '';
+        const status = document.getElementById('r_status')?.value || 'ALL';
+        const headFilter = document.getElementById('r_head_filter')?.value || '';
+        const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
+        const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
+        const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
+        const modeFilter = document.getElementById('r_mode_filter')?.value || '';
+        const firmFilter = document.getElementById('r_firm_filter')?.value || '';
+        
+        let allVouchers = [];
+        if (status === 'ALL' || status === 'active') {
+            allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
+        }
+        if (status === 'ALL' || status === 'deleted') {
+            allVouchers = allVouchers.concat(this.deletedVouchers);
         }
         
-        if (search) {
-            match = match && (
-                v.party?.toLowerCase().includes(search) ||
-                v.head?.toLowerCase().includes(search) ||
-                v.narration?.toLowerCase().includes(search) ||
-                v.vno?.toLowerCase().includes(search) ||
-                v.subHead?.toLowerCase().includes(search) ||
-                v.createdBy?.toLowerCase().includes(search)
-            );
+        const seen = new Set();
+        allVouchers = allVouchers.filter(v => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+        });
+        
+        const filtered = allVouchers.filter(v => {
+            let match = true;
+            
+            if (this.currentRole !== 'Admin' && this.currentFirm) {
+                match = match && v.firmKey === this.currentFirm;
+            }
+            
+            if (search) {
+                match = match && (
+                    v.party?.toLowerCase().includes(search) ||
+                    v.head?.toLowerCase().includes(search) ||
+                    v.narration?.toLowerCase().includes(search) ||
+                    v.vno?.toLowerCase().includes(search) ||
+                    v.subHead?.toLowerCase().includes(search) ||
+                    v.createdBy?.toLowerCase().includes(search)
+                );
+            }
+            if (start) match = match && v.date >= start;
+            if (end) match = match && v.date <= end;
+            if (amountMin > 0) match = match && v.amount >= amountMin;
+            if (amountMax < Infinity) match = match && v.amount <= amountMax;
+            if (headFilter) match = match && v.head === headFilter;
+            if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
+            if (modeFilter) match = match && v.mode === modeFilter;
+            if (firmFilter) match = match && v.firmKey === firmFilter;
+            return match;
+        });
+        
+        if (filtered.length === 0) {
+            div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
+            return;
         }
-        if (start) match = match && v.date >= start;
-        if (end) match = match && v.date <= end;
-        if (amountMin > 0) match = match && v.amount >= amountMin;
-        if (amountMax < Infinity) match = match && v.amount <= amountMax;
-        if (headFilter) match = match && v.head === headFilter;
-        if (partyFilter) match = match && v.party?.toLowerCase().includes(partyFilter);
-        if (modeFilter) match = match && v.mode === modeFilter;
-        if (firmFilter) match = match && v.firmKey === firmFilter;
-        return match;
-    });
-    
-    if (filtered.length === 0) {
-        div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
-        return;
-    }
-    
-    div.innerHTML = `
-        <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
-            <span>Total: <strong>${filtered.length}</strong></span>
-            <span>Active: <strong style="color:var(--success)">${filtered.filter(v => v.status !== 'deleted').length}</strong></span>
-            <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
-            <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
-        </div>
-        <div class="table-res">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th><th>Voucher No</th><th>Firm</th>
-                        <th>Head</th><th>Sub Head</th><th>Party</th>
-                        <th>Amount</th><th>Mode</th>
-                        <th>Created By</th>
-                        <th>Status</th><th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filtered.slice().reverse().map(v => {
-                        const isDeleted = v.status === 'deleted';
-                        const isEdited = this.editLogs.some(e => e.voucherId === v.id);
-                        const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-                        const createdBy = v.createdBy || 'Unknown';
-                        
-                        let actions = '';
-                        if (!isDeleted) {
-                            if (this.userPermissions.print || this.currentRole === 'Admin') {
-                                actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-                            }
-                            if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                                actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-                            }
-                            if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                                actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-                            }
-                            if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
-                                actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
-                            }
-                        } else {
-                            actions = `
-                                <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                            `;
-                        }
-                        
-                        return `<tr>
-                            <td>${v.date}</td>
-                            <td><b>${v.vno}</b></td>
-                            <td>${v.firmName || v.firmKey || '-'}</td>
-                            <td>${v.head}</td>
-                            <td>${v.subHead || '-'}</td>
-                            <td>${v.party || '-'}</td>
-                            <td>₹${v.amount.toLocaleString()}</td>
-                            <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
-                            <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
-                            <td>${statusText}</td>
-                            <td>${actions}</td>
-                        </tr>`;
-                    }).join('')}
-                </tbody>
-            </table>
-        </div>
-        ${this.editLogs.length > 0 ? `
-        <div style="margin-top:20px;">
-            <h5>📝 Edit Logs</h5>
+        
+        div.innerHTML = `
+            <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
+                <span>Total: <strong>${filtered.length}</strong></span>
+                <span>Active: <strong style="color:var(--success)">${filtered.filter(v => v.status !== 'deleted').length}</strong></span>
+                <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
+                <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
+            </div>
             <div class="table-res">
                 <table>
-                    <thead><tr><th>Voucher</th><th>Edited By</th><th>Edited At</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Voucher No</th><th>Firm</th>
+                            <th>Head</th><th>Sub Head</th><th>Party</th>
+                            <th>Amount</th><th>Mode</th>
+                            <th>Created By</th>
+                            <th>Status</th><th>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        ${this.editLogs.slice().reverse().map(log => `
-                            <tr>
-                                <td>${log.vno}</td>
-                                <td><span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${log.editedBy}</span></td>
-                                <td>${new Date(log.editedAt).toLocaleString()}</td>
-                            </tr>
-                        `).join('')}
+                        ${filtered.slice().reverse().map(v => {
+                            const isDeleted = v.status === 'deleted';
+                            const isEdited = this.editLogs.some(e => e.voucherId === v.id);
+                            const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
+                            const createdBy = v.createdBy || 'Unknown';
+                            
+                            let actions = '';
+                            if (!isDeleted) {
+                                if (this.userPermissions.print || this.currentRole === 'Admin') {
+                                    actions += `<button class="btn-action btn-print" onclick="app.printVoucherById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+                                }
+                                if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                                    actions += `<button class="btn-action btn-edit" onclick="editVoucher('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+                                }
+                                if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                                    actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+                                }
+                                if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
+                                    actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+                                }
+                            } else {
+                                actions = `
+                                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
+                                `;
+                            }
+                            
+                            return `<tr>
+                                <td>${v.date}</td>
+                                <td><b>${v.vno}</b></td>
+                                <td>${v.firmName || v.firmKey || '-'}</td>
+                                <td>${v.head}</td>
+                                <td>${v.subHead || '-'}</td>
+                                <td>${v.party || '-'}</td>
+                                <td>₹${v.amount.toLocaleString()}</td>
+                                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+                                <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
+                                <td>${statusText}</td>
+                                <td>${actions}</td>
+                            </tr>`;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
-        </div>
-        ` : ''}
-    `;
-}
+            ${this.editLogs.length > 0 ? `
+            <div style="margin-top:20px;">
+                <h5>📝 Edit Logs</h5>
+                <div class="table-res">
+                    <table>
+                        <thead><tr><th>Voucher</th><th>Edited By</th><th>Edited At</th></tr></thead>
+                        <tbody>
+                            ${this.editLogs.slice().reverse().map(log => `
+                                <tr>
+                                    <td>${log.vno}</td>
+                                    <td><span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${log.editedBy}</span></td>
+                                    <td>${new Date(log.editedAt).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ` : ''}
+        `;
+    }
 
     // ===== UPDATE HEAD FILTER =====
     updateHeadFilter() {
@@ -1011,29 +987,28 @@ renderReports() {
     }
 
     populateFirmDropdown() {
-    const dropdown = document.getElementById('firmDropdown');
-    if (!dropdown) return;
-    let firms = [];
-    
-    // ✅ STAFF - Only show their firm
-    if (this.currentRole === 'Admin') {
-        firms = Object.keys(this.allFirms);
-    } else if (this.currentFirm) {
-        firms = [this.currentFirm];
-    }
-    
-    if (firms.length === 0) {
-        dropdown.innerHTML = '<div class="no-result">No firms available</div>';
+        const dropdown = document.getElementById('firmDropdown');
+        if (!dropdown) return;
+        let firms = [];
+        
+        if (this.currentRole === 'Admin') {
+            firms = Object.keys(this.allFirms);
+        } else if (this.currentFirm) {
+            firms = [this.currentFirm];
+        }
+        
+        if (firms.length === 0) {
+            dropdown.innerHTML = '<div class="no-result">No firms available</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        dropdown.innerHTML = firms.map(f => 
+            `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
+        ).join('');
         dropdown.style.display = 'block';
-        return;
+        const firstItem = dropdown.querySelector('div');
+        if (firstItem) firstItem.classList.add('selected');
     }
-    dropdown.innerHTML = firms.map(f => 
-        `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
-    ).join('');
-    dropdown.style.display = 'block';
-    const firstItem = dropdown.querySelector('div');
-    if (firstItem) firstItem.classList.add('selected');
-}
 
     populatePartyDropdown() {
         const dropdown = document.getElementById('partyDropdown');
@@ -1046,23 +1021,6 @@ renderReports() {
         }
         dropdown.innerHTML = parties.map(p => 
             `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
-    }
-
-    populateSignatoryDropdown() {
-        const dropdown = document.getElementById('signatoryDropdown');
-        if (!dropdown) return;
-        const signatories = this.getSignatoriesForCurrentFirm();
-        if (signatories.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No signatories. Add one.</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = signatories.map(s => 
-            `<div onclick="selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
         ).join('');
         dropdown.style.display = 'block';
         const firstItem = dropdown.querySelector('div');
@@ -1165,28 +1123,6 @@ renderReports() {
         dropdown.style.display = 'block';
     }
 
-    filterSignatories(search) {
-        const dropdown = document.getElementById('signatoryDropdown');
-        if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populateSignatoryDropdown();
-            return;
-        }
-        const signatories = this.getSignatoriesForCurrentFirm();
-        const filtered = signatories.filter(s => 
-            s.name.toLowerCase().includes(search.toLowerCase())
-        );
-        if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="no-result">No signatory found</div>';
-            dropdown.style.display = 'block';
-            return;
-        }
-        dropdown.innerHTML = filtered.map(s => 
-            `<div onclick="selectSignatory('${s.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${s.name} ${s.designation ? ' - ' + s.designation : ''}</div>`
-        ).join('');
-        dropdown.style.display = 'block';
-    }
-
     // ============================================================
     // SELECT FUNCTIONS
     // ============================================================
@@ -1219,12 +1155,6 @@ renderReports() {
         document.getElementById('partyDropdown').style.display = 'none';
     }
 
-    selectSignatory(name) {
-        document.getElementById('signatory_input').value = name;
-        document.getElementById('signatory_value').value = name;
-        document.getElementById('signatoryDropdown').style.display = 'none';
-    }
-
     // ============================================================
     // FIRM-WISE HELPERS
     // ============================================================
@@ -1233,12 +1163,6 @@ renderReports() {
         const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
         if (!firmKey) return this.parties;
         return this.parties.filter(p => p.firm === firmKey || !p.firm);
-    }
-
-    getSignatoriesForCurrentFirm() {
-        const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
-        if (!firmKey) return this.signatories;
-        return this.signatories.filter(s => s.firm === firmKey || !s.firm);
     }
 
     // ============================================================
@@ -1372,131 +1296,6 @@ renderReports() {
     }
 
     // ============================================================
-    // SIGNATORY FUNCTIONS
-    // ============================================================
-
-    openAddSignatoryModal() {
-        if (!this.canAddSignatory()) {
-            showToast('❌ No permission to add signatory');
-            return;
-        }
-        const firmKey = document.getElementById('firm_name_value')?.value || '';
-        document.getElementById('edit_signatory_id').value = '';
-        document.getElementById('edit_signatory_firm').value = '';
-        document.getElementById('new_signatory_name').value = '';
-        document.getElementById('new_signatory_designation').value = '';
-        document.getElementById('new_signatory_firm').value = firmKey;
-        document.getElementById('signatoryModalTitle').innerHTML = '✍️ Add New Signatory';
-        document.getElementById('addSignatoryModal').style.display = 'flex';
-    }
-
-    openAddSignatoryModalFromSettings() {
-        document.getElementById('edit_signatory_id').value = '';
-        document.getElementById('edit_signatory_firm').value = '';
-        document.getElementById('new_signatory_name').value = '';
-        document.getElementById('new_signatory_designation').value = '';
-        document.getElementById('signatoryModalTitle').innerHTML = '✍️ Add Signatory (Settings)';
-        document.getElementById('addSignatoryModal').style.display = 'flex';
-    }
-
-    closeAddSignatoryModal() {
-        document.getElementById('addSignatoryModal').style.display = 'none';
-    }
-
-    async saveSignatory() {
-        if (!this.canAddSignatory()) {
-            showToast('❌ No permission to add signatory');
-            return;
-        }
-        const id = document.getElementById('edit_signatory_id').value;
-        const name = document.getElementById('new_signatory_name').value.trim();
-        const firm = document.getElementById('new_signatory_firm').value || this.currentFirm;
-        if (!name) { showToast('Signatory name required'); return; }
-        
-        const signatory = {
-            id: id || generateId(),
-            name: name,
-            designation: document.getElementById('new_signatory_designation').value.trim(),
-            firm: firm
-        };
-        
-        if (id) {
-            const idx = this.signatories.findIndex(s => s.id === id);
-            if (idx !== -1) this.signatories[idx] = signatory;
-        } else {
-            if (this.signatories.find(s => s.name.toLowerCase() === name.toLowerCase() && s.firm === firm)) {
-                showToast('Signatory already exists in this firm');
-                return;
-            }
-            this.signatories.push(signatory);
-        }
-        
-        await this.storage.save(STORAGE_KEYS.SIGNATORIES,
-            Object.fromEntries(this.signatories.map(s => [s.id, s]))
-        );
-        
-        this.populateSignatoryDropdown();
-        this.renderSignatoriesList();
-        this.closeAddSignatoryModal();
-        showToast(id ? '✅ Signatory updated' : '✅ Signatory added');
-    }
-
-    editSignatory(id) {
-        const sig = this.signatories.find(s => s.id === id);
-        if (!sig) return;
-        document.getElementById('edit_signatory_id').value = sig.id;
-        document.getElementById('edit_signatory_firm').value = sig.firm || '';
-        document.getElementById('new_signatory_name').value = sig.name;
-        document.getElementById('new_signatory_designation').value = sig.designation || '';
-        document.getElementById('new_signatory_firm').value = sig.firm || '';
-        document.getElementById('signatoryModalTitle').innerHTML = '✏️ Edit Signatory';
-        document.getElementById('addSignatoryModal').style.display = 'flex';
-    }
-
-    async deleteSignatory(id) {
-        const used = this.db.some(v => v.signatory === this.signatories.find(s => s.id === id)?.name);
-        if (used) {
-            showToast('❌ Cannot delete: Signatory is used in vouchers');
-            return;
-        }
-        if (!confirm('Delete this signatory?')) return;
-        this.signatories = this.signatories.filter(s => s.id !== id);
-        await this.storage.save(STORAGE_KEYS.SIGNATORIES,
-            Object.fromEntries(this.signatories.map(s => [s.id, s]))
-        );
-        this.populateSignatoryDropdown();
-        this.renderSignatoriesList();
-        showToast('✅ Signatory deleted');
-    }
-
-    renderSignatoriesList() {
-        const container = document.getElementById('signatories_list');
-        if (!container) return;
-        const firmFilter = document.getElementById('signatory_firm_filter')?.value || '';
-        let signatories = this.signatories;
-        if (firmFilter) {
-            signatories = signatories.filter(s => s.firm === firmFilter);
-        }
-        if (signatories.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No signatories found</p>';
-            return;
-        }
-        container.innerHTML = signatories.map(s => `
-            <div class="signatory-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff; flex-wrap:wrap; gap:5px;">
-                <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
-                    <span><strong>✍️ ${s.name}</strong></span>
-                    ${s.designation ? `<span>📋 ${s.designation}</span>` : ''}
-                    <span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[s.firm]?.name || s.firm || 'No Firm'}</span>
-                </div>
-                <div>
-                    <button class="btn-action btn-edit" onclick="editSignatory('${s.id}')">✏️</button>
-                    <button class="btn-action btn-del" onclick="deleteSignatory('${s.id}')">✖</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // ============================================================
     // SETTINGS
     // ============================================================
 
@@ -1510,7 +1309,6 @@ renderReports() {
         this.renderUsersList();
         this.renderHeadsList();
         this.renderPartiesList();
-        this.renderSignatoriesList();
         this.updateFirmSelectInSettings();
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
@@ -1717,7 +1515,6 @@ renderReports() {
                     <span>📋 Voucher List: ${perms.reports ? '✅' : '❌'}</span>
                     <span>👁️ View All: ${perms.view_all ? '✅' : '❌'}</span>
                     <span>👤 Add Party: ${perms.party_add ? '✅' : '❌'}</span>
-                    <span>✍️ Add Signatory: ${perms.signatory_add ? '✅' : '❌'}</span>
                     <span>🏦 Add Bank: ${perms.bank_add ? '✅' : '❌'}</span>
                     <span>📂 Add Expense: ${perms.expense_add ? '✅' : '❌'}</span>
                 </div>
@@ -1752,7 +1549,6 @@ renderReports() {
             reports: document.getElementById('perm_reports').checked,
             view_all: document.getElementById('perm_view_all').checked,
             party_add: document.getElementById('perm_party_add').checked,
-            signatory_add: document.getElementById('perm_signatory_add').checked,
             bank_add: document.getElementById('perm_bank_add').checked,
             expense_add: document.getElementById('perm_expense_add').checked
         };
@@ -1954,10 +1750,6 @@ renderReports() {
         return this.userPermissions.party_add || this.currentRole === 'Admin';
     }
 
-    canAddSignatory() {
-        return this.userPermissions.signatory_add || this.currentRole === 'Admin';
-    }
-
     canAddBank() {
         return this.userPermissions.bank_add || this.currentRole === 'Admin';
     }
@@ -2034,35 +1826,6 @@ renderReports() {
         }
     }
 
-    async importSignatories() {
-        const fileInput = document.getElementById('importSignatoriesFile');
-        if (!fileInput.files || !fileInput.files[0]) {
-            showToast('❌ Please select a file');
-            return;
-        }
-        try {
-            const data = await this._readFile(fileInput.files[0]);
-            const firm = document.getElementById('signatory_firm_filter')?.value || this.currentFirm;
-            let count = 0;
-            data.forEach(row => {
-                const name = row.Name || row[0];
-                const designation = row.Designation || row[1] || '';
-                if (name && !this.signatories.find(s => s.name.toLowerCase() === name.toLowerCase() && s.firm === firm)) {
-                    this.signatories.push({ id: generateId(), name, designation, firm: firm || '' });
-                    count++;
-                }
-            });
-            await this.storage.save(STORAGE_KEYS.SIGNATORIES,
-                Object.fromEntries(this.signatories.map(s => [s.id, s]))
-            );
-            this.populateSignatoryDropdown();
-            this.renderSignatoriesList();
-            showToast(`✅ ${count} Signatories imported!`);
-        } catch (error) {
-            showToast('❌ Import failed: ' + error.message);
-        }
-    }
-
     exportExpenseHeads() {
         const data = Object.keys(this.expenseHeads).map(head => ({
             Head: head,
@@ -2080,15 +1843,6 @@ renderReports() {
             Firm: this.allFirms[p.firm]?.name || p.firm || ''
         }));
         this.exportToExcel(data, 'Parties_Export');
-    }
-
-    exportSignatories() {
-        const data = this.signatories.map(s => ({
-            Name: s.name,
-            Designation: s.designation || '',
-            Firm: this.allFirms[s.firm]?.name || s.firm || ''
-        }));
-        this.exportToExcel(data, 'Signatories_Export');
     }
 
     // ============================================================
@@ -2111,7 +1865,6 @@ renderReports() {
             'Bank Account': v.bankAccount || v['Bank Account'] || '',
             'IFSC': v.bankIfsc || v.IFSC || '',
             'Reference No': v.referenceNo || v['Reference No'] || '',
-            'Signatory': v.signatory || v.Signatory || '',
             'Narration': v.narration || v.Narration || '',
             'Created By': v.createdBy || v['Created By'] || '',
             'Status': v.status || v.Status || 'active'
@@ -2243,7 +1996,6 @@ renderReports() {
             reports: document.getElementById('perm_reports').checked,
             view_all: document.getElementById('perm_view_all').checked,
             party_add: document.getElementById('perm_party_add').checked,
-            signatory_add: document.getElementById('perm_signatory_add').checked,
             bank_add: document.getElementById('perm_bank_add').checked,
             expense_add: document.getElementById('perm_expense_add').checked
         };
