@@ -807,6 +807,15 @@ class App {
                 <span>Deleted: <strong style="color:var(--danger)">${filtered.filter(v => v.status === 'deleted').length}</strong></span>
                 <span>Edited: <strong style="color:var(--warning)">${filtered.filter(v => this.editLogs.some(e => e.voucherId === v.id)).length}</strong></span>
             </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <button class="btn-xlsx" onclick="exportAllVouchers()">📎 Export All</button>
+                <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Export Active</button>
+                <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Export Deleted</button>
+                <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Export Edited</button>
+                <button class="btn-xlsx" style="background:#8b5cf6;" onclick="exportFilteredVouchers()">📎 Export Filtered</button>
+                <button class="btn-xlsx" style="background:#8b5cf6;" onclick="document.getElementById('importVouchersFile').click()">📥 Import Vouchers</button>
+                <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importVouchers()">
+            </div>
             <div class="table-res">
                 <table>
                     <thead>
@@ -1321,7 +1330,7 @@ class App {
     }
 
     // ============================================================
-    // FIRM MANAGEMENT
+    // FIRM MANAGEMENT - UPDATED (All firms editable & deletable)
     // ============================================================
 
     renderFirmsList() {
@@ -1343,8 +1352,7 @@ class App {
                     </div>
                     <div>
                         <button class="btn-action btn-edit" onclick="editFirm('${f}')">✏️ Edit</button>
-                        ${!['DevVidyalaya', 'DevGas', 'Rama'].includes(f) ? 
-                            `<button class="btn-action btn-del" onclick="deleteFirm('${f}')">✖</button>` : ''}
+                        <button class="btn-action btn-del" onclick="deleteFirm('${f}')">✖</button>
                     </div>
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:15px; margin-top:5px; font-size:12px; color:#64748b;">
@@ -1376,11 +1384,10 @@ class App {
         
         this.allFirms[key] = { name, short, logo, addr, mobile, email, gst, pan };
         
+        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
+            firmObj[k] = this.allFirms[k];
         });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         
@@ -1431,11 +1438,10 @@ class App {
         const newPan = prompt('📄 PAN No:', firm.pan || '');
         if (newPan !== null) firm.pan = newPan.trim();
         
+        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
+            firmObj[k] = this.allFirms[k];
         });
         this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         this.renderFirmsList();
@@ -1451,10 +1457,7 @@ class App {
 
     async deleteFirm(key) {
         if (!confirm(`Delete firm "${this.allFirms[key]?.name}"?`)) return;
-        if (['DevVidyalaya', 'DevGas', 'Rama'].includes(key)) {
-            showToast('Cannot delete default firm');
-            return;
-        }
+        
         const hasVouchers = this.db.some(v => v.firmKey === key) || 
                            this.deletedVouchers.some(v => v.firmKey === key);
         if (hasVouchers) {
@@ -1462,11 +1465,11 @@ class App {
             return;
         }
         delete this.allFirms[key];
+        
+        // Save all firms (including default ones)
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
+            firmObj[k] = this.allFirms[k];
         });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         this.renderFirmsList();
@@ -1826,6 +1829,122 @@ class App {
         }
     }
 
+    // ============================================================
+    // BULK VOUCHER IMPORT
+    // ============================================================
+
+    async importVouchers() {
+        const fileInput = document.getElementById('importVouchersFile');
+        if (!fileInput.files || !fileInput.files[0]) {
+            showToast('❌ Please select a file');
+            return;
+        }
+        try {
+            const data = await this._readFile(fileInput.files[0]);
+            let count = 0;
+            let skipped = 0;
+            
+            for (const row of data) {
+                const firmKey = row.FirmKey || row.Firm || row.firmKey || '';
+                const firm = this.allFirms[firmKey];
+                if (!firm) {
+                    skipped++;
+                    continue;
+                }
+                
+                const date = row.Date || row.date || getToday();
+                const head = row.Head || row.head || '';
+                const subHead = row.SubHead || row.subHead || '';
+                const party = row.Party || row.party || '';
+                const amount = parseFloat(row.Amount || row.amount || 0);
+                const mode = row.Mode || row.mode || 'Cash';
+                const referenceNo = row.ReferenceNo || row.referenceNo || '';
+                const narration = row.Narration || row.narration || '';
+                const createdBy = row.CreatedBy || row.createdBy || this.currentUser;
+                
+                if (!head || !party || amount <= 0) {
+                    skipped++;
+                    continue;
+                }
+                
+                const vno = `${firm.short}/EXP/${getFinancialYear()}/${String(this.db.filter(v => v.firmKey === firmKey).length + 1).padStart(3, '0')}`;
+                
+                const voucher = {
+                    id: generateId(),
+                    vno: vno,
+                    date: date,
+                    firmKey: firmKey,
+                    firmName: firm.name,
+                    head: head,
+                    subHead: subHead,
+                    party: party,
+                    amount: amount,
+                    mode: mode,
+                    referenceNo: referenceNo,
+                    narration: narration,
+                    type: 'EXP',
+                    status: 'active',
+                    createdBy: createdBy,
+                    createdAt: new Date().toISOString(),
+                    timestamp: Date.now()
+                };
+                
+                this.db.push(voucher);
+                await this.storage.saveVoucher(voucher);
+                
+                if (!this.voucherCounter[firmKey]) this.voucherCounter[firmKey] = 0;
+                this.voucherCounter[firmKey]++;
+                count++;
+            }
+            
+            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
+            this.renderAll();
+            this.updateStats();
+            this.updateHeadFilter();
+            showToast(`✅ ${count} vouchers imported! ${skipped > 0 ? '⚠️ ' + skipped + ' skipped' : ''}`);
+            
+        } catch (error) {
+            console.error('❌ Import error:', error);
+            showToast('❌ Import failed: ' + error.message);
+        }
+    }
+
+    // ============================================================
+    // DOWNLOAD TEMPLATES
+    // ============================================================
+
+    downloadPartyTemplate() {
+        const headers = ['PartyName', 'Phone', 'Address', 'Firm'];
+        const csv = headers.join(',') + '\n' + 'Example Party,9876543210,Jaipur,DevVidyalaya';
+        this._downloadFile(csv, 'Party_Import_Template.csv');
+        showToast('📎 Template downloaded!');
+    }
+
+    downloadExpenseHeadTemplate() {
+        const headers = ['Head', 'SubHead', 'Firm'];
+        const csv = headers.join(',') + '\n' + 'Tea & Canteen,Rashan Exp,DevVidyalaya';
+        this._downloadFile(csv, 'ExpenseHead_Import_Template.csv');
+        showToast('📎 Template downloaded!');
+    }
+
+    downloadVoucherTemplate() {
+        const headers = ['Date', 'FirmKey', 'Head', 'SubHead', 'Party', 'Amount', 'Mode', 'ReferenceNo', 'Narration', 'CreatedBy'];
+        const csv = headers.join(',') + '\n' + '2026-08-27,DevVidyalaya,Tea & Canteen,Rashan Exp,SHREE RAM RASHAN WALA,5000,Cash,BILL123,Payment for canteen,Admin';
+        this._downloadFile(csv, 'Voucher_Import_Template.csv');
+        showToast('📎 Template downloaded!');
+    }
+
+    _downloadFile(content, filename) {
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+
     exportExpenseHeads() {
         const data = Object.keys(this.expenseHeads).map(head => ({
             Head: head,
@@ -1977,9 +2096,7 @@ class App {
     async saveAllSettings() {
         const firmObj = {};
         Object.keys(this.allFirms).forEach(k => {
-            if (!['DevVidyalaya', 'DevGas', 'Rama'].includes(k)) {
-                firmObj[k] = this.allFirms[k];
-            }
+            firmObj[k] = this.allFirms[k];
         });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
