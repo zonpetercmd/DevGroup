@@ -42,7 +42,7 @@ class PrintEngine {
             address: firm?.addr || '',
             phone: firm?.mobile || '',
             email: firm?.email || '',
-            logo: firm?.logo || 'logo.jpeg',
+            logo: firm?.logo || 'logo.png',
             currentTime: new Date().toLocaleString(),
             title: voucher.mode === 'Cash' ? 'CASH PAYMENT VOUCHER' : 'BANK PAYMENT VOUCHER'
         };
