@@ -366,7 +366,10 @@
         <!-- ===== EXPENSE HEADS - FIRM WISE ===== -->
         <h4>📂 Expense Heads</h4>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-            <select id="expense_head_firm" style="width:200px;"><option value="">-- Select Firm --</option></select>
+            <select id="expense_head_firm" style="width:200px;">
+                <option value="">-- Select Firm --</option>
+                <option value="all">🌐 All Firms</option>
+            </select>
             <input type="text" id="new_head_name" placeholder="Expense Head" style="flex:1; min-width:150px;">
             <input type="text" id="new_subhead_name" placeholder="Sub Head" style="flex:1; min-width:150px;">
             <button class="btn-add" onclick="addExpenseHead()">+ Add</button>
