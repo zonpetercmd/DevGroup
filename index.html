@@ -159,16 +159,6 @@
                     <!-- Reference No - Optional -->
                     <div><label>🔢 Reference No. <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label><input type="text" id="reference_no" placeholder="Optional"></div>
                     
-                    <!-- Signatory - Search + Dropdown (Read-only input) -->
-                    <div>
-                        <label>✍️ Signatory</label>
-                        <div class="search-wrapper">
-                            <input type="text" id="signatory_input" placeholder="Select signatory..." readonly onclick="this.nextElementSibling.style.display='block'; populateSignatoryDropdown();" onfocus="populateSignatoryDropdown();" autocomplete="off">
-                            <div id="signatoryDropdown" class="dropdown-list"></div>
-                        </div>
-                        <input type="hidden" id="signatory_value">
-                    </div>
-                    
                     <!-- Amount -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0" step="0.01"></div>
                     
@@ -319,26 +309,6 @@
     </div>
 </div>
 
-<!-- Add Signatory Modal -->
-<div id="addSignatoryModal" class="modal">
-    <div class="modal-content">
-        <h3 id="signatoryModalTitle">✍️ Add Signatory</h3>
-        <input type="hidden" id="edit_signatory_id">
-        <input type="hidden" id="edit_signatory_firm">
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <div><label>Signatory Name</label><input type="text" id="new_signatory_name"></div>
-            <div><label>Designation</label><input type="text" id="new_signatory_designation"></div>
-            <div><label>Firm</label>
-                <select id="new_signatory_firm"><option value="">-- Select Firm --</option></select>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-login" style="width:auto" onclick="saveSignatory()">💾 Save</button>
-                <button class="btn-action" style="background:#64748b; color:white;" onclick="closeAddSignatoryModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ===== SETTINGS MODAL ===== -->
 <div id="settings-modal" class="modal">
     <div class="modal-content" style="max-width: 800px;">
@@ -383,7 +353,6 @@
             <label><input type="checkbox" id="perm_reports" checked> 📋 Voucher List</label>
             <label><input type="checkbox" id="perm_view_all" checked> 👁️ View All</label>
             <label><input type="checkbox" id="perm_party_add" checked> 👤 Add Party</label>
-            <label><input type="checkbox" id="perm_signatory_add" checked> ✍️ Add Signatory</label>
             <label><input type="checkbox" id="perm_bank_add" checked> 🏦 Add Bank</label>
             <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
         </div>
@@ -426,18 +395,6 @@
         </div>
         <div id="parties_list"></div>
         
-        <!-- ===== SIGNATORIES - FIRM WISE ===== -->
-        <h4>✍️ Signatories</h4>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-            <select id="signatory_firm_filter" onchange="renderSignatoriesList()" style="width:200px;">
-                <option value="">-- All Firms --</option>
-            </select>
-            <button class="btn-add" onclick="openAddSignatoryModalFromSettings()">+ Add Signatory</button>
-            <button class="btn-add" onclick="document.getElementById('importSignatoriesFile').click()" style="background:#8b5cf6;">📥 Import</button>
-            <input type="file" id="importSignatoriesFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importSignatories()">
-        </div>
-        <div id="signatories_list"></div>
-        
         <!-- ===== BULK IMPORT ===== -->
         <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
             <h4>📥 Bulk Import / Export</h4>
@@ -454,10 +411,6 @@
                 <div>
                     <label style="font-size:11px;">Export Parties</label>
                     <button class="btn-add" onclick="app.exportParties()" style="background:#10b981; margin-top:5px;">📎 Export</button>
-                </div>
-                <div>
-                    <label style="font-size:11px;">Export Signatories</label>
-                    <button class="btn-add" onclick="app.exportSignatories()" style="background:#10b981; margin-top:5px;">📎 Export</button>
                 </div>
             </div>
         </div>
@@ -489,19 +442,14 @@
     window.generateA4Print = (v) => app.printVoucher(v);
     window.shareVoucher = (id) => app.shareVoucher(id);
     window.openAddPartyModal = () => app.openAddPartyModal();
-    window.openAddSignatoryModal = () => app.openAddSignatoryModal();
     window.openAddPartyModalFromSettings = () => app.openAddPartyModalFromSettings();
-    window.openAddSignatoryModalFromSettings = () => app.openAddSignatoryModalFromSettings();
     window.saveParty = () => app.saveParty();
-    window.saveSignatory = () => app.saveSignatory();
     window.closeAddPartyModal = () => app.closeAddPartyModal();
-    window.closeAddSignatoryModal = () => app.closeAddSignatoryModal();
     window.closeSettings = () => app.closeSettings();
     window.resetForm = () => app.resetForm();
     window.toggleBankField = () => app.toggleBankField();
     window.shareInvoiceViaWhatsApp = () => app.shareInvoiceViaWhatsApp();
     window.renderPartiesList = () => app.renderPartiesList();
-    window.renderSignatoriesList = () => app.renderSignatoriesList();
     window.exportFilteredVouchers = () => app.exportFilteredVouchers();
     
     // ✅ Search + Dropdown Functions
@@ -509,20 +457,17 @@
     window.filterSubHeads = (v) => app.filterSubHeads(v);
     window.filterFirms = (v) => app.filterFirms(v);
     window.filterParties = (v) => app.filterParties(v);
-    window.filterSignatories = (v) => app.filterSignatories(v);
     window.filterModes = (v) => app.filterModes(v);
     window.populateExpenseHeads = () => app.populateExpenseHeads();
     window.populateSubHeads = (h) => app.populateSubHeads(h);
     window.populateFirmDropdown = () => app.populateFirmDropdown();
     window.populatePartyDropdown = () => app.populatePartyDropdown();
-    window.populateSignatoryDropdown = () => app.populateSignatoryDropdown();
     window.populateModes = () => app.populateModes();
     
     window.selectExpenseHead = (h) => app.selectExpenseHead(h);
     window.selectSubHead = (s) => app.selectSubHead(s);
     window.selectFirm = (f) => app.selectFirm(f);
     window.selectParty = (p) => app.selectParty(p);
-    window.selectSignatory = (s) => app.selectSignatory(s);
     window.selectMode = (m) => app.selectMode(m);
     
     window.renderAll = () => app.renderAll();
@@ -537,8 +482,6 @@
     window.addExpenseHead = () => app.addExpenseHead();
     window.editParty = (id) => app.editParty(id);
     window.deleteParty = (id) => app.deleteParty(id);
-    window.editSignatory = (id) => app.editSignatory(id);
-    window.deleteSignatory = (id) => app.deleteSignatory(id);
     window.switchModule = (m) => app.switchModule(m);
     window.editFirm = (k) => app.editFirm(k);
     window.deleteFirm = (k) => app.deleteFirm(k);
