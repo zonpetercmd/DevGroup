@@ -5,7 +5,7 @@ export const DEFAULT_FIRMS = {
         name: 'D E V विद्यालय',
         short: 'DV',
         logo: 'logo.png',
-        addr: 'Dev Vidyalaya, Near RTO Choraha, Sikar, Rajasthan',
+        addr: 'DEV Vidyalaya, Near RTO Crossing, Sikar, Rajasthan',
         email: 'devvidyalayasikar@gmail.com',
         mobile: '01572-251021'
     },
