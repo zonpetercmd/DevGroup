@@ -126,7 +126,9 @@
             justify-content: space-between;
             padding: 1px 0;
         }
-        .voucher-details .label { font-weight: bold; }
+        .voucher-details .label { 
+            font-weight: bold; 
+        }
         .voucher-details .divider {
             border-top: 1px dashed #999;
             margin: 2px 0;
@@ -178,7 +180,7 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
-            padding-top: 10px;
+            padding-top: 12px;
             border-top: 2px solid #000;
             margin-top: auto;
             flex-shrink: 0;
@@ -187,39 +189,35 @@
         }
         .sign-box {
             text-align: center;
-            font-size: 8px;
+            font-size: 13px;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            min-height: 70px;
+            min-height: 80px;
         }
         .sign-box .sign-label {
             font-weight: bold;
-            font-size: 8px;
-            line-height: 1.2;
+            font-size: 13px;
+            line-height: 1.4;
             min-height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #000;
+            margin-bottom: 4px;
         }
         .sign-box .sign-name {
-            font-weight: bold;
-            font-size: 9px;
-            min-height: 16px;
+            font-weight: normal;
+            font-size: 12px;
+            min-height: 20px;
             line-height: 1.2;
             color: #000;
         }
         .sign-box .sign-line {
             border-top: 1.5px solid #000;
-            margin-top: 4px;
-            padding-top: 4px;
-            min-height: 30px;
-        }
-        .sign-box .sign-hint {
-            font-size: 6px;
-            color: #666;
             margin-top: 2px;
+            padding-top: 2px;
+            min-height: 35px;
         }
         
         .footer-text {
@@ -279,7 +277,7 @@
                 opacity: 0.08 !important;
             }
             .sign-box .sign-line {
-                min-height: 30px !important;
+                min-height: 35px !important;
             }
         }
     </style>
@@ -350,31 +348,27 @@
                 <div class="sign-label">Prepared By</div>
                 <div class="sign-name">{{createdBy}}</div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 2. Incharge -->
-            <div class="sign-box">
-                <div class="sign-label">Incharge</div>
-                <div class="sign-name"></div>
-                <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
-            </div>
-            
-            <!-- 3. Accountant -->
+            <!-- 2. Accountant -->
             <div class="sign-box">
                 <div class="sign-label">Accountant</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 4. Principal -->
+            <!-- 3. Received -->
             <div class="sign-box">
-                <div class="sign-label">Principal</div>
+                <div class="sign-label">Received</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
+            </div>
+            
+            <!-- 4. Incharge -->
+            <div class="sign-box">
+                <div class="sign-label">Incharge</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
             </div>
             
             <!-- 5. COO -->
@@ -382,23 +376,20 @@
                 <div class="sign-label">COO</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
             
-            <!-- 6. Convenor -->
+            <!-- 6. Principal -->
+            <div class="sign-box">
+                <div class="sign-label">Principal</div>
+                <div class="sign-name"></div>
+                <div class="sign-line"></div>
+            </div>
+            
+            <!-- 7. Convenor -->
             <div class="sign-box">
                 <div class="sign-label">Convenor</div>
                 <div class="sign-name"></div>
                 <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
-            </div>
-            
-            <!-- 7. Receiver -->
-            <div class="sign-box">
-                <div class="sign-label">Receiver</div>
-                <div class="sign-name"></div>
-                <div class="sign-line"></div>
-                <div class="sign-hint">(Sign &amp; Date)</div>
             </div>
         </div>
         
