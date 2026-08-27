@@ -51,11 +51,12 @@
             z-index: 0;
         }
         
-        /* ===== FIRM HEADER ===== */
+        /* ===== FIRM HEADER - CENTER ===== */
         .firm-header-print {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
+            justify-content: center;
             border-bottom: 2px solid #000;
             padding-bottom: 6px;
             margin-bottom: 6px;
@@ -64,23 +65,27 @@
             z-index: 1;
         }
 
-        .firm-header-print .logo-img {
-            max-height: 50px;
-            max-width: 80px;
-            object-fit: contain;
-            flex-shrink: 0;
+        .firm-header-print .logo-dev-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2px;
         }
-        
+
+        .firm-header-print .logo-img {
+            max-height: 45px;
+            max-width: 70px;
+            object-fit: contain;
+        }
+
         .firm-header-print .dev-text {
             font-size: 28px;
             font-weight: bold;
             letter-spacing: 1px;
             color: #000;
-            flex-shrink: 0;
         }
 
         .firm-header-print .firm-info {
-            flex: 1;
             text-align: center;
         }
 
@@ -287,10 +292,12 @@
         
         <div class="copy-label copy-original">◆◆ ORIGINAL COPY ◆◆</div>
         
-        <!-- ===== HEADER WITH LOGO LEFT + DEV TEXT ===== -->
+        <!-- ===== HEADER - LOGO + DEV CENTER ===== -->
         <div class="firm-header-print">
-            <img src="{{logo}}" class="logo-img" onerror="this.style.display='none'">
-            <span class="dev-text">DEV</span>
+            <div class="logo-dev-row">
+                <img src="{{logo}}" class="logo-img" onerror="this.style.display='none'">
+                <span class="dev-text">DEV</span>
+            </div>
             <div class="firm-info">
                 <div class="firm-name">{{companyName}}</div>
                 <div class="firm-addr">{{address}}</div>
