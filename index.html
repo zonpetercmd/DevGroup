@@ -273,12 +273,16 @@
                     </div>
                 </div>
                 
+                <!-- ===== EXPORT/IMPORT BUTTONS - ONLY ONCE ===== -->
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
                     <button class="btn-xlsx" onclick="exportAllVouchers()">📎 Export All</button>
                     <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Export Active</button>
                     <button class="btn-xlsx" style="background:#f59e0b;" onclick="exportDeletedVouchers()">📎 Export Deleted</button>
                     <button class="btn-xlsx" style="background:#dc2626;" onclick="exportEditedVouchers()">📎 Export Edited</button>
                     <button class="btn-xlsx" style="background:#8b5cf6;" onclick="exportFilteredVouchers()">📎 Export Filtered</button>
+                    <button class="btn-xlsx" style="background:#8b5cf6;" onclick="document.getElementById('importVouchersFile').click()">📥 Import Vouchers</button>
+                    <button class="btn-xlsx" style="background:#f59e0b;" onclick="app.downloadVoucherTemplate()">📄 Template</button>
+                    <input type="file" id="importVouchersFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importVouchers()">
                 </div>
                 <div id="report_content"></div>
             </div>
@@ -343,7 +347,7 @@
         </div>
         <div style="font-size:11px; color:#64748b; margin-top:5px;">💡 Staff को multiple firms access देने के लिए एक से ज्यादा Staff entries बनाएं</div>
         
-        <!-- ===== PERMISSIONS ===== -->
+        <!-- ===== PERMISSIONS - UPDATED ===== -->
         <h4>🔐 Permissions</h4>
         <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
             <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
@@ -355,6 +359,8 @@
             <label><input type="checkbox" id="perm_party_add" checked> 👤 Add Party</label>
             <label><input type="checkbox" id="perm_bank_add" checked> 🏦 Add Bank</label>
             <label><input type="checkbox" id="perm_expense_add" checked> 📂 Add Expense Head</label>
+            <label><input type="checkbox" id="perm_export_import" checked> 📎 Export/Import</label>
+            <label><input type="checkbox" id="perm_edit_firm" checked> ✏️ Edit Firm</label>
         </div>
         
         <!-- ===== EXPENSE HEADS - FIRM WISE ===== -->
@@ -391,6 +397,7 @@
             </select>
             <button class="btn-add" onclick="openAddPartyModalFromSettings()">+ Add Party</button>
             <button class="btn-add" onclick="document.getElementById('importPartiesFile').click()" style="background:#8b5cf6;">📥 Import</button>
+            <button class="btn-add" onclick="app.downloadPartyTemplate()" style="background:#f59e0b;">📄 Template</button>
             <input type="file" id="importPartiesFile" accept=".csv,.xlsx" style="display:none;" onchange="app.importParties()">
         </div>
         <div id="parties_list"></div>
@@ -400,17 +407,24 @@
             <h4>📥 Bulk Import / Export</h4>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                 <div>
+                    <label style="font-size:11px;">Select Firm for Import</label>
+                    <select id="import_firm_select" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1; width:200px; margin-top:4px;">
+                        <option value="">-- Select Firm --</option>
+                    </select>
+                </div>
+                <div>
                     <label style="font-size:11px;">Import Expense Heads</label>
-                    <input type="file" id="importHeadsFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px;">
+                    <input type="file" id="importHeadsFile" accept=".csv,.xlsx" style="padding:5px; font-size:12px; display:block; margin-top:4px;">
                     <button class="btn-add" onclick="app.importExpenseHeads()" style="margin-top:5px;">📤 Import</button>
+                    <button class="btn-add" onclick="app.downloadExpenseHeadTemplate()" style="background:#f59e0b; margin-top:5px;">📄 Template</button>
                 </div>
                 <div>
                     <label style="font-size:11px;">Export Expense Heads</label>
-                    <button class="btn-add" onclick="app.exportExpenseHeads()" style="background:#10b981; margin-top:5px;">📎 Export</button>
+                    <button class="btn-add" onclick="app.exportExpenseHeads()" style="background:#10b981; margin-top:5px; display:block;">📎 Export</button>
                 </div>
                 <div>
                     <label style="font-size:11px;">Export Parties</label>
-                    <button class="btn-add" onclick="app.exportParties()" style="background:#10b981; margin-top:5px;">📎 Export</button>
+                    <button class="btn-add" onclick="app.exportParties()" style="background:#10b981; margin-top:5px; display:block;">📎 Export</button>
                 </div>
             </div>
         </div>
