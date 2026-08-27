@@ -2,7 +2,7 @@
 
 export const DEFAULT_FIRMS = {
     'DevVidyalaya': {
-        name: 'DEV Vidyalaya',
+        name: 'D E V विद्यालय',
         short: 'DV',
         logo: 'logo.png',
         addr: 'Dev Vidyalaya, Near RTO Choraha, Sikar, Rajasthan',
@@ -56,6 +56,6 @@ export const STORAGE_KEYS = {
 };
 
 // ✅ Added exports for storage.js and app.js
-export const PROTECTED_FIRMS = ['DevVidyalaya', 'DevGas', 'Rama'];
+export const PROTECTED_FIRMS = ['D E V विद्यालय', 'DevGas', 'Rama'];
 export const PAYMENT_MODES = ['Cash', 'Bank', 'UPI', 'Cheque'];
 export const UPI_APPS = ['PhonePe', 'GooglePay', 'Paytm', 'AmazonPay', 'Other'];
