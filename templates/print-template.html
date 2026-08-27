@@ -55,7 +55,6 @@
         .firm-header-print {
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 12px;
             border-bottom: 2px solid #000;
             padding-bottom: 6px;
@@ -65,10 +64,18 @@
             z-index: 1;
         }
 
-        .firm-header-print img {
+        .firm-header-print .logo-img {
             max-height: 50px;
             max-width: 80px;
             object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .firm-header-print .dev-text {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #000;
             flex-shrink: 0;
         }
 
@@ -78,7 +85,7 @@
         }
 
         .firm-header-print .firm-name {
-            font-size: 26px;
+            font-size: 20px;
             font-weight: bold;
             letter-spacing: 1px;
             line-height: 1.2;
@@ -280,8 +287,10 @@
         
         <div class="copy-label copy-original">◆◆ ORIGINAL COPY ◆◆</div>
         
+        <!-- ===== HEADER WITH LOGO LEFT + DEV TEXT ===== -->
         <div class="firm-header-print">
-            <img src="{{logo}}" onerror="this.style.display='none'">
+            <img src="{{logo}}" class="logo-img" onerror="this.style.display='none'">
+            <span class="dev-text">DEV</span>
             <div class="firm-info">
                 <div class="firm-name">{{companyName}}</div>
                 <div class="firm-addr">{{address}}</div>
