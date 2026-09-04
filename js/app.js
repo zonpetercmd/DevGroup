@@ -1,3 +1,21 @@
+// ========================================
+// 🔐 AUTH CHECK - ADD AT START OF app.js
+// ========================================
+
+// Firebase Auth State Listener
+if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            // User not logged in - login page par bhejein
+            if (!window.location.pathname.includes('login.html')) {
+                window.location.href = 'login.html';
+            }
+        } else {
+            console.log('✅ User authenticated:', user.uid);
+            // App already loaded, continue...
+        }
+    });
+}
 // js/app.js - Main Application (With Search + Dropdown + Recover + Firm-wise)
 
 import Storage from './storage.js';
