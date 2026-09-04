@@ -1,1 +1,9 @@
-
+{
+  "name": "voucher-app",
+  "version": "1.0.0",
+  "description": "Voucher Management System with Authentication",
+  "dependencies": {
+    "firebase-admin": "^11.11.0",
+    "bcryptjs": "^2.4.3"
+  }
+}
