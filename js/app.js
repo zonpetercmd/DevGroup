@@ -1849,19 +1849,71 @@ class App {
     closeEditUserModal() {
         document.getElementById('editUserModal').style.display = 'none';
     }
-
-    async deleteUser(id) {
-        if (id === 'Admin' || id === 'admin@dev.com') { showToast('Cannot delete Admin'); return; }
-        if (!confirm('Delete user: ' + id + '?')) return;
-        this.allUsers = this.allUsers.filter(u => (u.id || u.email) !== id);
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.email, u]))
+// 🗑️ DELETE USER - Permanent fix
+async deleteUser(identifier) {
+    // Admin user delete nahi ho sakta
+    if (identifier === 'Admin' || identifier === 'admin@dev.com') { 
+        showToast('❌ Cannot delete Admin user'); 
+        return; 
+    }
+    
+    if (!confirm('Delete user: ' + identifier + ' permanently?')) return;
+    
+    try {
+        showToast('⏳ Deleting user...');
+        
+        // ✅ User dhoondhein
+        const user = this.allUsers.find(u => 
+            u.email === identifier || 
+            u.id === identifier || 
+            u.username === identifier
         );
+        
+        if (!user) {
+            showToast('❌ User not found');
+            return;
+        }
+        
+        // ✅ Firebase Database se delete
+        const usersRef = firebase.database().ref('users');
+        const snapshot = await usersRef.once('value');
+        const users = snapshot.val() || {};
+        let userKey = null;
+        
+        Object.keys(users).forEach(key => {
+            const u = users[key];
+            if (u.email === user.email || u.id === user.id || u.username === user.username) {
+                userKey = key;
+            }
+        });
+        
+        if (userKey) {
+            await usersRef.child(userKey).remove();
+            console.log(`✅ User ${identifier} deleted from database`);
+        }
+        
+        // ✅ Local array se delete
+        this.allUsers = this.allUsers.filter(u => 
+            (u.email || u.id || u.username) !== identifier
+        );
+        
+        // ✅ Local storage update
+        await this.storage.save(STORAGE_KEYS.USERS,
+            Object.fromEntries(this.allUsers.map(u => [u.email || u.id, u]))
+        );
+        
+        // ✅ UI update
         this.renderUsersList();
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
-        showToast('✅ User deleted');
+        
+        showToast(`✅ User "${identifier}" deleted successfully!`);
+        
+    } catch (error) {
+        console.error('❌ Delete user error:', error);
+        showToast('❌ ' + error.message);
     }
+}
 
     // ============================================================
     // BANK MANAGEMENT
