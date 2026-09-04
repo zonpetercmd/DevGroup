@@ -21,7 +21,7 @@
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
         }
         .login-container img {
@@ -104,8 +104,8 @@
 
         <form id="loginForm">
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="username" placeholder="Enter username" required>
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="Enter email" required>
             </div>
             <div class="form-group">
                 <label>Password</label>
@@ -117,9 +117,9 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <!-- Config -->
     <script src="config/firebase-config.js"></script>
@@ -132,11 +132,11 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             
-            if (!username || !password) {
-                message.textContent = 'Please enter username and password';
+            if (!email || !password) {
+                message.textContent = 'Please enter email and password';
                 message.className = 'error';
                 return;
             }
@@ -146,10 +146,11 @@
             loginBtn.disabled = true;
 
             try {
+                // ✅ API call with email
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
@@ -158,8 +159,10 @@
                     throw new Error(data.error || 'Login failed');
                 }
 
+                // ✅ Firebase Custom Token se sign in
                 await firebase.auth().signInWithCustomToken(data.token);
 
+                // ✅ Store user data
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('firmId', data.user.firmId);
 
