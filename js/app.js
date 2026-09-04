@@ -1641,6 +1641,10 @@ class App {
 
 // ✅ FIXED: API se user create karein (passwordHash automatically add hoga)
 async addUser() {
+    console.log('🔥🔥🔥 NEW addUser() function called!'); // ✅ YEH LINE ADD KAREIN
+    const id = document.getElementById('new_user_id').value.trim();
+    // ... baaki code
+} {
     const id = document.getElementById('new_user_id').value.trim();
     const pass = document.getElementById('new_user_pass').value.trim();
     const role = document.getElementById('new_user_role').value;
