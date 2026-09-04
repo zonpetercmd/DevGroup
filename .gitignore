@@ -1,9 +1,16 @@
-# .gitignore
+# Node
+node_modules/
+npm-debug.log*
+
+# Firebase
+service-account.json
+*.key
+*.pem
+
+# Environment
+.env
+.env.local
+
+# OS
 .DS_Store
 Thumbs.db
-*.log
-.vscode/
-.idea/
-node_modules/
-.env
-*.local
