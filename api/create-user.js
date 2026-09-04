@@ -32,7 +32,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'All fields required' });
     }
 
-    // Check if user already exists
     const usersRef = db.ref('users');
     const existing = await usersRef.orderByChild('username')
       .equalTo(username)
