@@ -49,7 +49,7 @@
             color: #334155;
             margin-bottom: 4px;
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px 14px;
             border: 1px solid #e2e8f0;
@@ -57,7 +57,7 @@
             font-size: 14px;
             box-sizing: border-box;
         }
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
@@ -94,6 +94,14 @@
             margin-top: 12px;
             min-height: 20px;
         }
+        .role-select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -105,11 +113,18 @@
         <form id="loginForm">
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="email" placeholder="Enter email" required>
+                <input type="email" id="email" placeholder="Enter your email" required>
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" id="password" placeholder="Enter password" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="login_role" class="role-select">
+                    <option value="">-- Select Role --</option>
+                    <option value="Admin">Admin (Full Access)</option>
+                </select>
             </div>
             <button type="submit" class="btn-login" id="loginBtn">Login</button>
             <div id="message" class="error"></div>
@@ -134,9 +149,15 @@
             
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
+            const role = document.getElementById('login_role').value;
             
             if (!email || !password) {
                 message.textContent = 'Please enter email and password';
+                message.className = 'error';
+                return;
+            }
+            if (!role) {
+                message.textContent = 'Please select a role';
                 message.className = 'error';
                 return;
             }
@@ -165,6 +186,12 @@
                 // ✅ Store user data
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('firmId', data.user.firmId);
+
+                // ✅ Session storage for existing app
+                sessionStorage.setItem('auth', 'ok');
+                sessionStorage.setItem('user', data.user.email);
+                sessionStorage.setItem('role', role);
+                sessionStorage.setItem('firm', data.user.firmId);
 
                 message.textContent = '✅ Login successful! Redirecting...';
                 message.className = 'success';
