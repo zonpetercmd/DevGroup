@@ -1,21 +1,3 @@
-// ========================================
-// 🔐 AUTH CHECK - ADD AT START OF app.js
-// ========================================
-
-// Firebase Auth State Listener
-if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged((user) => {
-        if (!user) {
-            // User not logged in - login page par bhejein
-            if (!window.location.pathname.includes('login.html')) {
-                window.location.href = 'login.html';
-            }
-        } else {
-            console.log('✅ User authenticated:', user.uid);
-            // App already loaded, continue...
-        }
-    });
-}
 // js/app.js - Main Application (With Search + Dropdown + Recover + Firm-wise)
 
 import Storage from './storage.js';
@@ -156,43 +138,55 @@ class App {
             return;
         }
 
-        let actualRole = role;
-        let staffFirm = '';
-        if (role.startsWith('Staff_')) {
-            staffFirm = role.replace('Staff_', '');
-            actualRole = 'Staff';
-        }
+        try {
+            errorDiv.innerText = '⏳ Logging in...';
+            errorDiv.style.color = '#22c55e';
+            errorDiv.style.display = 'block';
 
-        let foundUser = this.allUsers.find(u => {
-            if (actualRole === 'Staff') {
-                return u.id === userId && u.password === pass && u.role === role && u.firm === staffFirm;
+            // ✅ FIREBASE AUTH - Backend API call
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: userId, password: pass })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
             }
-            return u.id === userId && u.password === pass && u.role === role;
-        });
-        
-        if (!foundUser) {
-            if (userId === 'Admin' && pass === '1811' && role === 'Admin') {
-                foundUser = { id: 'Admin', role: 'Admin', firm: null, permissions: { ...DEFAULT_PERMISSIONS } };
-            } else {
-                errorDiv.innerText = 'Invalid credentials or role mismatch';
-                errorDiv.style.display = 'block';
-                return;
+
+            // ✅ Firebase Custom Token se sign in
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                await firebase.auth().signInWithCustomToken(data.token);
             }
+
+            // ✅ Store user data
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('firmId', data.user.firmId);
+
+            // ✅ Session storage for existing app
+            sessionStorage.setItem('auth', 'ok');
+            sessionStorage.setItem('user', data.user.username);
+            sessionStorage.setItem('role', data.user.role || 'user');
+            sessionStorage.setItem('firm', data.user.firmId);
+
+            this.currentUser = data.user.username;
+            this.currentRole = data.user.role || 'user';
+            this.currentFirm = data.user.firmId;
+
+            errorDiv.innerText = '✅ Login successful!';
+            errorDiv.style.color = '#22c55e';
+
+            this.showMainApp();
+            showToast('✅ Login successful!');
+
+        } catch (error) {
+            console.error('❌ Login error:', error);
+            errorDiv.innerText = error.message || 'Login failed. Please try again.';
+            errorDiv.style.color = '#ef4444';
+            errorDiv.style.display = 'block';
         }
-        
-        this.currentUser = foundUser.id;
-        this.currentRole = foundUser.role;
-        this.currentFirm = foundUser.firm || '';
-        this.userPermissions = foundUser.permissions || { ...DEFAULT_PERMISSIONS };
-        
-        sessionStorage.setItem('auth', 'ok');
-        sessionStorage.setItem('user', this.currentUser);
-        sessionStorage.setItem('role', this.currentRole);
-        sessionStorage.setItem('firm', this.currentFirm);
-        sessionStorage.setItem('permissions', JSON.stringify(this.userPermissions));
-        
-        this.showMainApp();
-        showToast('✅ Login successful!');
     }
 
     // ===== LOGOUT =====
