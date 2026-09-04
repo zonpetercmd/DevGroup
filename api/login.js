@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // ✅ Find user by email
+    // ✅ Search by email
     const usersRef = db.ref('users');
     const snapshot = await usersRef.orderByChild('email')
       .equalTo(email)
@@ -49,19 +49,15 @@ module.exports = async (req, res) => {
       uid = child.key;
     });
 
-    // ✅ Check if passwordHash exists
     if (!userData.passwordHash) {
-      console.error(`❌ passwordHash missing for user: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // ✅ Compare password with hash
     const isValid = await bcrypt.compare(password, userData.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // ✅ Create custom token
     const token = await admin.auth().createCustomToken(uid, {
       firmId: userData.firmId,
       role: userData.role || 'user'
