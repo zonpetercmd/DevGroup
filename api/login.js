@@ -1,7 +1,6 @@
 const admin = require('firebase-admin');
 const bcrypt = require('bcryptjs');
 
-// Service Account - Environment variable se read
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 if (!admin.apps.length) {
@@ -14,7 +13,6 @@ if (!admin.apps.length) {
 const db = admin.database();
 
 module.exports = async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -34,7 +32,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    // Database se user search
     const usersRef = db.ref('users');
     const snapshot = await usersRef.orderByChild('username')
       .equalTo(username)
@@ -51,13 +48,11 @@ module.exports = async (req, res) => {
       uid = child.key;
     });
 
-    // Password verify
     const isValid = await bcrypt.compare(password, userData.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Firebase Custom Token generate
     const token = await admin.auth().createCustomToken(uid, {
       firmId: userData.firmId,
       role: userData.role || 'user'
