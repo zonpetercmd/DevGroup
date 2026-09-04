@@ -26,16 +26,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // ✅ Find user in database
+    // ✅ Find user by email
     const usersRef = db.ref('users');
-    const snapshot = await usersRef.orderByChild('username')
-      .equalTo(username)
+    const snapshot = await usersRef.orderByChild('email')
+      .equalTo(email)
       .once('value');
 
     if (!snapshot.exists()) {
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
 
     // ✅ Check if passwordHash exists
     if (!userData.passwordHash) {
-      console.error(`❌ passwordHash missing for user: ${username}`);
+      console.error(`❌ passwordHash missing for user: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
       token: token,
       user: {
         uid: uid,
-        username: userData.username,
+        email: userData.email,
         name: userData.name,
         firmId: userData.firmId,
         role: userData.role || 'user'
