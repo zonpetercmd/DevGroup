@@ -440,6 +440,62 @@
     </div>
 </div>
 
+<!-- ===== EDIT USER MODAL ===== -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <h3 id="editUserModalTitle">✏️ Edit User</h3>
+        <input type="hidden" id="edit_user_identifier">
+        
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <div>
+                <label>Email / Username</label>
+                <input type="text" id="edit_user_email" placeholder="Email" required>
+            </div>
+            <div>
+                <label>Password (Leave blank to keep current)</label>
+                <input type="text" id="edit_user_password" placeholder="New password (optional)">
+            </div>
+            <div>
+                <label>Name</label>
+                <input type="text" id="edit_user_name" placeholder="Name">
+            </div>
+            <div>
+                <label>Role</label>
+                <select id="edit_user_role">
+                    <option value="Admin">Admin</option>
+                    <option value="Staff">Staff</option>
+                </select>
+            </div>
+            <div>
+                <label>Firm</label>
+                <select id="edit_user_firm">
+                    <option value="">-- Select Firm --</option>
+                </select>
+            </div>
+            
+            <h4>🔐 Permissions</h4>
+            <div class="permission-grid">
+                <label><input type="checkbox" id="edit_perm_print"> 🖨️ Print</label>
+                <label><input type="checkbox" id="edit_perm_edit"> ✏️ Edit</label>
+                <label><input type="checkbox" id="edit_perm_delete"> 🗑️ Delete</label>
+                <label><input type="checkbox" id="edit_perm_whatsapp"> 💬 WhatsApp</label>
+                <label><input type="checkbox" id="edit_perm_reports"> 📋 Voucher List</label>
+                <label><input type="checkbox" id="edit_perm_view_all"> 👁️ View All</label>
+                <label><input type="checkbox" id="edit_perm_party_add"> 👤 Add Party</label>
+                <label><input type="checkbox" id="edit_perm_bank_add"> 🏦 Add Bank</label>
+                <label><input type="checkbox" id="edit_perm_expense_add"> 📂 Add Expense</label>
+                <label><input type="checkbox" id="edit_perm_export_import"> 📎 Export/Import</label>
+                <label><input type="checkbox" id="edit_perm_edit_firm"> ✏️ Edit Firm</label>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn-login" style="width:auto" onclick="app.updateUser()">💾 Save Changes</button>
+                <button class="btn-action" style="background:#64748b; color:white;" onclick="app.closeEditUserModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="toastMsg" class="toast-msg"></div>
 
 <!-- ===== MAIN SCRIPT ===== -->
@@ -505,6 +561,11 @@
     window.deleteFirm = (k) => app.deleteFirm(k);
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
+    
+    // ✅ Edit User Functions
+    window.editUser = (id) => app.editUser(id);
+    window.updateUser = () => app.updateUser();
+    window.closeEditUserModal = () => app.closeEditUserModal();
 
     // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
