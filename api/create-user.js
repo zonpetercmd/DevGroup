@@ -32,6 +32,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'All fields required' });
     }
 
+    // ✅ Check if user already exists
     const usersRef = db.ref('users');
     const existing = await usersRef.orderByChild('username')
       .equalTo(username)
@@ -41,7 +42,11 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    // ✅ Create password hash
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+
+    // ✅ Create user in database
     const newRef = usersRef.push();
     const uid = newRef.key;
 
@@ -54,7 +59,7 @@ module.exports = async (req, res) => {
       createdAt: Date.now()
     });
 
-    // ✅ FIX: Password bhi set karein Firebase Auth mein
+    // ✅ Create user in Firebase Authentication with password
     await admin.auth().createUser({
       uid: uid,
       displayName: name,
