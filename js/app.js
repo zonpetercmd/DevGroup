@@ -1639,7 +1639,7 @@ class App {
         `}).join('');
     }
 
-    // ✅ FIXED: API se user create karein (passwordHash automatically add hoga)
+// ✅ FIXED: API se user create karein (passwordHash automatically add hoga)
 async addUser() {
     const id = document.getElementById('new_user_id').value.trim();
     const pass = document.getElementById('new_user_pass').value.trim();
