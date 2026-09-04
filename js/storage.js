@@ -267,3 +267,97 @@ class Storage {
 }
 
 export default Storage;
+// ========================================
+// 🔐 AUTHENTICATION FUNCTIONS (ADD AT END)
+// ========================================
+
+// 🔐 LOGIN - Backend API call
+async function login(username, password) {
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
+
+        // Firebase Custom Token se sign in
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            await firebase.auth().signInWithCustomToken(data.token);
+        }
+
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('firmId', data.user.firmId);
+        
+        this.currentUser = data.user;
+        this.currentFirmId = data.user.firmId;
+
+        return data.user;
+
+    } catch (error) {
+        console.error('Login error:', error);
+        throw error;
+    }
+}
+
+// 👤 GET CURRENT USER
+function getCurrentUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+        return null;
+    }
+}
+
+// 🏢 GET CURRENT FIRM ID
+function getCurrentFirmId() {
+    const user = getCurrentUser();
+    return user?.firmId || localStorage.getItem('firmId') || 'DevVidyalaya';
+}
+
+// 🔒 AUTH CHECK
+function requireAuth() {
+    const user = getCurrentUser();
+    if (!user) {
+        throw new Error('User not authenticated. Please login.');
+    }
+    return user;
+}
+
+// 🚪 LOGOUT
+async function logout() {
+    try {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            await firebase.auth().signOut();
+        }
+    } catch (e) {
+        // Ignore
+    }
+    localStorage.removeItem('user');
+    localStorage.removeItem('firmId');
+    this.currentUser = null;
+    this.currentFirmId = null;
+    window.location.href = 'login.html';
+}
+
+// 👤 CREATE USER (Admin only)
+async function createUser(userData) {
+    const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+    });
+    return response.json();
+}
+
+// ---------- FIRMWISE PATH HELPER ----------
+function _getFirmPath(key) {
+    const firmId = getCurrentFirmId();
+    return `${key}/${firmId}`;
+}
