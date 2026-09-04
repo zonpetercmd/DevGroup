@@ -5,8 +5,10 @@ import { DEFAULT_FIRMS, STORAGE_KEYS, PROTECTED_FIRMS } from '../config/constant
 
 class Storage {
     constructor() {
-        this.mode = STORAGE_MODE.current || 'local';
+        this.mode = STORAGE_MODE.current || 'firebase';  // ✅ Firebase mode
         this.rtdb = null;
+        this.currentUser = null;
+        this.currentFirmId = null;
         this._initFirebase();
         console.log(`📦 Storage initialized with ${this.mode} mode`);
     }
@@ -19,6 +21,116 @@ class Storage {
             }
             this.rtdb = firebase.database();
         }
+    }
+
+    // ==========================================
+    // 🔐 AUTHENTICATION FUNCTIONS (CLASS KE ANDAR)
+    // ==========================================
+
+    // 🔐 LOGIN - Backend API call
+    async login(username, password) {
+        try {
+            console.log('🔐 Attempting login for:', username);
+            
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
+
+            // Firebase Custom Token se sign in
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                await firebase.auth().signInWithCustomToken(data.token);
+            }
+
+            // Store user data
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('firmId', data.user.firmId);
+            
+            this.currentUser = data.user;
+            this.currentFirmId = data.user.firmId;
+
+            console.log('✅ Login successful:', data.user.username);
+            return data.user;
+
+        } catch (error) {
+            console.error('❌ Login error:', error);
+            throw error;
+        }
+    }
+
+    // 👤 GET CURRENT USER
+    getCurrentUser() {
+        try {
+            return JSON.parse(localStorage.getItem('user') || 'null');
+        } catch {
+            return null;
+        }
+    }
+
+    // 🏢 GET CURRENT FIRM ID
+    getCurrentFirmId() {
+        const user = this.getCurrentUser();
+        return user?.firmId || localStorage.getItem('firmId') || 'DevVidyalaya';
+    }
+
+    // 🔒 AUTH CHECK
+    requireAuth() {
+        const user = this.getCurrentUser();
+        if (!user) {
+            throw new Error('User not authenticated. Please login.');
+        }
+        return user;
+    }
+
+    // 🚪 LOGOUT
+    async logout() {
+        try {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                await firebase.auth().signOut();
+            }
+        } catch (e) {
+            console.warn('Firebase logout warning:', e);
+        }
+        localStorage.removeItem('user');
+        localStorage.removeItem('firmId');
+        this.currentUser = null;
+        this.currentFirmId = null;
+        console.log('👋 Logged out');
+        window.location.href = 'login.html';
+    }
+
+    // 👤 CREATE USER (Admin only)
+    async createUser(userData) {
+        try {
+            console.log('👤 Creating user:', userData.username);
+            const response = await fetch('/api/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create user');
+            }
+            console.log('✅ User created:', data.uid);
+            return data;
+        } catch (error) {
+            console.error('❌ Create user error:', error);
+            throw error;
+        }
+    }
+
+    // ---------- FIRMWISE PATH HELPER ----------
+    _getFirmPath(key) {
+        const firmId = this.getCurrentFirmId();
+        return `${key}/${firmId}`;
     }
 
     // ===== LOCAL STORAGE =====
@@ -44,7 +156,9 @@ class Storage {
     async _getFirebase(key) {
         if (!this.rtdb) return {};
         try {
-            const snap = await this.rtdb.ref(key).once('value');
+            // Agar key firm-wise hai toh path add karein
+            const path = this._getFirmPath(key);
+            const snap = await this.rtdb.ref(path).once('value');
             return snap.val() || {};
         } catch (error) {
             console.error(`❌ Firebase load error (${key}):`, error);
@@ -55,8 +169,9 @@ class Storage {
     async _setFirebase(key, data) {
         if (!this.rtdb) return data;
         try {
-            await this.rtdb.ref(key).set(data);
-            console.log(`✅ Firebase saved: ${key}`);
+            const path = this._getFirmPath(key);
+            await this.rtdb.ref(path).set(data);
+            console.log(`✅ Firebase saved: ${path}`);
             return data;
         } catch (error) {
             console.error(`❌ Firebase save error (${key}):`, error);
@@ -67,7 +182,8 @@ class Storage {
     async _removeFirebase(key) {
         if (!this.rtdb) return true;
         try {
-            await this.rtdb.ref(key).remove();
+            const path = this._getFirmPath(key);
+            await this.rtdb.ref(path).remove();
             return true;
         } catch {
             return true;
@@ -76,17 +192,57 @@ class Storage {
 
     // ===== PUBLIC METHODS =====
     async load(key) {
+        // Public keys - bina firm path ke
+        const publicKeys = ['users', 'firms', 'userPermissions'];
+        if (publicKeys.includes(key)) {
+            if (this.mode === 'firebase') {
+                return await this._getFirebasePublic(key);
+            }
+            return this._getLocal(key);
+        }
+
         if (this.mode === 'firebase') {
             return await this._getFirebase(key);
         }
         return this._getLocal(key);
     }
 
+    async _getFirebasePublic(key) {
+        if (!this.rtdb) return {};
+        try {
+            const snap = await this.rtdb.ref(key).once('value');
+            return snap.val() || {};
+        } catch (error) {
+            console.error(`❌ Firebase load error (${key}):`, error);
+            return {};
+        }
+    }
+
     async save(key, data) {
+        const publicKeys = ['users', 'firms', 'userPermissions'];
+        if (publicKeys.includes(key)) {
+            if (this.mode === 'firebase') {
+                return await this._setFirebasePublic(key, data);
+            }
+            return this._setLocal(key, data);
+        }
+
         if (this.mode === 'firebase') {
             return await this._setFirebase(key, data);
         }
         return this._setLocal(key, data);
+    }
+
+    async _setFirebasePublic(key, data) {
+        if (!this.rtdb) return data;
+        try {
+            await this.rtdb.ref(key).set(data);
+            console.log(`✅ Firebase saved (public): ${key}`);
+            return data;
+        } catch (error) {
+            console.error(`❌ Firebase save error (${key}):`, error);
+            return data;
+        }
     }
 
     async remove(key) {
@@ -98,6 +254,14 @@ class Storage {
 
     // ===== LOAD ALL DATA =====
     async loadAllData() {
+        // Check authentication
+        try {
+            this.requireAuth();
+        } catch (e) {
+            console.warn('⚠️ Not authenticated, returning empty data');
+            return this._getEmptyData();
+        }
+
         const keys = [
             STORAGE_KEYS.FIRMS,
             STORAGE_KEYS.VOUCHERS,
@@ -115,35 +279,29 @@ class Storage {
         const results = {};
         for (const key of keys) {
             results[key] = await this.load(key);
-            console.log(`📥 Loaded ${key}:`, Object.keys(results[key]).length);
+            console.log(`📥 Loaded ${key}:`, Object.keys(results[key] || {}).length);
         }
 
-        // ✅ Expense Heads - New Structure Support (firm-wise)
+        // ✅ Expense Heads - Format
         const expenseHeads = results[STORAGE_KEYS.EXPENSE_HEADS] || {};
         const formattedExpenseHeads = {};
         Object.keys(expenseHeads).forEach(key => {
             const value = expenseHeads[key];
             if (Array.isArray(value)) {
-                // Old format: { "Head": ["Sub1", "Sub2"] }
                 formattedExpenseHeads[key] = {
-                    firm: 'DevVidyalaya',
+                    firm: this.getCurrentFirmId(),
                     subHeads: value
                 };
             } else if (typeof value === 'object' && value.subHeads !== undefined) {
-                // New format: { "Head": { firm: "xxx", subHeads: [] } }
                 formattedExpenseHeads[key] = value;
             } else {
                 formattedExpenseHeads[key] = {
-                    firm: 'DevVidyalaya',
+                    firm: this.getCurrentFirmId(),
                     subHeads: []
                 };
             }
         });
 
-        // ✅ Bank Accounts - Keep as is
-        const bankAccounts = results[STORAGE_KEYS.BANK_ACCOUNTS] || {};
-
-        // ✅ Get firms (merge default + saved)
         const allFirms = { ...DEFAULT_FIRMS, ...results[STORAGE_KEYS.FIRMS] };
 
         return {
@@ -156,13 +314,30 @@ class Storage {
             expenseHeads: formattedExpenseHeads,
             allUsers: Object.values(results[STORAGE_KEYS.USERS] || {}),
             voucherCounter: results[STORAGE_KEYS.VOUCHER_COUNTER] || {},
-            bankAccounts: bankAccounts,
+            bankAccounts: results[STORAGE_KEYS.BANK_ACCOUNTS] || {},
             userPermissions: results[STORAGE_KEYS.PERMISSIONS] || {}
+        };
+    }
+
+    _getEmptyData() {
+        return {
+            allFirms: DEFAULT_FIRMS,
+            db: [],
+            deletedVouchers: [],
+            editLogs: [],
+            parties: [],
+            signatories: [],
+            expenseHeads: {},
+            allUsers: [],
+            voucherCounter: {},
+            bankAccounts: {},
+            userPermissions: {}
         };
     }
 
     // ===== VOUCHER OPERATIONS =====
     async saveVoucher(voucher) {
+        this.requireAuth();
         const key = STORAGE_KEYS.VOUCHERS;
         const data = await this.load(key);
         data[voucher.id] = voucher;
@@ -171,6 +346,7 @@ class Storage {
     }
 
     async deleteVoucher(id) {
+        this.requireAuth();
         const key = STORAGE_KEYS.VOUCHERS;
         const data = await this.load(key);
         delete data[id];
@@ -179,12 +355,14 @@ class Storage {
     }
 
     async getVoucher(id) {
+        this.requireAuth();
         const key = STORAGE_KEYS.VOUCHERS;
         const data = await this.load(key);
         return data[id] || null;
     }
 
     async getAllVouchers() {
+        this.requireAuth();
         const key = STORAGE_KEYS.VOUCHERS;
         const data = await this.load(key);
         return Object.values(data);
@@ -193,12 +371,18 @@ class Storage {
     // ===== REAL-TIME LISTENER =====
     onVoucherChange(callback) {
         if (this.mode === 'firebase' && this.rtdb) {
-            console.log('🔥 Firebase Realtime Listener started');
-            this.rtdb.ref(STORAGE_KEYS.VOUCHERS).on('value', (snap) => {
-                const data = snap.val() || {};
-                const db = Object.values(data).filter(v => v && v.status !== 'deleted');
-                callback(db);
-            });
+            try {
+                this.requireAuth();
+                const path = this._getFirmPath(STORAGE_KEYS.VOUCHERS);
+                console.log('🔥 Firebase Realtime Listener started:', path);
+                this.rtdb.ref(path).on('value', (snap) => {
+                    const data = snap.val() || {};
+                    const db = Object.values(data).filter(v => v && v.status !== 'deleted');
+                    callback(db);
+                });
+            } catch (e) {
+                console.warn('⚠️ Cannot start listener (not authenticated)');
+            }
         } else {
             // Local Storage polling
             let lastData = '';
@@ -212,7 +396,6 @@ class Storage {
                 }
             }, 3000);
             
-            // Return cleanup function
             return () => clearInterval(interval);
         }
     }
@@ -220,12 +403,18 @@ class Storage {
     // ===== REMOVE LISTENERS =====
     removeListeners() {
         if (this.rtdb) {
-            this.rtdb.ref(STORAGE_KEYS.VOUCHERS).off();
+            try {
+                const path = this._getFirmPath(STORAGE_KEYS.VOUCHERS);
+                this.rtdb.ref(path).off();
+            } catch (e) {
+                // Ignore
+            }
         }
     }
 
     // ===== EXPORT DATA =====
     async exportAllData() {
+        this.requireAuth();
         const data = {
             firms: await this.load(STORAGE_KEYS.FIRMS),
             vouchers: await this.load(STORAGE_KEYS.VOUCHERS),
@@ -244,6 +433,7 @@ class Storage {
 
     // ===== IMPORT DATA =====
     async importAllData(data) {
+        this.requireAuth();
         const keys = [
             STORAGE_KEYS.FIRMS,
             STORAGE_KEYS.VOUCHERS,
@@ -264,100 +454,13 @@ class Storage {
         }
         return true;
     }
+
+    // ===== SET FIRM ID =====
+    setFirmId(firmId) {
+        this.currentFirmId = firmId;
+        localStorage.setItem('firmId', firmId);
+        console.log('🏢 Switched to firm:', firmId);
+    }
 }
 
 export default Storage;
-// ========================================
-// 🔐 AUTHENTICATION FUNCTIONS (ADD AT END)
-// ========================================
-
-// 🔐 LOGIN - Backend API call
-async function login(username, password) {
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Login failed');
-        }
-
-        // Firebase Custom Token se sign in
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            await firebase.auth().signInWithCustomToken(data.token);
-        }
-
-        // Store user data
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('firmId', data.user.firmId);
-        
-        this.currentUser = data.user;
-        this.currentFirmId = data.user.firmId;
-
-        return data.user;
-
-    } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-    }
-}
-
-// 👤 GET CURRENT USER
-function getCurrentUser() {
-    try {
-        return JSON.parse(localStorage.getItem('user') || 'null');
-    } catch {
-        return null;
-    }
-}
-
-// 🏢 GET CURRENT FIRM ID
-function getCurrentFirmId() {
-    const user = getCurrentUser();
-    return user?.firmId || localStorage.getItem('firmId') || 'DevVidyalaya';
-}
-
-// 🔒 AUTH CHECK
-function requireAuth() {
-    const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated. Please login.');
-    }
-    return user;
-}
-
-// 🚪 LOGOUT
-async function logout() {
-    try {
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            await firebase.auth().signOut();
-        }
-    } catch (e) {
-        // Ignore
-    }
-    localStorage.removeItem('user');
-    localStorage.removeItem('firmId');
-    this.currentUser = null;
-    this.currentFirmId = null;
-    window.location.href = 'login.html';
-}
-
-// 👤 CREATE USER (Admin only)
-async function createUser(userData) {
-    const response = await fetch('/api/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-    });
-    return response.json();
-}
-
-// ---------- FIRMWISE PATH HELPER ----------
-function _getFirmPath(key) {
-    const firmId = getCurrentFirmId();
-    return `${key}/${firmId}`;
-}
