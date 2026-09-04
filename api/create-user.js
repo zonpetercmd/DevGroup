@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
       name,
       firmId,
       role: role || 'user',
-      passwordHash: hash,
+      passwordHash: hash,  // ✅ ✅ ✅ YEH LINE - passwordHash save karega
       createdAt: Date.now()
     });
 
