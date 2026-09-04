@@ -101,7 +101,6 @@ class App {
         document.getElementById('display_role').innerText = this.currentRole + 
             (this.currentFirm ? ' (' + (this.allFirms[this.currentFirm]?.name || '') + ')' : '');
         
-        // ✅ FIX: Case-insensitive Admin check - Settings button hamesha dikhega
         const isAdmin = this.currentRole && 
             (this.currentRole.toLowerCase() === 'admin' || 
              this.currentRole === 'Admin' || 
@@ -149,7 +148,6 @@ class App {
             errorDiv.style.color = '#22c55e';
             errorDiv.style.display = 'block';
 
-            // ✅ FIREBASE AUTH - Backend API call
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -162,16 +160,13 @@ class App {
                 throw new Error(data.error || 'Login failed');
             }
 
-            // ✅ Firebase Custom Token se sign in
             if (typeof firebase !== 'undefined' && firebase.auth) {
                 await firebase.auth().signInWithCustomToken(data.token);
             }
 
-            // ✅ Store user data
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('firmId', data.user.firmId);
 
-            // ✅ Session storage for existing app
             sessionStorage.setItem('auth', 'ok');
             sessionStorage.setItem('user', data.user.username);
             sessionStorage.setItem('role', data.user.role || 'user');
@@ -1424,7 +1419,6 @@ class App {
     // ============================================================
 
     openSettings() {
-        // ✅ FIX: Case-insensitive Admin check
         const isAdmin = this.currentRole && 
             (this.currentRole.toLowerCase() === 'admin' || 
              this.currentRole === 'Admin' || 
@@ -1601,7 +1595,7 @@ class App {
     }
 
     // ============================================================
-    // USER MANAGEMENT
+    // USER MANAGEMENT - FIXED (API se user create)
     // ============================================================
 
     renderUsersList() {
@@ -1645,6 +1639,7 @@ class App {
         `}).join('');
     }
 
+    // ✅ FIXED: API se user create karein (passwordHash automatically add hoga)
     async addUser() {
         const id = document.getElementById('new_user_id').value.trim();
         const pass = document.getElementById('new_user_pass').value.trim();
@@ -1664,42 +1659,72 @@ class App {
             return; 
         }
         
-        const permissions = {
-            print: document.getElementById('perm_print').checked,
-            edit: document.getElementById('perm_edit').checked,
-            delete: document.getElementById('perm_delete').checked,
-            whatsapp: document.getElementById('perm_whatsapp').checked,
-            reports: document.getElementById('perm_reports').checked,
-            view_all: document.getElementById('perm_view_all').checked,
-            party_add: document.getElementById('perm_party_add').checked,
-            bank_add: document.getElementById('perm_bank_add').checked,
-            expense_add: document.getElementById('perm_expense_add').checked,
-            export_import: document.getElementById('perm_export_import').checked,
-            edit_firm: document.getElementById('perm_edit_firm').checked
-        };
-        
-        const user = { 
-            id, 
-            password: pass, 
-            role, 
-            firm: role === 'Admin' ? null : firm, 
-            permissions 
-        };
-        
-        this.allUsers.push(user);
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.id, u]))
-        );
-        
-        this.renderUsersList();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        
-        document.getElementById('new_user_id').value = '';
-        document.getElementById('new_user_pass').value = '';
-        document.getElementById('new_user_firm').value = '';
-        
-        showToast(`✅ ${role} User "${id}" added successfully!`);
+        try {
+            showToast('⏳ Creating user...');
+            
+            // ✅ ✅ ✅ API SE USER CREATE (passwordHash automatically add hoga)
+            const response = await fetch('/api/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: id,
+                    password: pass,
+                    name: id,
+                    firmId: firm || 'DevVidyalaya',
+                    role: role
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to create user');
+            }
+            
+            // ✅ User ko local array mein add karein (UI update ke liye)
+            const permissions = {
+                print: document.getElementById('perm_print')?.checked || false,
+                edit: document.getElementById('perm_edit')?.checked || false,
+                delete: document.getElementById('perm_delete')?.checked || false,
+                whatsapp: document.getElementById('perm_whatsapp')?.checked || false,
+                reports: document.getElementById('perm_reports')?.checked || false,
+                view_all: document.getElementById('perm_view_all')?.checked || false,
+                party_add: document.getElementById('perm_party_add')?.checked || false,
+                bank_add: document.getElementById('perm_bank_add')?.checked || false,
+                expense_add: document.getElementById('perm_expense_add')?.checked || false,
+                export_import: document.getElementById('perm_export_import')?.checked || false,
+                edit_firm: document.getElementById('perm_edit_firm')?.checked || false
+            };
+            
+            const user = { 
+                id, 
+                password: pass, 
+                role, 
+                firm: role === 'Admin' ? null : firm, 
+                permissions 
+            };
+            
+            this.allUsers.push(user);
+            
+            // ✅ Database mein bhi save karein (backup)
+            await this.storage.save(STORAGE_KEYS.USERS,
+                Object.fromEntries(this.allUsers.map(u => [u.id, u]))
+            );
+            
+            this.renderUsersList();
+            this.updateLoginRoleDropdown();
+            this.updateSettingsRoleDropdown();
+            
+            document.getElementById('new_user_id').value = '';
+            document.getElementById('new_user_pass').value = '';
+            document.getElementById('new_user_firm').value = '';
+            
+            showToast(`✅ ${role} User "${id}" created successfully!`);
+            
+        } catch (error) {
+            console.error('❌ Create user error:', error);
+            showToast('❌ ' + error.message);
+        }
     }
 
     async deleteUser(id) {
