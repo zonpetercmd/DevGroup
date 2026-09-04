@@ -1640,106 +1640,92 @@ class App {
     }
 
     // ✅ FIXED: API se user create karein (passwordHash automatically add hoga)
-    async addUser() {
-        const id = document.getElementById('new_user_id').value.trim();
-        const pass = document.getElementById('new_user_pass').value.trim();
-        const role = document.getElementById('new_user_role').value;
-        const firm = document.getElementById('new_user_firm').value;
-        
-        if (!id || !pass) { 
-            showToast('❌ Enter ID and Password'); 
-            return; 
-        }
-        if (this.allUsers.find(u => u.id === id)) { 
-            showToast('❌ User already exists'); 
-            return; 
-        }
-        if (role !== 'Admin' && !firm) { 
-            showToast('❌ Please select a firm for Staff'); 
-            return; 
-        }
-        
-        try {
-            showToast('⏳ Creating user...');
-            
-            // ✅ ✅ ✅ API SE USER CREATE (passwordHash automatically add hoga)
-            const response = await fetch('/api/create-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: id,
-                    password: pass,
-                    name: id,
-                    firmId: firm || 'DevVidyalaya',
-                    role: role
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.error || 'Failed to create user');
-            }
-            
-            // ✅ User ko local array mein add karein (UI update ke liye)
-            const permissions = {
-                print: document.getElementById('perm_print')?.checked || false,
-                edit: document.getElementById('perm_edit')?.checked || false,
-                delete: document.getElementById('perm_delete')?.checked || false,
-                whatsapp: document.getElementById('perm_whatsapp')?.checked || false,
-                reports: document.getElementById('perm_reports')?.checked || false,
-                view_all: document.getElementById('perm_view_all')?.checked || false,
-                party_add: document.getElementById('perm_party_add')?.checked || false,
-                bank_add: document.getElementById('perm_bank_add')?.checked || false,
-                expense_add: document.getElementById('perm_expense_add')?.checked || false,
-                export_import: document.getElementById('perm_export_import')?.checked || false,
-                edit_firm: document.getElementById('perm_edit_firm')?.checked || false
-            };
-            
-            const user = { 
-                id, 
-                password: pass, 
-                role, 
-                firm: role === 'Admin' ? null : firm, 
-                permissions 
-            };
-            
-            this.allUsers.push(user);
-            
-            // ✅ Database mein bhi save karein (backup)
-            await this.storage.save(STORAGE_KEYS.USERS,
-                Object.fromEntries(this.allUsers.map(u => [u.id, u]))
-            );
-            
-            this.renderUsersList();
-            this.updateLoginRoleDropdown();
-            this.updateSettingsRoleDropdown();
-            
-            document.getElementById('new_user_id').value = '';
-            document.getElementById('new_user_pass').value = '';
-            document.getElementById('new_user_firm').value = '';
-            
-            showToast(`✅ ${role} User "${id}" created successfully!`);
-            
-        } catch (error) {
-            console.error('❌ Create user error:', error);
-            showToast('❌ ' + error.message);
-        }
+async addUser() {
+    const id = document.getElementById('new_user_id').value.trim();
+    const pass = document.getElementById('new_user_pass').value.trim();
+    const role = document.getElementById('new_user_role').value;
+    const firm = document.getElementById('new_user_firm').value;
+    
+    if (!id || !pass) { 
+        showToast('❌ Enter ID and Password'); 
+        return; 
     }
-
-    async deleteUser(id) {
-        if (id === 'Admin') { showToast('Cannot delete Admin'); return; }
-        if (!confirm('Delete user: ' + id + '?')) return;
-        this.allUsers = this.allUsers.filter(u => u.id !== id);
+    if (this.allUsers.find(u => u.id === id)) { 
+        showToast('❌ User already exists'); 
+        return; 
+    }
+    if (role !== 'Admin' && !firm) { 
+        showToast('❌ Please select a firm for Staff'); 
+        return; 
+    }
+    
+    try {
+        showToast('⏳ Creating user...');
+        
+        // ✅ ✅ ✅ API SE USER CREATE (passwordHash automatically add hoga)
+        const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: id,
+                password: pass,
+                name: id,
+                firmId: firm || 'DevVidyalaya',
+                role: role
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to create user');
+        }
+        
+        // ✅ User ko local array mein add karein (UI update ke liye)
+        const permissions = {
+            print: document.getElementById('perm_print')?.checked || false,
+            edit: document.getElementById('perm_edit')?.checked || false,
+            delete: document.getElementById('perm_delete')?.checked || false,
+            whatsapp: document.getElementById('perm_whatsapp')?.checked || false,
+            reports: document.getElementById('perm_reports')?.checked || false,
+            view_all: document.getElementById('perm_view_all')?.checked || false,
+            party_add: document.getElementById('perm_party_add')?.checked || false,
+            bank_add: document.getElementById('perm_bank_add')?.checked || false,
+            expense_add: document.getElementById('perm_expense_add')?.checked || false,
+            export_import: document.getElementById('perm_export_import')?.checked || false,
+            edit_firm: document.getElementById('perm_edit_firm')?.checked || false
+        };
+        
+        const user = { 
+            id, 
+            password: pass, 
+            role, 
+            firm: role === 'Admin' ? null : firm, 
+            permissions 
+        };
+        
+        this.allUsers.push(user);
+        
+        // ✅ Database mein bhi save karein (backup)
         await this.storage.save(STORAGE_KEYS.USERS,
             Object.fromEntries(this.allUsers.map(u => [u.id, u]))
         );
+        
         this.renderUsersList();
         this.updateLoginRoleDropdown();
         this.updateSettingsRoleDropdown();
-        showToast('✅ User deleted');
+        
+        document.getElementById('new_user_id').value = '';
+        document.getElementById('new_user_pass').value = '';
+        document.getElementById('new_user_firm').value = '';
+        
+        showToast(`✅ ${role} User "${id}" created successfully!`);
+        
+    } catch (error) {
+        console.error('❌ Create user error:', error);
+        showToast('❌ ' + error.message);
     }
-
+}
     // ============================================================
     // BANK MANAGEMENT
     // ============================================================
