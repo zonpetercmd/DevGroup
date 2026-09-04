@@ -123,81 +123,77 @@ class App {
         this.renderPartiesList();
     }
 
-// ===== LOGIN - Email-based =====
-async doLogin() {
-    const email = document.getElementById('user_id').value.trim();  // ✅ Email
-    const pass = document.getElementById('user_pass').value.trim();
-    const role = document.getElementById('login_role').value;
-    const errorDiv = document.getElementById('login_error');
-    
-    errorDiv.style.display = 'none';
-    
-    if (!email || !pass) {
-        errorDiv.innerText = 'Please enter Email and Password';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    if (!email.includes('@')) {
-        errorDiv.innerText = 'Please enter a valid email address';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    if (!role) {
-        errorDiv.innerText = 'Please select a Role';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    try {
-        errorDiv.innerText = '⏳ Logging in...';
-        errorDiv.style.color = '#22c55e';
-        errorDiv.style.display = 'block';
-
-        // ✅ API call with email
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: pass })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Login failed');
+    // ===== LOGIN - Email-based =====
+    async doLogin() {
+        const email = document.getElementById('user_id').value.trim();
+        const pass = document.getElementById('user_pass').value.trim();
+        const role = document.getElementById('login_role').value;
+        const errorDiv = document.getElementById('login_error');
+        
+        errorDiv.style.display = 'none';
+        
+        if (!email || !pass) {
+            errorDiv.innerText = 'Please enter Email and Password';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (!email.includes('@')) {
+            errorDiv.innerText = 'Please enter a valid email address';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (!role) {
+            errorDiv.innerText = 'Please select a Role';
+            errorDiv.style.display = 'block';
+            return;
         }
 
-        // ✅ Firebase Custom Token se sign in
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            await firebase.auth().signInWithCustomToken(data.token);
+        try {
+            errorDiv.innerText = '⏳ Logging in...';
+            errorDiv.style.color = '#22c55e';
+            errorDiv.style.display = 'block';
+
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password: pass })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
+
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                await firebase.auth().signInWithCustomToken(data.token);
+            }
+
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('firmId', data.user.firmId);
+
+            sessionStorage.setItem('auth', 'ok');
+            sessionStorage.setItem('user', data.user.email);
+            sessionStorage.setItem('role', role);
+            sessionStorage.setItem('firm', data.user.firmId);
+
+            this.currentUser = data.user.email;
+            this.currentRole = role;
+            this.currentFirm = data.user.firmId;
+
+            errorDiv.innerText = '✅ Login successful!';
+            errorDiv.style.color = '#22c55e';
+
+            this.showMainApp();
+            showToast('✅ Login successful!');
+
+        } catch (error) {
+            console.error('❌ Login error:', error);
+            errorDiv.innerText = error.message || 'Login failed. Please try again.';
+            errorDiv.style.color = '#ef4444';
+            errorDiv.style.display = 'block';
         }
-
-        // ✅ Store user data
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('firmId', data.user.firmId);
-
-        // ✅ Session storage for existing app
-        sessionStorage.setItem('auth', 'ok');
-        sessionStorage.setItem('user', data.user.email);
-        sessionStorage.setItem('role', role);
-        sessionStorage.setItem('firm', data.user.firmId);
-
-        this.currentUser = data.user.email;
-        this.currentRole = role;
-        this.currentFirm = data.user.firmId;
-
-        errorDiv.innerText = '✅ Login successful!';
-        errorDiv.style.color = '#22c55e';
-
-        this.showMainApp();
-        showToast('✅ Login successful!');
-
-    } catch (error) {
-        console.error('❌ Login error:', error);
-        errorDiv.innerText = error.message || 'Login failed. Please try again.';
-        errorDiv.style.color = '#ef4444';
-        errorDiv.style.display = 'block';
     }
-}
 
     // ===== LOGOUT =====
     logout() {
@@ -761,7 +757,7 @@ async doLogin() {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS / VOUCHER LIST =====
+    // ===== REPORTS / VOUCHER LIST - FIXED (Duplicate buttons removed) =====
     renderReports() {
         const div = document.getElementById('report_content');
         if (!div) return;
@@ -1604,7 +1600,7 @@ async doLogin() {
     }
 
     // ============================================================
-    // USER MANAGEMENT - FIXED (Email-based API se user create)
+    // USER MANAGEMENT - FIXED (Email-based + Edit button)
     // ============================================================
 
     renderUsersList() {
@@ -1617,18 +1613,22 @@ async doLogin() {
         container.innerHTML = this.allUsers.map(u => {
             const perms = u.permissions || {};
             const firmNames = u.firm ? (this.allFirms[u.firm]?.name || u.firm) : '🌐 All Firms';
+            const isAdminUser = u.email === 'admin@dev.com' || u.id === 'Admin' || u.username === 'Admin';
             return `
             <div class="user-card" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#f8fafc;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
-                        <span><strong>👤 ${u.email || u.id}</strong></span>
+                        <span><strong>👤 ${u.email || u.id || u.username}</strong></span>
                         <span>🔒 ${u.password}</span>
                         <span><span class="badge" style="background:${u.role === 'Admin' ? '#2563eb' : '#10b981'}">${u.role}</span></span>
                         <span><span class="firm-badge" style="background:#8b5cf6;">${firmNames}</span></span>
                     </div>
                     <div>
-                        ${u.id !== 'Admin' && u.email !== 'admin@dev.com' ? 
-                            `<button class="btn-action btn-del" onclick="deleteUser('${u.id || u.email}')">✖</button>` : ''}
+                        ${!isAdminUser ? 
+                            `<button class="btn-action btn-edit" onclick="app.editUser('${u.email || u.id || u.username}')" title="Edit User" style="background:#f59e0b; color:white; padding:5px 12px; border:none; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Edit</button>
+                             <button class="btn-action btn-del" onclick="app.deleteUser('${u.email || u.id || u.username}')">✖</button>` :
+                            `<span style="color:#94a3b8; font-size:12px;">🔒 Admin (Protected)</span>`
+                        }
                     </div>
                 </div>
                 <div style="display:flex; gap:12px; margin-top:5px; font-size:12px; color:#64748b; flex-wrap:wrap;">
@@ -1648,7 +1648,7 @@ async doLogin() {
         `}).join('');
     }
 
-    // ✅ FIXED: Email-based API se user create (passwordHash automatically add hoga)
+    // ✅ FIXED: Email-based API se user create
     async addUser() {
         const email = document.getElementById('new_user_id').value.trim();
         const pass = document.getElementById('new_user_pass').value.trim();
@@ -1675,7 +1675,6 @@ async doLogin() {
         try {
             showToast('⏳ Creating user...');
             
-            // ✅ ✅ ✅ API SE USER CREATE (passwordHash automatically add hoga)
             const response = await fetch('/api/create-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1694,7 +1693,6 @@ async doLogin() {
                 throw new Error(data.error || 'Failed to create user');
             }
             
-            // ✅ User ko local array mein add karein (UI update ke liye)
             const permissions = {
                 print: document.getElementById('perm_print')?.checked || false,
                 edit: document.getElementById('perm_edit')?.checked || false,
@@ -1720,7 +1718,6 @@ async doLogin() {
             
             this.allUsers.push(user);
             
-            // ✅ Database mein bhi save karein (backup)
             await this.storage.save(STORAGE_KEYS.USERS,
                 Object.fromEntries(this.allUsers.map(u => [u.email, u]))
             );
@@ -1739,6 +1736,118 @@ async doLogin() {
             console.error('❌ Create user error:', error);
             showToast('❌ ' + error.message);
         }
+    }
+
+    // ✏️ EDIT USER - Open edit modal
+    editUser(identifier) {
+        const user = this.allUsers.find(u => 
+            u.email === identifier || 
+            u.id === identifier || 
+            u.username === identifier
+        );
+        
+        if (!user) {
+            showToast('❌ User not found');
+            return;
+        }
+        
+        document.getElementById('edit_user_identifier').value = identifier;
+        document.getElementById('edit_user_email').value = user.email || user.id || user.username;
+        document.getElementById('edit_user_password').value = '';
+        document.getElementById('edit_user_name').value = user.name || user.email || user.id;
+        document.getElementById('edit_user_role').value = user.role || 'Staff';
+        document.getElementById('edit_user_firm').value = user.firm || 'DevVidyalaya';
+        
+        document.getElementById('edit_perm_print').checked = user.permissions?.print || false;
+        document.getElementById('edit_perm_edit').checked = user.permissions?.edit || false;
+        document.getElementById('edit_perm_delete').checked = user.permissions?.delete || false;
+        document.getElementById('edit_perm_whatsapp').checked = user.permissions?.whatsapp || false;
+        document.getElementById('edit_perm_reports').checked = user.permissions?.reports || false;
+        document.getElementById('edit_perm_view_all').checked = user.permissions?.view_all || false;
+        document.getElementById('edit_perm_party_add').checked = user.permissions?.party_add || false;
+        document.getElementById('edit_perm_bank_add').checked = user.permissions?.bank_add || false;
+        document.getElementById('edit_perm_expense_add').checked = user.permissions?.expense_add || false;
+        document.getElementById('edit_perm_export_import').checked = user.permissions?.export_import || false;
+        document.getElementById('edit_perm_edit_firm').checked = user.permissions?.edit_firm || false;
+        
+        document.getElementById('editUserModal').style.display = 'flex';
+        document.getElementById('editUserModalTitle').innerHTML = `✏️ Edit User: ${user.email || user.id || user.username}`;
+        
+        // Update firm dropdown
+        const firmSelect = document.getElementById('edit_user_firm');
+        firmSelect.innerHTML = '<option value="">-- Select Firm --</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            firmSelect.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+        });
+        if (user.firm) firmSelect.value = user.firm;
+    }
+
+    // 💾 UPDATE USER
+    async updateUser() {
+        const identifier = document.getElementById('edit_user_identifier').value;
+        const email = document.getElementById('edit_user_email').value.trim();
+        const password = document.getElementById('edit_user_password').value.trim();
+        const name = document.getElementById('edit_user_name').value.trim();
+        const role = document.getElementById('edit_user_role').value;
+        const firm = document.getElementById('edit_user_firm').value;
+        
+        const userIndex = this.allUsers.findIndex(u => 
+            u.email === identifier || 
+            u.id === identifier || 
+            u.username === identifier
+        );
+        
+        if (userIndex === -1) {
+            showToast('❌ User not found');
+            return;
+        }
+        
+        try {
+            showToast('⏳ Updating user...');
+            
+            const permissions = {
+                print: document.getElementById('edit_perm_print').checked,
+                edit: document.getElementById('edit_perm_edit').checked,
+                delete: document.getElementById('edit_perm_delete').checked,
+                whatsapp: document.getElementById('edit_perm_whatsapp').checked,
+                reports: document.getElementById('edit_perm_reports').checked,
+                view_all: document.getElementById('edit_perm_view_all').checked,
+                party_add: document.getElementById('edit_perm_party_add').checked,
+                bank_add: document.getElementById('edit_perm_bank_add').checked,
+                expense_add: document.getElementById('edit_perm_expense_add').checked,
+                export_import: document.getElementById('edit_perm_export_import').checked,
+                edit_firm: document.getElementById('edit_perm_edit_firm').checked
+            };
+            
+            this.allUsers[userIndex].email = email;
+            this.allUsers[userIndex].name = name;
+            this.allUsers[userIndex].role = role;
+            this.allUsers[userIndex].firm = role === 'Admin' ? null : firm;
+            this.allUsers[userIndex].permissions = permissions;
+            
+            if (password) {
+                this.allUsers[userIndex].password = password;
+            }
+            
+            await this.storage.save(STORAGE_KEYS.USERS,
+                Object.fromEntries(this.allUsers.map(u => [u.email || u.id, u]))
+            );
+            
+            this.renderUsersList();
+            this.updateLoginRoleDropdown();
+            this.updateSettingsRoleDropdown();
+            
+            document.getElementById('editUserModal').style.display = 'none';
+            showToast(`✅ User "${email}" updated successfully!`);
+            
+        } catch (error) {
+            console.error('❌ Update user error:', error);
+            showToast('❌ ' + error.message);
+        }
+    }
+
+    closeEditUserModal() {
+        document.getElementById('editUserModal').style.display = 'none';
     }
 
     async deleteUser(id) {
