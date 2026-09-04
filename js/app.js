@@ -123,72 +123,81 @@ class App {
         this.renderPartiesList();
     }
 
-    // ===== LOGIN =====
-    async doLogin() {
-        const userId = document.getElementById('user_id').value.trim();
-        const pass = document.getElementById('user_pass').value.trim();
-        const role = document.getElementById('login_role').value;
-        const errorDiv = document.getElementById('login_error');
-        
-        errorDiv.style.display = 'none';
-        
-        if (!userId || !pass) {
-            errorDiv.innerText = 'Please enter User ID and Password';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        if (!role) {
-            errorDiv.innerText = 'Please select a Role';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        try {
-            errorDiv.innerText = '⏳ Logging in...';
-            errorDiv.style.color = '#22c55e';
-            errorDiv.style.display = 'block';
-
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: userId, password: pass })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Login failed');
-            }
-
-            if (typeof firebase !== 'undefined' && firebase.auth) {
-                await firebase.auth().signInWithCustomToken(data.token);
-            }
-
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('firmId', data.user.firmId);
-
-            sessionStorage.setItem('auth', 'ok');
-            sessionStorage.setItem('user', data.user.username);
-            sessionStorage.setItem('role', data.user.role || 'user');
-            sessionStorage.setItem('firm', data.user.firmId);
-
-            this.currentUser = data.user.username;
-            this.currentRole = data.user.role || 'user';
-            this.currentFirm = data.user.firmId;
-
-            errorDiv.innerText = '✅ Login successful!';
-            errorDiv.style.color = '#22c55e';
-
-            this.showMainApp();
-            showToast('✅ Login successful!');
-
-        } catch (error) {
-            console.error('❌ Login error:', error);
-            errorDiv.innerText = error.message || 'Login failed. Please try again.';
-            errorDiv.style.color = '#ef4444';
-            errorDiv.style.display = 'block';
-        }
+// ===== LOGIN - Email-based =====
+async doLogin() {
+    const email = document.getElementById('user_id').value.trim();  // ✅ Email
+    const pass = document.getElementById('user_pass').value.trim();
+    const role = document.getElementById('login_role').value;
+    const errorDiv = document.getElementById('login_error');
+    
+    errorDiv.style.display = 'none';
+    
+    if (!email || !pass) {
+        errorDiv.innerText = 'Please enter Email and Password';
+        errorDiv.style.display = 'block';
+        return;
     }
+    if (!email.includes('@')) {
+        errorDiv.innerText = 'Please enter a valid email address';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    if (!role) {
+        errorDiv.innerText = 'Please select a Role';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        errorDiv.innerText = '⏳ Logging in...';
+        errorDiv.style.color = '#22c55e';
+        errorDiv.style.display = 'block';
+
+        // ✅ API call with email
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pass })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Login failed');
+        }
+
+        // ✅ Firebase Custom Token se sign in
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            await firebase.auth().signInWithCustomToken(data.token);
+        }
+
+        // ✅ Store user data
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('firmId', data.user.firmId);
+
+        // ✅ Session storage for existing app
+        sessionStorage.setItem('auth', 'ok');
+        sessionStorage.setItem('user', data.user.email);
+        sessionStorage.setItem('role', role);
+        sessionStorage.setItem('firm', data.user.firmId);
+
+        this.currentUser = data.user.email;
+        this.currentRole = role;
+        this.currentFirm = data.user.firmId;
+
+        errorDiv.innerText = '✅ Login successful!';
+        errorDiv.style.color = '#22c55e';
+
+        this.showMainApp();
+        showToast('✅ Login successful!');
+
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        errorDiv.innerText = error.message || 'Login failed. Please try again.';
+        errorDiv.style.color = '#ef4444';
+        errorDiv.style.display = 'block';
+    }
+}
 
     // ===== LOGOUT =====
     logout() {
