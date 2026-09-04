@@ -49,18 +49,15 @@
             color: #334155;
             margin-bottom: 4px;
         }
-        .form-group input,
-        .form-group select {
+        .form-group input {
             width: 100%;
             padding: 12px 14px;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 14px;
             box-sizing: border-box;
-            transition: border 0.2s;
         }
-        .form-group input:focus,
-        .form-group select:focus {
+        .form-group input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
@@ -105,7 +102,7 @@
         <h2>📋 Voucher System</h2>
         <p>Login to your account</p>
 
-        <form id="loginForm" autocomplete="off">
+        <form id="loginForm">
             <div class="form-group">
                 <label>Username</label>
                 <input type="text" id="username" placeholder="Enter username" required>
@@ -149,7 +146,6 @@
             loginBtn.disabled = true;
 
             try {
-                // Backend API call
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -162,17 +158,14 @@
                     throw new Error(data.error || 'Login failed');
                 }
 
-                // Firebase Custom Token se sign in
                 await firebase.auth().signInWithCustomToken(data.token);
 
-                // Store user data
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('firmId', data.user.firmId);
 
                 message.textContent = '✅ Login successful! Redirecting...';
                 message.className = 'success';
 
-                // Redirect to main page
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 500);
@@ -182,13 +175,6 @@
                 message.textContent = error.message || 'Login failed. Please try again.';
                 message.className = 'error';
                 loginBtn.disabled = false;
-            }
-        });
-
-        // Enter key support
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                loginForm.dispatchEvent(new Event('submit'));
             }
         });
     </script>
