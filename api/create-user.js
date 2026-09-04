@@ -26,20 +26,25 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { username, password, name, firmId, role } = req.body;
+    const { email, password, name, firmId, role } = req.body;
 
-    if (!username || !password || !name || !firmId) {
+    if (!email || !password || !name || !firmId) {
       return res.status(400).json({ error: 'All fields required' });
     }
 
-    // ✅ Check if user already exists
+    // ✅ Email validation
+    if (!email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+
+    // ✅ Check if user already exists (by email)
     const usersRef = db.ref('users');
-    const existing = await usersRef.orderByChild('username')
-      .equalTo(username)
+    const existing = await usersRef.orderByChild('email')
+      .equalTo(email)
       .once('value');
 
     if (existing.exists()) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ error: 'Email already exists' });
     }
 
     // ✅ Create password hash
@@ -51,17 +56,18 @@ module.exports = async (req, res) => {
     const uid = newRef.key;
 
     await newRef.set({
-      username,
+      email,
       name,
       firmId,
       role: role || 'user',
-      passwordHash: hash,  // ✅ ✅ ✅ YEH LINE - passwordHash save karega
+      passwordHash: hash,
       createdAt: Date.now()
     });
 
-    // ✅ Create user in Firebase Authentication with password
+    // ✅ Create user in Firebase Authentication
     await admin.auth().createUser({
       uid: uid,
+      email: email,
       displayName: name,
       password: password,
       disabled: false
