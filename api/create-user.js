@@ -32,7 +32,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'All fields required' });
     }
 
-    // ✅ Check if user already exists
     const usersRef = db.ref('users');
     const existing = await usersRef.orderByChild('username')
       .equalTo(username)
@@ -42,12 +41,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    // ✅ Create password hash
     const hash = await bcrypt.hash(password, 10);
     const newRef = usersRef.push();
     const uid = newRef.key;
 
-    // ✅ Save to database
     await newRef.set({
       username,
       name,
@@ -57,26 +54,18 @@ module.exports = async (req, res) => {
       createdAt: Date.now()
     });
 
-    // ✅ ✅ ✅ CRITICAL: Create user in Firebase Authentication
-    try {
-      await admin.auth().createUser({
-        uid: uid,
-        displayName: name,
-        password: password,  // ✅ Password bhi set karein
-        disabled: false
-      });
-      console.log(`✅ User ${username} created in Firebase Auth with UID: ${uid}`);
-    } catch (authError) {
-      console.error('❌ Firebase Auth error:', authError);
-      // Agar auth fail ho toh database se user delete karein
-      await newRef.remove();
-      return res.status(500).json({ error: 'Failed to create user in authentication: ' + authError.message });
-    }
+    // ✅ FIX: Password bhi set karein Firebase Auth mein
+    await admin.auth().createUser({
+      uid: uid,
+      displayName: name,
+      password: password,
+      disabled: false
+    });
 
     res.json({
       success: true,
       uid: uid,
-      message: 'User created successfully in both Database and Authentication'
+      message: 'User created successfully'
     });
 
   } catch (error) {
