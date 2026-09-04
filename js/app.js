@@ -92,6 +92,7 @@ class App {
         document.getElementById('main-app').style.display = 'none';
     }
 
+    // ===== SHOW MAIN APP - FIXED =====
     showMainApp() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
@@ -100,13 +101,18 @@ class App {
         document.getElementById('display_role').innerText = this.currentRole + 
             (this.currentFirm ? ' (' + (this.allFirms[this.currentFirm]?.name || '') + ')' : '');
         
+        // ✅ FIX: Case-insensitive Admin check - Settings button hamesha dikhega
+        const isAdmin = this.currentRole && 
+            (this.currentRole.toLowerCase() === 'admin' || 
+             this.currentRole === 'Admin' || 
+             this.currentRole === 'ADMIN');
         document.getElementById('admin_settings_btn').style.display = 
-            this.currentRole === 'Admin' ? 'inline-block' : 'none';
+            isAdmin ? 'inline-block' : 'none';
         
         document.getElementById('v_date').value = getToday();
         
         let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📝 Create Voucher</button>`;
-        if (this.userPermissions.reports || this.currentRole === 'Admin') {
+        if (this.userPermissions.reports || isAdmin) {
             tabs += `<button class="module-tab" onclick="switchModule('reports')">📋 Voucher List</button>`;
         }
         document.getElementById('moduleTabsContainer').innerHTML = tabs;
@@ -1418,7 +1424,13 @@ class App {
     // ============================================================
 
     openSettings() {
-        if (this.currentRole !== 'Admin') {
+        // ✅ FIX: Case-insensitive Admin check
+        const isAdmin = this.currentRole && 
+            (this.currentRole.toLowerCase() === 'admin' || 
+             this.currentRole === 'Admin' || 
+             this.currentRole === 'ADMIN');
+        
+        if (!isAdmin) {
             showToast('❌ Only Admin can access settings');
             return;
         }
