@@ -2290,7 +2290,478 @@ class App {
         this.renderReceiptList();
         showToast('✅ Receipt deleted');
     }
+    // ============================================================
+    // ✅ PART 3: CONTRA VOUCHER — Edit / Delete / Recover
+    // ============================================================
 
+    editContra(id) {
+        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to edit');
+            return;
+        }
+        const v = this.db.find(x => x.id === id);
+        if (!v || v.type !== 'CTR') { showToast('Voucher not found'); return; }
+
+        // Form fill करो
+        document.getElementById('ctr_edit_id').value = v.id;
+        document.getElementById('ctr_date').value = v.date;
+        document.getElementById('ctr_from_account').value = v.fromAccount || '';
+        document.getElementById('ctr_to_account').value = v.toAccount || '';
+        document.getElementById('ctr_amount').value = v.amount;
+        document.getElementById('ctr_reference').value = v.reference || '';
+        document.getElementById('ctr_narration').value = v.narration || '';
+        document.getElementById('ctr_vno').value = v.vno;
+
+        // Button label change
+        const submitBtn = document.querySelector('#module-contra .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Update Contra';
+
+        // Module switch करो
+        this.switchModule('contra');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('✏️ Edit mode — Modify and submit');
+    }
+
+    async saveContraVoucher() {
+        // ✅ FIX: Edit + New दोनों handle करो
+        const firmKey = this.currentFirm || 'DevVidyalaya';
+        const editId = document.getElementById('ctr_edit_id')?.value || '';
+        const date = document.getElementById('ctr_date').value;
+        const fromAcc = document.getElementById('ctr_from_account').value;
+        const toAcc = document.getElementById('ctr_to_account').value;
+        const amount = parseFloat(document.getElementById('ctr_amount').value) || 0;
+        const reference = document.getElementById('ctr_reference').value.trim();
+        const narration = document.getElementById('ctr_narration').value.trim();
+        const vno = document.getElementById('ctr_vno').value;
+
+        if (!date) { showToast('❌ Please select date'); return; }
+        if (!fromAcc) { showToast('❌ Please select From Account'); return; }
+        if (!toAcc) { showToast('❌ Please select To Account'); return; }
+        if (fromAcc === toAcc) { showToast('❌ From and To accounts cannot be same'); return; }
+        if (amount <= 0) { showToast('❌ Please enter valid amount'); return; }
+
+        const voucher = {
+            id: editId || generateId(),
+            vno, date, firmKey,
+            firmName: this.allFirms[firmKey]?.name || firmKey,
+            type: 'CTR',
+            fromAccount: fromAcc,
+            toAccount: toAcc,
+            amount, reference, narration,
+            status: 'active',
+            createdBy: this.currentUser,
+            createdAt: editId ? (this.db.find(x => x.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+            updatedAt: editId ? new Date().toISOString() : null,
+            timestamp: Date.now()
+        };
+
+        await this.storage.saveVoucher(voucher);
+
+        if (editId) {
+            // ✅ Edit mode — existing update करो
+            const idx = this.db.findIndex(x => x.id === editId);
+            if (idx !== -1) this.db[idx] = voucher;
+            showToast('✅ Contra updated!');
+        } else {
+            // ✅ New mode — counter बढ़ाओ
+            if (!this.voucherCounter['CTR_' + firmKey]) this.voucherCounter['CTR_' + firmKey] = 0;
+            this.voucherCounter['CTR_' + firmKey]++;
+            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
+            this.db.push(voucher);
+            showToast('✅ Contra voucher submitted!');
+        }
+
+        this.resetContraForm();
+        this.renderContraList();
+        setTimeout(() => this.printContraById(voucher.id), 500);
+    }
+
+    resetContraForm() {
+        const editIdEl = document.getElementById('ctr_edit_id');
+        if (editIdEl) editIdEl.value = '';
+
+        const date = document.getElementById('ctr_date');
+        if (date) date.value = getToday();
+        const from = document.getElementById('ctr_from_account');
+        if (from) from.value = '';
+        const to = document.getElementById('ctr_to_account');
+        if (to) to.value = '';
+        const amt = document.getElementById('ctr_amount');
+        if (amt) amt.value = '0';
+        const ref = document.getElementById('ctr_reference');
+        if (ref) ref.value = '';
+        const narr = document.getElementById('ctr_narration');
+        if (narr) narr.value = '';
+
+        const submitBtn = document.querySelector('#module-contra .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Submit Contra';
+
+        this.generateContraVoucherNo();
+    }
+
+    async deleteContra(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to delete');
+            return;
+        }
+        if (!confirm('Delete this contra voucher?')) return;
+
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Voucher not found'); return; }
+
+        // ✅ Deleted list में add करो
+        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
+        this.deletedVouchers.push(deletedV);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        // ✅ Active से remove
+        await this.storage.deleteVoucher(id);
+        this.db = this.db.filter(x => x.id !== id);
+
+        this.renderContraList();
+        this.renderAll();
+        showToast('✅ Contra deleted');
+    }
+
+    async recoverContra(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to recover');
+            return;
+        }
+        if (!confirm('Recover this contra voucher?')) return;
+
+        const index = this.deletedVouchers.findIndex(v => v.id === id && v.type === 'CTR');
+        if (index === -1) { showToast('❌ Deleted contra not found'); return; }
+
+        const voucher = this.deletedVouchers[index];
+        voucher.status = 'active';
+        delete voucher.deletedBy;
+        delete voucher.deletedAt;
+
+        this.deletedVouchers.splice(index, 1);
+        this.db.push(voucher);
+
+        await this.storage.saveVoucher(voucher);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        this.renderContraList();
+        this.renderAll();
+        showToast(`✅ Contra ${voucher.vno} recovered!`);
+    }
+
+    // ============================================================
+    // ✅ PART 3: RECEIPT VOUCHER — Edit / Delete / Recover
+    // ============================================================
+
+    editReceipt(id) {
+        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to edit');
+            return;
+        }
+        const v = this.db.find(x => x.id === id);
+        if (!v || v.type !== 'RCP') { showToast('Receipt not found'); return; }
+
+        // Form fill करो
+        document.getElementById('rcp_edit_id').value = v.id;
+        document.getElementById('rcp_date').value = v.date;
+        document.getElementById('rcp_student_name').value = v.studentName || '';
+        document.getElementById('rcp_father_name').value = v.fatherName || '';
+        document.getElementById('rcp_class').value = v.studentClass || '';
+        document.getElementById('rcp_roll').value = v.roll || '';
+        document.getElementById('rcp_mobile').value = v.mobile || '';
+        document.getElementById('rcp_category').value = v.category || 'Student Fee';
+        document.getElementById('rcp_amount').value = v.amount;
+        document.getElementById('rcp_mode').value = v.mode || 'Cash';
+        document.getElementById('rcp_vno').value = v.vno;
+        document.getElementById('rcp_narration').value = v.narration || '';
+
+        // Mode toggle
+        this.toggleReceiptMode();
+
+        // Bank select करो
+        if (v.bankName && v.bankAccount) {
+            const bankVal = v.bankName + '|' + v.bankAccount;
+            const bankSel = document.getElementById('rcp_bank_account');
+            if (bankSel) bankSel.value = bankVal;
+        }
+        if (v.upiApp) {
+            const upiSel = document.getElementById('rcp_upi_app');
+            if (upiSel) upiSel.value = v.upiApp;
+        }
+        if (v.mode === 'Cheque') {
+            document.getElementById('rcp_cheque_no').value = v.chequeNo || '';
+            document.getElementById('rcp_cheque_date').value = v.chequeDate || '';
+            document.getElementById('rcp_cheque_bank').value = v.chequeBank || '';
+        }
+
+        // Button label change
+        const submitBtn = document.querySelector('#module-receipt .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Update Receipt';
+
+        // Module switch करो
+        this.switchModule('receipt');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('✏️ Edit mode — Modify and submit');
+    }
+
+    async saveReceiptVoucher() {
+        // ✅ FIX: Edit + New दोनों handle करो
+        const firmKey = this.currentFirm || 'DevVidyalaya';
+        const editId = document.getElementById('rcp_edit_id')?.value || '';
+        const date = document.getElementById('rcp_date').value;
+        const studentName = document.getElementById('rcp_student_name').value.trim();
+        const fatherName = document.getElementById('rcp_father_name').value.trim();
+        const studentClass = document.getElementById('rcp_class').value.trim();
+        const roll = document.getElementById('rcp_roll').value.trim();
+        const mobile = document.getElementById('rcp_mobile').value.trim();
+        const category = document.getElementById('rcp_category').value;
+        const amount = parseFloat(document.getElementById('rcp_amount').value) || 0;
+        const mode = document.getElementById('rcp_mode').value;
+        const bankVal = document.getElementById('rcp_bank_account')?.value || '';
+        const upiApp = document.getElementById('rcp_upi_app')?.value || '';
+        const chequeNo = document.getElementById('rcp_cheque_no')?.value?.trim() || '';
+        const chequeDate = document.getElementById('rcp_cheque_date')?.value || '';
+        const chequeBank = document.getElementById('rcp_cheque_bank')?.value?.trim() || '';
+        const narration = document.getElementById('rcp_narration').value.trim();
+        const vno = document.getElementById('rcp_vno').value;
+
+        if (!date) { showToast('❌ Please select date'); return; }
+        if (!studentName) { showToast('❌ Enter student name'); return; }
+        if (amount <= 0) { showToast('❌ Enter valid amount'); return; }
+        if (mode === 'Cheque' && !chequeNo) { showToast('❌ Enter cheque number'); return; }
+
+        let bankName = '', bankAccount = '';
+        if (bankVal) {
+            const parts = bankVal.split('|');
+            bankName = parts[0] || '';
+            bankAccount = parts[1] || '';
+        }
+
+        const oldVoucher = editId ? this.db.find(x => x.id === editId) : null;
+
+        const voucher = {
+            id: editId || generateId(),
+            vno, date, firmKey,
+            firmName: this.allFirms[firmKey]?.name || firmKey,
+            type: 'RCP',
+            studentName, fatherName, studentClass, roll, mobile, category,
+            amount, mode,
+            bankName, bankAccount, upiApp,
+            chequeNo, chequeDate, chequeBank,
+            chequeStatus: mode === 'Cheque' ? (oldVoucher?.chequeStatus || 'pending') : null,
+            narration,
+            status: 'active',
+            createdBy: this.currentUser,
+            createdAt: oldVoucher?.createdAt || new Date().toISOString(),
+            updatedAt: editId ? new Date().toISOString() : null,
+            timestamp: Date.now()
+        };
+
+        await this.storage.saveVoucher(voucher);
+
+        if (editId) {
+            const idx = this.db.findIndex(x => x.id === editId);
+            if (idx !== -1) this.db[idx] = voucher;
+            showToast('✅ Receipt updated!');
+        } else {
+            if (!this.voucherCounter['RCP_' + firmKey]) this.voucherCounter['RCP_' + firmKey] = 0;
+            this.voucherCounter['RCP_' + firmKey]++;
+            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
+            this.db.push(voucher);
+            showToast('✅ Receipt voucher submitted!');
+        }
+
+        this.resetReceiptForm();
+        this.renderReceiptList();
+        setTimeout(() => this.printReceiptById(voucher.id), 500);
+    }
+
+    resetReceiptForm() {
+        const editIdEl = document.getElementById('rcp_edit_id');
+        if (editIdEl) editIdEl.value = '';
+
+        const fields = ['rcp_student_name', 'rcp_father_name', 'rcp_class', 'rcp_roll', 'rcp_mobile', 'rcp_cheque_no', 'rcp_cheque_bank', 'rcp_narration'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const dateEl = document.getElementById('rcp_date');
+        if (dateEl) dateEl.value = getToday();
+        const amt = document.getElementById('rcp_amount');
+        if (amt) amt.value = '0';
+        const mode = document.getElementById('rcp_mode');
+        if (mode) mode.value = 'Cash';
+
+        const submitBtn = document.querySelector('#module-receipt .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Submit Receipt';
+
+        this.toggleReceiptMode();
+        this.generateReceiptVoucherNo();
+    }
+
+    async deleteReceipt(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to delete');
+            return;
+        }
+        if (!confirm('Delete this receipt?')) return;
+
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Receipt not found'); return; }
+
+        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
+        this.deletedVouchers.push(deletedV);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        await this.storage.deleteVoucher(id);
+        this.db = this.db.filter(x => x.id !== id);
+
+        this.renderReceiptList();
+        this.renderAll();
+        showToast('✅ Receipt deleted');
+    }
+
+    async recoverReceipt(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to recover');
+            return;
+        }
+        if (!confirm('Recover this receipt?')) return;
+
+        const index = this.deletedVouchers.findIndex(v => v.id === id && v.type === 'RCP');
+        if (index === -1) { showToast('❌ Deleted receipt not found'); return; }
+
+        const voucher = this.deletedVouchers[index];
+        voucher.status = 'active';
+        delete voucher.deletedBy;
+        delete voucher.deletedAt;
+
+        this.deletedVouchers.splice(index, 1);
+        this.db.push(voucher);
+
+        await this.storage.saveVoucher(voucher);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        this.renderReceiptList();
+        this.renderAll();
+        showToast(`✅ Receipt ${voucher.vno} recovered!`);
+    }
+
+    // ============================================================
+    // ✅ PART 3: UPDATED renderContraList (with Edit + Delete + Print)
+    // ============================================================
+
+    renderContraList() {
+        const tbody = document.getElementById('ctr_list');
+        if (!tbody) return;
+
+        const contraVouchers = this.db.filter(v => v.type === 'CTR' && v.status !== 'deleted');
+
+        if (contraVouchers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999; padding:20px;">No contra vouchers yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = contraVouchers.slice().reverse().slice(0, 50).map(v => {
+            const fromDisplay = (v.fromAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
+            const toDisplay = (v.toAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
+
+            let actions = '';
+            if (this.userPermissions.print || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-print" onclick="app.printContraById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+            }
+            if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-edit" onclick="app.editContra('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+            }
+            if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-del" onclick="app.deleteContra('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+            }
+
+            return `<tr>
+                <td>${v.date}</td>
+                <td><b>${v.vno}</b></td>
+                <td>${fromDisplay}</td>
+                <td>${toDisplay}</td>
+                <td>₹${v.amount.toLocaleString()}</td>
+                <td>${v.narration || '-'}</td>
+                <td>${actions}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ============================================================
+    // ✅ PART 3: UPDATED renderReceiptList (with Edit + Delete + Print + Clear)
+    // ============================================================
+
+    renderReceiptList() {
+        const tbody = document.getElementById('rcp_list');
+        if (!tbody) return;
+
+        const receipts = this.db.filter(v => v.type === 'RCP' && v.status !== 'deleted');
+
+        if (receipts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999; padding:20px;">No receipts yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = receipts.slice().reverse().slice(0, 50).map(v => {
+            let statusBadge = '<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">✅ Active</span>';
+            if (v.mode === 'Cheque' && v.chequeStatus === 'pending') {
+                statusBadge = '<span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">⏳ Pending</span>';
+            } else if (v.chequeStatus === 'cleared') {
+                statusBadge = '<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">✅ Cleared</span>';
+            } else if (v.chequeStatus === 'bounced') {
+                statusBadge = '<span style="background:#dc2626; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">❌ Bounced</span>';
+            }
+
+            let actions = '';
+            if (this.userPermissions.print || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-print" onclick="app.printReceiptById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+            }
+            if (v.mode === 'Cheque' && v.chequeStatus === 'pending') {
+                actions += `<button class="btn-action" onclick="app.clearCheque('${v.id}')" title="Mark as Cleared" style="background:#16a34a; color:white; padding:4px 8px; border:none; border-radius:4px; font-size:11px; cursor:pointer;">✔</button>`;
+            }
+            if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-edit" onclick="app.editReceipt('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+            }
+            if (this.userPermissions.whatsapp || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-whatsapp-small" onclick="app.shareReceipt('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+            }
+            if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-del" onclick="app.deleteReceipt('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+            }
+
+            return `<tr>
+                <td>${v.date}</td>
+                <td><b>${v.vno}</b></td>
+                <td>${v.studentName}${v.fatherName ? ' (s/o ' + v.fatherName + ')' : ''}</td>
+                <td>${v.studentClass || '-'}</td>
+                <td>₹${v.amount.toLocaleString()}</td>
+                <td>${v.mode}${v.chequeNo ? ' #' + v.chequeNo : ''}</td>
+                <td>${statusBadge}</td>
+                <td>${actions}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ============================================================
+    // ✅ PART 3: WhatsApp Share for Receipt
+    // ============================================================
+
+    shareReceipt(id) {
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Receipt not found'); return; }
+        const message = `*${v.firmName}*\n\n🎓 *Fee Receipt*\nReceipt No: ${v.vno}\nDate: ${v.date}\nStudent: ${v.studentName}\nClass: ${v.studentClass || '-'}\nAmount: ₹${v.amount.toFixed(2)}\nCategory: ${v.category || '-'}\nMode: ${v.mode}\n\nThank you!`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
     // ============================================================
     // ✅ NEW: DAILY CASH BOOK
     // ============================================================
