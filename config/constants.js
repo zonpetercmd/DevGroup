@@ -69,7 +69,11 @@ export const STORAGE_KEYS = {
   USERS: 'users',
   VOUCHER_COUNTER: 'voucherCounter',
   BANK_ACCOUNTS: 'bankAccounts',
-  PERMISSIONS: 'userPermissions'
+  PERMISSIONS: 'userPermissions',
+  // ✅ NEW: Opening balances
+  OPENING_BALANCES: 'openingBalances',
+  // ✅ NEW: Accounts (Cash/Bank/Petty)
+  ACCOUNTS: 'accounts'
 };
 
 // ---------- Payment ----------
@@ -84,10 +88,71 @@ export const VOUCHER_TYPES = {
   CONTRA: 'Contra'
 };
 
+// ============================================
+// ✅ NEW ADDITIONS - Contra, Receipt, Cash Book
+// (पुराना कुछ भी नहीं बदला)
+// ============================================
+
+// ✅ Voucher Type Codes (voucher number के लिए)
+// EXP = Expense (Payment) — existing
+// CTR = Contra — new
+// RCP = Receipt — new
+export const VOUCHER_TYPE_CODES = {
+  EXPENSE: 'EXP',
+  CONTRA: 'CTR',
+  RECEIPT: 'RCP'
+};
+
+// ✅ Account Types (Cash / Bank / Petty Cash)
+export const ACCOUNT_TYPES = {
+  CASH: 'cash',
+  BANK: 'bank',
+  PETTY: 'petty'
+};
+
+// ✅ Receipt Voucher Modes (Cheque भी शामिल)
+export const RECEIPT_MODES = ['Cash', 'Bank', 'UPI', 'Cheque'];
+
+// ✅ Cheque Status (Receipt के लिए)
+export const CHEQUE_STATUS = {
+  PENDING: 'pending',     // अभी clear नहीं हुआ
+  CLEARED: 'cleared',     // clear हो गया
+  BOUNCED: 'bounced'      // bounce हो गया
+};
+
+// ✅ Default Accounts (अगर कोई accounts नहीं बनाए)
+export const DEFAULT_ACCOUNTS = [
+  { id: 'cash', name: 'Cash in Hand', type: 'cash', firm: '' },
+  { id: 'petty-1', name: 'Petty Cash 1', type: 'petty', firm: '' },
+  { id: 'petty-2', name: 'Petty Cash 2', type: 'petty', firm: '' }
+];
+
+// ✅ Receipt Categories (Student Fee + Others)
+export const RECEIPT_CATEGORIES = [
+  'Student Fee',
+  'Admission Fee',
+  'Exam Fee',
+  'Transport Fee',
+  'Hostel Fee',
+  'Donation',
+  'Other'
+];
+
+// ✅ Student Classes (Dropdown के लिए)
+export const STUDENT_CLASSES = [
+  'Nursery', 'LKG', 'UKG',
+  '1', '2', '3', '4', '5',
+  '6', '7', '8', '9', '10',
+  '11', '12'
+];
+
+// ✅ Class Sections
+export const CLASS_SECTIONS = ['A', 'B', 'C', 'D', 'E'];
+
 // ---------- App Info ----------
 export const APP_INFO = {
   name: 'Voucher System',
-  version: '1.0.0',
+  version: '2.0.0',                        // ✅ Updated
   company: 'DEV Vidyalaya',
   supportEmail: 'devvidyalayasikar@gmail.com'
 };
