@@ -1,4 +1,4 @@
-// js/app.js - Main Application (With Search + Dropdown + Recover + Firm-wise)
+// js/app.js - Main Application (FIXED - No Duplicates)
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
@@ -27,7 +27,7 @@ class App {
         this.paymentModes = ['Cash', 'Bank', 'UPI', 'Cheque'];
         this.upiApps = ['PhonePe', 'GooglePay', 'Paytm', 'AmazonPay', 'Other'];
 
-        // ✅ NEW: Accounts + Opening Balances
+        // ✅ Accounts + Opening Balances
         this.accounts = [];
         this.openingBalances = {};
 
@@ -50,7 +50,7 @@ class App {
     }
 
     // ===== LOAD DATA =====
-        async loadAllData() {
+    async loadAllData() {
         const data = await this.storage.loadAllData();
         this.allFirms = data.allFirms || {};
         this.db = data.db || [];
@@ -80,6 +80,7 @@ class App {
         console.log('✅ Data loaded. Firms:', Object.keys(this.allFirms).length);
         console.log('✅ Accounts loaded:', this.accounts.length);
     }
+
     // ===== SESSION =====
     checkSession() {
         if (!this.loaded) {
@@ -128,7 +129,7 @@ class App {
 
         document.getElementById('v_date').value = getToday();
 
-        // ✅ NEW: 5 Tabs (Contra, Receipt, Cash Book भी)
+        // ✅ 5 Tabs
         let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📝 Create Voucher</button>`;
         tabs += `<button class="module-tab" onclick="switchModule('contra')">💱 Contra</button>`;
         tabs += `<button class="module-tab" onclick="switchModule('receipt')">🧾 Receipt</button>`;
@@ -138,7 +139,7 @@ class App {
         }
         document.getElementById('moduleTabsContainer').innerHTML = tabs;
 
-        // ✅ NEW: Date initialize for new forms
+        // Date initialize
         const ctrDate = document.getElementById('ctr_date');
         if (ctrDate) ctrDate.value = getToday();
         const rcpDate = document.getElementById('rcp_date');
@@ -152,15 +153,14 @@ class App {
         this.updateFirmDropdownsInSettings();
         this.renderPartiesList();
 
-        // ✅ NEW: Populate Contra + Receipt forms
-        this.populateContraAccounts();
-        this.generateContraVoucherNo();
-        this.generateReceiptVoucherNo();
+        // ✅ Populate Contra + Receipt firm dropdowns
+        this.populateContraFirms();
+        this.populateReceiptFirms();
         this.renderContraList();
         this.renderReceiptList();
     }
 
-    // ===== LOGIN (inline form) =====
+    // ===== LOGIN =====
     async doLogin() {
         const email = document.getElementById('user_id').value.trim();
         const pass = document.getElementById('user_pass').value.trim();
@@ -238,7 +238,6 @@ class App {
         }
     }
 
-    // ===== LOGOUT =====
     logout() {
         sessionStorage.clear();
         this.currentUser = '';
@@ -312,7 +311,7 @@ class App {
     }
 
     updateFirmDropdownsInSettings() {
-        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'new_party_firm', 'r_firm_filter', 'import_firm_select', 'ob_firm'];
+        const firmSelects = ['new_user_firm', 'bank_firm_select', 'expense_head_firm', 'party_firm_filter', 'new_party_firm', 'r_firm_filter', 'import_firm_select', 'ob_firm', 'cb_firm'];
         firmSelects.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
@@ -380,7 +379,7 @@ class App {
         document.getElementById('v_no').value = `${firm.short}/EXP/${fy}/${String(count).padStart(3, '0')}`;
     }
 
-    // ===== SAVE VOUCHER (EXISTING - UNCHANGED) =====
+    // ===== SAVE VOUCHER (EXPENSE - UNCHANGED) =====
     async saveVoucher() {
         const firmKey = document.getElementById('firm_name_value').value;
         const head = document.getElementById('expense_head_value').value;
@@ -471,7 +470,6 @@ class App {
         setTimeout(() => this.printVoucher(voucher), 500);
     }
 
-    // ===== PRINT VOUCHER (EXISTING) =====
     async printVoucher(voucher) {
         try {
             if (!voucher) { showToast('❌ Voucher not found'); return; }
@@ -522,7 +520,6 @@ class App {
         showToast('🔄 Form reset');
     }
 
-    // ===== EDIT VOUCHER (EXISTING) =====
     editVoucher(id) {
         if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
             showToast('❌ No permission to edit');
@@ -566,7 +563,6 @@ class App {
         showToast('✏️ Edit mode - Modify and submit');
     }
 
-    // ===== DELETE VOUCHER (EXISTING) =====
     async deleteVoucher(id) {
         if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
             showToast('❌ No permission to delete');
@@ -591,7 +587,6 @@ class App {
         showToast('✅ Voucher deleted');
     }
 
-    // ===== RECOVER VOUCHER (EXISTING) =====
     async recoverVoucher(id) {
         if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
             showToast('❌ No permission to recover');
@@ -629,7 +624,6 @@ class App {
         this.renderReports();
     }
 
-    // ===== RENDER TABLE (EXISTING - only EXP type) =====
     renderTable() {
         const search = document.getElementById('f_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('f_start')?.value || '';
@@ -745,7 +739,8 @@ class App {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS / VOUCHER LIST (EXISTING) =====
+    // ⬇️ अगली file में जारी है...
+    // ===== REPORTS / VOUCHER LIST =====
     renderReports() {
         const div = document.getElementById('report_content');
         if (!div) return;
@@ -843,12 +838,10 @@ class App {
                             const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
                             const createdBy = v.createdBy || 'Unknown';
 
-                            // ✅ Type badge
                             const typeBadge = v.type === 'CTR' ? '<span style="background:#0891b2; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">💱 CTR</span>' :
                                 v.type === 'RCP' ? '<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">🧾 RCP</span>' :
                                 '<span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">📤 EXP</span>';
 
-                            // ✅ Head display for different types
                             let headDisplay = v.head || '-';
                             let subHeadDisplay = v.subHead || '-';
                             let partyDisplay = v.party || '-';
@@ -880,16 +873,24 @@ class App {
                                     }
                                 } else if (v.type === 'CTR') {
                                     actions += `<button class="btn-action btn-print" onclick="app.printContraById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+                                    actions += `<button class="btn-action btn-edit" onclick="app.editContra('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
                                     actions += `<button class="btn-action btn-del" onclick="app.deleteContra('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                                 } else if (v.type === 'RCP') {
                                     actions += `<button class="btn-action btn-print" onclick="app.printReceiptById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
                                     if (v.chequeStatus === 'pending') {
                                         actions += `<button class="btn-action" onclick="app.clearCheque('${v.id}')" title="Clear Cheque" style="background:#16a34a; color:white; padding:4px 8px; border-radius:4px; font-size:11px; border:none; cursor:pointer;">✔</button>`;
                                     }
+                                    actions += `<button class="btn-action btn-edit" onclick="app.editReceipt('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
                                     actions += `<button class="btn-action btn-del" onclick="app.deleteReceipt('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                                 }
                             } else {
-                                actions = `<button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
+                                if (v.type === 'EXP') {
+                                    actions = `<button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
+                                } else if (v.type === 'CTR') {
+                                    actions = `<button class="btn-action" onclick="app.recoverContra('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
+                                } else if (v.type === 'RCP') {
+                                    actions = `<button class="btn-action" onclick="app.recoverReceipt('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
+                                }
                             }
 
                             return `<tr>
@@ -1068,7 +1069,6 @@ class App {
         dropdown.style.display = 'block';
     }
 
-    // ===== EXPENSE HEADS SETTINGS =====
     renderHeadsList() {
         const container = document.getElementById('heads_list');
         if (!container) return;
@@ -1348,559 +1348,9 @@ class App {
                 </div>
             </div>
         `).join('');
-    }    // ===== SETTINGS =====
-    openSettings() {
-        const isAdmin = this.currentRole &&
-            (this.currentRole.toLowerCase() === 'admin' ||
-                this.currentRole === 'Admin' ||
-                this.currentRole === 'ADMIN');
-        if (!isAdmin) { showToast('❌ Only Admin can access settings'); return; }
-        document.getElementById('settings-modal').style.display = 'flex';
-        this.renderFirmsList();
-        this.renderUsersList();
-        this.renderHeadsList();
-        this.renderPartiesList();
-        this.updateFirmSelectInSettings();
-        this.updateSettingsRoleDropdown();
-        this.updateBankFirmSelect();
-        this.loadBankAccounts();
-        this.updateFirmDropdownsInSettings();
-        // ✅ NEW
-        this.renderAccountsList();
-        const obFirmSelect = document.getElementById('ob_firm');
-        if (obFirmSelect && !obFirmSelect.value) {
-            obFirmSelect.innerHTML = '<option value="">-- Select Firm --</option>';
-            Object.keys(this.allFirms).forEach(f => {
-                obFirmSelect.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
-            });
-        }
-        const obDateEl = document.getElementById('ob_date');
-        if (obDateEl) obDateEl.value = getToday();
     }
 
-    closeSettings() {
-        document.getElementById('settings-modal').style.display = 'none';
-    }
-
-    // ===== FIRM MANAGEMENT =====
-    renderFirmsList() {
-        const container = document.getElementById('firms_list');
-        if (!container) return;
-        const firms = Object.keys(this.allFirms);
-        if (firms.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No firms added</p>';
-            return;
-        }
-        container.innerHTML = firms.map(f => `
-            <div class="firm-card" style="padding:12px 15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#f8fafc;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
-                        <span><strong>🏢 ${this.allFirms[f].name}</strong></span>
-                        <span>📛 ${this.allFirms[f].short}</span>
-                        <span>🔑 ${f}</span>
-                        ${this.allFirms[f].logo ? `<span><img src="${this.allFirms[f].logo}" height="25" onerror="this.style.display='none'" style="border-radius:4px;"></span>` : ''}
-                    </div>
-                    <div>
-                        <button class="btn-action btn-edit" onclick="editFirm('${f}')">✏️ Edit</button>
-                        <button class="btn-action btn-del" onclick="deleteFirm('${f}')">✖</button>
-                    </div>
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:15px; margin-top:5px; font-size:12px; color:#64748b;">
-                    ${this.allFirms[f].addr ? `<span>📍 ${this.allFirms[f].addr}</span>` : ''}
-                    ${this.allFirms[f].mobile ? `<span>📞 ${this.allFirms[f].mobile}</span>` : ''}
-                    ${this.allFirms[f].email ? `<span>✉ ${this.allFirms[f].email}</span>` : ''}
-                    ${this.allFirms[f].gst ? `<span>📄 GST: ${this.allFirms[f].gst}</span>` : ''}
-                    ${this.allFirms[f].pan ? `<span>📄 PAN: ${this.allFirms[f].pan}</span>` : ''}
-                </div>
-            </div>
-        `).join('');
-    }
-
-    async addFirm() {
-        const name = document.getElementById('new_firm_name').value.trim();
-        const short = document.getElementById('new_firm_short').value.trim().toUpperCase();
-        const logo = document.getElementById('new_firm_logo').value.trim() || 'logo.png';
-        const addr = document.getElementById('new_firm_addr').value.trim();
-        const mobile = document.getElementById('new_firm_mobile').value.trim();
-        const email = document.getElementById('new_firm_email').value.trim();
-        const gst = document.getElementById('new_firm_gst').value.trim();
-        const pan = document.getElementById('new_firm_pan').value.trim();
-
-        if (!name) { showToast('Firm name required'); return; }
-        if (!short) { showToast('Short code required'); return; }
-
-        const key = name.replace(/\s/g, '');
-        if (this.allFirms[key]) { showToast('Firm already exists'); return; }
-
-        this.allFirms[key] = { name, short, logo, addr, mobile, email, gst, pan };
-
-        const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
-        await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-
-        this.renderFirmsList();
-        this.populateFirmDropdown();
-        this.updateFirmSelectInSettings();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        this.updateBankFirmSelect();
-        this.updateFirmDropdownsInSettings();
-
-        document.getElementById('new_firm_name').value = '';
-        document.getElementById('new_firm_short').value = '';
-        document.getElementById('new_firm_logo').value = '';
-        document.getElementById('new_firm_addr').value = '';
-        document.getElementById('new_firm_mobile').value = '';
-        document.getElementById('new_firm_email').value = '';
-        document.getElementById('new_firm_gst').value = '';
-        document.getElementById('new_firm_pan').value = '';
-        showToast('✅ Firm added');
-    }
-
-    editFirm(key) {
-        const firm = this.allFirms[key];
-        if (!firm) return;
-
-        const newName = prompt('🏢 Firm Name:', firm.name);
-        if (newName !== null && newName.trim()) firm.name = newName.trim();
-
-        const newShort = prompt('📛 Short Code:', firm.short);
-        if (newShort !== null && newShort.trim()) firm.short = newShort.trim().toUpperCase();
-
-        const newLogo = prompt('🖼️ Logo URL:', firm.logo || 'logo.png');
-        if (newLogo !== null) firm.logo = newLogo.trim() || 'logo.png';
-
-        const newAddr = prompt('📍 Address:', firm.addr || '');
-        if (newAddr !== null) firm.addr = newAddr.trim();
-
-        const newMobile = prompt('📞 Mobile No:', firm.mobile || '');
-        if (newMobile !== null) firm.mobile = newMobile.trim();
-
-        const newEmail = prompt('✉ Email:', firm.email || '');
-        if (newEmail !== null) firm.email = newEmail.trim();
-
-        const newGst = prompt('📄 GST No:', firm.gst || '');
-        if (newGst !== null) firm.gst = newGst.trim();
-
-        const newPan = prompt('📄 PAN No:', firm.pan || '');
-        if (newPan !== null) firm.pan = newPan.trim();
-
-        const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
-        this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        this.renderFirmsList();
-        this.populateFirmDropdown();
-        this.updateFirmSelectInSettings();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        this.updateBankFirmSelect();
-        this.updateFirmDropdownsInSettings();
-        this.updateFirmHeader();
-        showToast('✅ Firm updated successfully!');
-    }
-
-    async deleteFirm(key) {
-        if (!confirm(`Delete firm "${this.allFirms[key]?.name}"?`)) return;
-        const hasVouchers = this.db.some(v => v.firmKey === key) || this.deletedVouchers.some(v => v.firmKey === key);
-        if (hasVouchers) { showToast('Cannot delete: vouchers exist'); return; }
-
-        delete this.allFirms[key];
-        const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
-        await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        this.renderFirmsList();
-        this.populateFirmDropdown();
-        this.updateFirmSelectInSettings();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        this.updateBankFirmSelect();
-        this.updateFirmDropdownsInSettings();
-        showToast('✅ Firm deleted');
-    }
-
-    // ===== USER MANAGEMENT =====
-    renderUsersList() {
-        const container = document.getElementById('users_list');
-        if (!container) return;
-        if (this.allUsers.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No users added</p>';
-            return;
-        }
-        container.innerHTML = this.allUsers.map(u => {
-            const perms = u.permissions || {};
-            const firmNames = u.firm ? (this.allFirms[u.firm]?.name || u.firm) : '🌐 All Firms';
-            const isAdminUser = u.email === 'admin@dev.com' || u.id === 'Admin' || u.username === 'Admin';
-            const userKey = u.email || u.id || u.username || '';
-            return `
-            <div class="user-card" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#f8fafc;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
-                        <span><strong>👤 ${u.email || u.id || u.username}</strong></span>
-                        <span><span class="badge" style="background:${u.role === 'Admin' ? '#2563eb' : '#10b981'}">${u.role}</span></span>
-                        <span><span class="firm-badge" style="background:#8b5cf6;">${firmNames}</span></span>
-                    </div>
-                    <div>
-                        ${!isAdminUser ?
-                            `<button class="btn-action btn-edit" onclick="app.editUser('${userKey}')" title="Edit User" style="background:#f59e0b; color:white; padding:5px 12px; border:none; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Edit</button>
-                             <button class="btn-action btn-del" onclick="app.deleteUser('${userKey}')">✖</button>` :
-                            `<span style="color:#94a3b8; font-size:12px;">🔒 Admin (Protected)</span>`
-                        }
-                    </div>
-                </div>
-                <div style="display:flex; gap:12px; margin-top:5px; font-size:12px; color:#64748b; flex-wrap:wrap;">
-                    <span>🖨️ Print: ${perms.print ? '✅' : '❌'}</span>
-                    <span>✏️ Edit: ${perms.edit ? '✅' : '❌'}</span>
-                    <span>🗑️ Delete: ${perms.delete ? '✅' : '❌'}</span>
-                    <span>💬 WhatsApp: ${perms.whatsapp ? '✅' : '❌'}</span>
-                    <span>📋 Voucher List: ${perms.reports ? '✅' : '❌'}</span>
-                    <span>👁️ View All: ${perms.view_all ? '✅' : '❌'}</span>
-                    <span>👤 Add Party: ${perms.party_add ? '✅' : '❌'}</span>
-                    <span>🏦 Add Bank: ${perms.bank_add ? '✅' : '❌'}</span>
-                    <span>📂 Add Expense: ${perms.expense_add ? '✅' : '❌'}</span>
-                    <span>📎 Export/Import: ${perms.export_import ? '✅' : '❌'}</span>
-                    <span>✏️ Edit Firm: ${perms.edit_firm ? '✅' : '❌'}</span>
-                </div>
-            </div>
-        `}).join('');
-    }
-
-    async addUser() {
-        const email = document.getElementById('new_user_id').value.trim();
-        const pass = document.getElementById('new_user_pass').value.trim();
-        const role = document.getElementById('new_user_role').value;
-        const firm = document.getElementById('new_user_firm').value;
-
-        if (!email || !pass) { showToast('❌ Enter Email and Password'); return; }
-        if (!email.includes('@')) { showToast('❌ Valid email required'); return; }
-        if (this.allUsers.find(u => u.email === email)) { showToast('❌ Email already exists'); return; }
-        if (role !== 'Admin' && !firm) { showToast('❌ Please select a firm for Staff'); return; }
-
-        try {
-            showToast('⏳ Creating user...');
-
-            const response = await fetch('/api/create-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    password: pass,
-                    name: email.split('@')[0],
-                    firmId: firm || 'DevVidyalaya',
-                    role: role
-                })
-            });
-
-            const data = await response.json();
-            if (!data.success) throw new Error(data.error || 'Failed to create user');
-
-            const permissions = {
-                print: document.getElementById('perm_print')?.checked || false,
-                edit: document.getElementById('perm_edit')?.checked || false,
-                delete: document.getElementById('perm_delete')?.checked || false,
-                whatsapp: document.getElementById('perm_whatsapp')?.checked || false,
-                reports: document.getElementById('perm_reports')?.checked || false,
-                view_all: document.getElementById('perm_view_all')?.checked || false,
-                party_add: document.getElementById('perm_party_add')?.checked || false,
-                bank_add: document.getElementById('perm_bank_add')?.checked || false,
-                expense_add: document.getElementById('perm_expense_add')?.checked || false,
-                export_import: document.getElementById('perm_export_import')?.checked || false,
-                edit_firm: document.getElementById('perm_edit_firm')?.checked || false
-            };
-
-            const user = {
-                email, name: email.split('@')[0], password: pass, role,
-                firm: role === 'Admin' ? null : firm,
-                permissions
-            };
-
-            this.allUsers.push(user);
-
-            const usersObj = {};
-            this.allUsers.forEach(u => {
-                const safeKey = this.storage.emailToKey(u.email || u.id);
-                usersObj[safeKey] = u;
-            });
-            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
-
-            this.renderUsersList();
-            this.updateLoginRoleDropdown();
-            this.updateSettingsRoleDropdown();
-
-            document.getElementById('new_user_id').value = '';
-            document.getElementById('new_user_pass').value = '';
-            document.getElementById('new_user_firm').value = '';
-
-            showToast(`✅ ${role} User "${email}" created successfully!`);
-
-        } catch (error) {
-            console.error('❌ Create user error:', error);
-            showToast('❌ ' + error.message);
-        }
-    }
-
-    editUser(identifier) {
-        const user = this.allUsers.find(u =>
-            u.email === identifier || u.id === identifier || u.username === identifier
-        );
-        if (!user) { showToast('❌ User not found'); return; }
-
-        document.getElementById('edit_user_identifier').value = identifier;
-        document.getElementById('edit_user_email').value = user.email || user.id || user.username;
-        document.getElementById('edit_user_password').value = '';
-        document.getElementById('edit_user_name').value = user.name || user.email || user.id;
-        document.getElementById('edit_user_role').value = user.role || 'Staff';
-        document.getElementById('edit_user_firm').value = user.firm || 'DevVidyalaya';
-
-        document.getElementById('edit_perm_print').checked = user.permissions?.print || false;
-        document.getElementById('edit_perm_edit').checked = user.permissions?.edit || false;
-        document.getElementById('edit_perm_delete').checked = user.permissions?.delete || false;
-        document.getElementById('edit_perm_whatsapp').checked = user.permissions?.whatsapp || false;
-        document.getElementById('edit_perm_reports').checked = user.permissions?.reports || false;
-        document.getElementById('edit_perm_view_all').checked = user.permissions?.view_all || false;
-        document.getElementById('edit_perm_party_add').checked = user.permissions?.party_add || false;
-        document.getElementById('edit_perm_bank_add').checked = user.permissions?.bank_add || false;
-        document.getElementById('edit_perm_expense_add').checked = user.permissions?.expense_add || false;
-        document.getElementById('edit_perm_export_import').checked = user.permissions?.export_import || false;
-        document.getElementById('edit_perm_edit_firm').checked = user.permissions?.edit_firm || false;
-
-        document.getElementById('editUserModal').style.display = 'flex';
-        document.getElementById('editUserModalTitle').innerHTML = `✏️ Edit User: ${user.email || user.id || user.username}`;
-
-        const firmSelect = document.getElementById('edit_user_firm');
-        firmSelect.innerHTML = '<option value="">-- Select Firm --</option>';
-        Object.keys(this.allFirms).forEach(f => {
-            firmSelect.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
-        });
-        if (user.firm) firmSelect.value = user.firm;
-    }
-
-    async updateUser() {
-        const identifier = document.getElementById('edit_user_identifier').value;
-        const email = document.getElementById('edit_user_email').value.trim();
-        const password = document.getElementById('edit_user_password').value.trim();
-        const name = document.getElementById('edit_user_name').value.trim();
-        const role = document.getElementById('edit_user_role').value;
-        const firm = document.getElementById('edit_user_firm').value;
-
-        const userIndex = this.allUsers.findIndex(u =>
-            u.email === identifier || u.id === identifier || u.username === identifier
-        );
-        if (userIndex === -1) { showToast('❌ User not found'); return; }
-
-        try {
-            showToast('⏳ Updating user...');
-
-            const permissions = {
-                print: document.getElementById('edit_perm_print').checked,
-                edit: document.getElementById('edit_perm_edit').checked,
-                delete: document.getElementById('edit_perm_delete').checked,
-                whatsapp: document.getElementById('edit_perm_whatsapp').checked,
-                reports: document.getElementById('edit_perm_reports').checked,
-                view_all: document.getElementById('edit_perm_view_all').checked,
-                party_add: document.getElementById('edit_perm_party_add').checked,
-                bank_add: document.getElementById('edit_perm_bank_add').checked,
-                expense_add: document.getElementById('edit_perm_expense_add').checked,
-                export_import: document.getElementById('edit_perm_export_import').checked,
-                edit_firm: document.getElementById('edit_perm_edit_firm').checked
-            };
-
-            this.allUsers[userIndex].email = email;
-            this.allUsers[userIndex].name = name;
-            this.allUsers[userIndex].role = role;
-            this.allUsers[userIndex].firm = role === 'Admin' ? null : firm;
-            this.allUsers[userIndex].permissions = permissions;
-            if (password) this.allUsers[userIndex].password = password;
-
-            const usersObj = {};
-            this.allUsers.forEach(u => {
-                const safeKey = this.storage.emailToKey(u.email || u.id);
-                usersObj[safeKey] = u;
-            });
-            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
-
-            this.renderUsersList();
-            this.updateLoginRoleDropdown();
-            this.updateSettingsRoleDropdown();
-
-            document.getElementById('editUserModal').style.display = 'none';
-            showToast(`✅ User "${email}" updated successfully!`);
-
-        } catch (error) {
-            console.error('❌ Update user error:', error);
-            showToast('❌ ' + error.message);
-        }
-    }
-
-    closeEditUserModal() {
-        document.getElementById('editUserModal').style.display = 'none';
-    }
-
-    async deleteUser(identifier) {
-        if (identifier === 'Admin' || identifier === 'admin@dev.com') {
-            showToast('❌ Cannot delete Admin user');
-            return;
-        }
-        if (!confirm('Delete user: ' + identifier + ' permanently?')) return;
-
-        try {
-            showToast('⏳ Deleting user...');
-            const user = this.allUsers.find(u =>
-                u.email === identifier || u.id === identifier || u.username === identifier
-            );
-            if (!user) { showToast('❌ User not found'); return; }
-
-            if (this.storage.rtdb) {
-                const safeKey = this.storage.emailToKey(user.email || user.id);
-                await this.storage.rtdb.ref('users/' + safeKey).remove();
-                console.log(`✅ User ${identifier} deleted from database`);
-            }
-
-            this.allUsers = this.allUsers.filter(u =>
-                (u.email || u.id || u.username) !== identifier
-            );
-
-            const usersObj = {};
-            this.allUsers.forEach(u => {
-                const safeKey = this.storage.emailToKey(u.email || u.id);
-                usersObj[safeKey] = u;
-            });
-            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
-
-            this.renderUsersList();
-            this.updateLoginRoleDropdown();
-            this.updateSettingsRoleDropdown();
-            showToast(`✅ User "${identifier}" deleted successfully!`);
-
-        } catch (error) {
-            console.error('❌ Delete user error:', error);
-            showToast('❌ ' + error.message);
-        }
-    }
-
-    // ===== BANK =====
-    updateBankFirmSelect() {
-        const select = document.getElementById('bank_firm_select');
-        if (!select) return;
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">-- Select Firm --</option>';
-        Object.keys(this.allFirms).forEach(f => {
-            if (this.allFirms[f]) {
-                select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
-            }
-        });
-        if (currentVal) select.value = currentVal;
-    }
-
-    loadBankAccounts() {
-        const firmKey = document.getElementById('bank_firm_select')?.value;
-        if (!firmKey) {
-            const container = document.getElementById('bank_accounts_list');
-            if (container) container.innerHTML = '<p style="color:#999;">Select a firm to view banks</p>';
-            return;
-        }
-        this.renderBankAccountsList(firmKey);
-    }
-
-    renderBankAccountsList(firmKey) {
-        const container = document.getElementById('bank_accounts_list');
-        if (!container) return;
-        const banks = this.bankAccounts[firmKey] || [];
-        if (banks.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No bank accounts added for this firm</p>';
-            return;
-        }
-        container.innerHTML = banks.map((b, index) => `
-            <div class="bank-card" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; background:#fff;">
-                <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:13px;">
-                    <span><strong>🏦 ${b.name}</strong></span>
-                    <span>🔢 ${b.account}</span>
-                    <span>🏛️ ${b.ifsc || 'N/A'}</span>
-                </div>
-                <button class="btn-action btn-del" onclick="app.deleteBankAccount('${firmKey}', ${index})" title="Delete Bank">✖</button>
-            </div>
-        `).join('');
-    }
-
-    async addBankAccount() {
-        if (!this.canAddBank()) { showToast('❌ No permission to add bank'); return; }
-        const firmKey = document.getElementById('bank_firm_select').value;
-        const name = document.getElementById('new_bank_name').value.trim();
-        const account = document.getElementById('new_bank_account').value.trim();
-        const ifsc = document.getElementById('new_bank_ifsc').value.trim();
-
-        if (!firmKey) { showToast('❌ Please select a firm first'); return; }
-        if (!name) { showToast('❌ Please enter bank name'); return; }
-        if (!account) { showToast('❌ Please enter account number'); return; }
-
-        if (!this.bankAccounts[firmKey]) this.bankAccounts[firmKey] = [];
-        this.bankAccounts[firmKey].push({ name, account, ifsc });
-        await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-
-        this.renderBankAccountsList(firmKey);
-        this.updateBankDropdown();
-        this.updateBankFirmSelect();
-        document.getElementById('new_bank_name').value = '';
-        document.getElementById('new_bank_account').value = '';
-        document.getElementById('new_bank_ifsc').value = '';
-        showToast('✅ Bank account added successfully!');
-    }
-
-    async deleteBankAccount(firmKey, index) {
-        if (!confirm('Delete this bank account?')) return;
-        if (this.bankAccounts[firmKey]) {
-            this.bankAccounts[firmKey].splice(index, 1);
-            if (this.bankAccounts[firmKey].length === 0) delete this.bankAccounts[firmKey];
-        }
-        await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        this.renderBankAccountsList(firmKey);
-        this.updateBankDropdown();
-        this.updateBankFirmSelect();
-        showToast('✅ Bank account deleted');
-    }
-
-    // ===== PERMISSIONS =====
-    canAddParty() { return this.userPermissions.party_add || this.currentRole === 'Admin'; }
-    canAddBank() { return this.userPermissions.bank_add || this.currentRole === 'Admin'; }
-    canAddExpense() { return this.userPermissions.expense_add || this.currentRole === 'Admin'; }
-    canExportImport() { return this.userPermissions.export_import || this.currentRole === 'Admin'; }
-    canEditFirm() { return this.userPermissions.edit_firm || this.currentRole === 'Admin'; }
-
-    // ============================================================
-    // ✅ NEW: CONTRA VOUCHER FUNCTIONS
-    // ============================================================
-
-        generateContraVoucherNo() {
-        // ✅ FIX: Firm dropdown से firm लो, fallback currentFirm
-        let firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
-        
-        if (!firmKey && this.allFirms) {
-            const firms = Object.keys(this.allFirms);
-            if (firms.length > 0) firmKey = firms[0];
-        }
-
-        const firm = this.allFirms[firmKey];
-        const el = document.getElementById('ctr_vno');
-        if (!el) return;
-
-        if (!firm) {
-            el.value = 'Select Firm First';
-            return;
-        }
-
-        const fy = getFinancialYear();
-        const ctrCount = (this.voucherCounter['CTR_' + firmKey] || 0) + 1;
-        el.value = `${firm.short}/CTR/${fy}/${String(ctrCount).padStart(3, '0')}`;
-    }
-            populateContraAccounts() {
-        // ✅ FIX: Firm dropdown से firm लो
-        let firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
-        if (!firmKey && this.allFirms) {
-            const firms = Object.keys(this.allFirms);
-            if (firms.length > 0) firmKey = firms[0];
-        }
-    // ============================================================
-    // ✅ NEW: Firm dropdown functions for Contra + Receipt
-    // ============================================================
+    // ===== CONTRA VOUCHER =====
 
     populateContraFirms() {
         const select = document.getElementById('ctr_firm');
@@ -1909,13 +1359,11 @@ class App {
         Object.keys(this.allFirms).forEach(f => {
             select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
         });
-        // Auto-select current firm
         if (this.currentFirm) {
             select.value = this.currentFirm;
         } else if (Object.keys(this.allFirms).length > 0) {
             select.value = Object.keys(this.allFirms)[0];
         }
-        // Update accounts + voucher no
         this.onContraFirmChange();
     }
 
@@ -1931,7 +1379,6 @@ class App {
             return;
         }
 
-        // ✅ Accounts load करो
         const banks = this.bankAccounts[firmKey] || [];
 
         if (!Array.isArray(this.accounts)) {
@@ -1959,7 +1406,6 @@ class App {
         if (fromSel) fromSel.innerHTML = options;
         if (toSel) toSel.innerHTML = options;
 
-        // ✅ Voucher No update
         const firm = this.allFirms[firmKey];
         if (firm) {
             const fy = getFinancialYear();
@@ -1969,90 +1415,7 @@ class App {
         }
     }
 
-    populateReceiptFirms() {
-        const select = document.getElementById('rcp_firm');
-        if (!select) return;
-        select.innerHTML = '<option value="">-- Select Firm --</option>';
-        Object.keys(this.allFirms).forEach(f => {
-            select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
-        });
-        // Auto-select current firm
-        if (this.currentFirm) {
-            select.value = this.currentFirm;
-        } else if (Object.keys(this.allFirms).length > 0) {
-            select.value = Object.keys(this.allFirms)[0];
-        }
-        // Update bank + voucher no
-        this.onReceiptFirmChange();
-    }
-
-    onReceiptFirmChange() {
-        const firmKey = document.getElementById('rcp_firm')?.value;
-        if (!firmKey) {
-            const bankSel = document.getElementById('rcp_bank_account');
-            if (bankSel) bankSel.innerHTML = '<option value="">Select Firm First</option>';
-            const vnoEl = document.getElementById('rcp_vno');
-            if (vnoEl) vnoEl.value = 'Select Firm First';
-            return;
-        }
-
-        // ✅ Banks load करो
-        const banks = this.bankAccounts[firmKey] || [];
-        const bankSel = document.getElementById('rcp_bank_account');
-        if (bankSel) {
-            let options = '<option value="">Select Bank</option>';
-            banks.forEach(b => {
-                options += `<option value="${b.name}|${b.account}">${b.name} - ${b.account}</option>`;
-            });
-            bankSel.innerHTML = options;
-        }
-
-        // ✅ Voucher No update
-        const firm = this.allFirms[firmKey];
-        if (firm) {
-            const fy = getFinancialYear();
-            const rcpCount = (this.voucherCounter['RCP_' + firmKey] || 0) + 1;
-            const vnoEl = document.getElementById('rcp_vno');
-            if (vnoEl) vnoEl.value = `${firm.short}/RCP/${fy}/${String(rcpCount).padStart(3, '0')}`;
-        }
-    }
-        const banks = this.bankAccounts[firmKey] || [];
-
-        // ✅ ensure array
-        if (!Array.isArray(this.accounts)) {
-            const acc = this.accounts;
-            if (acc && typeof acc === 'object') {
-                this.accounts = Object.values(acc);
-            } else {
-                this.accounts = [];
-            }
-        }
-
-        const cashAccounts = this.accounts.filter(a => a.type === 'cash' || a.type === 'petty');
-        const bankAccounts = this.accounts.filter(a => a.type === 'bank');
-
-        let options = '<option value="">-- Select Account --</option>';
-        options += '<option value="Cash">💵 Cash in Hand</option>';
-
-        cashAccounts.forEach(a => {
-            options += `<option value="Petty-${a.name}">💵 ${a.name}</option>`;
-        });
-
-        banks.forEach(b => {
-            options += `<option value="Bank-${b.name}|${b.account}">🏦 ${b.name} - ${b.account}</option>`;
-        });
-
-        bankAccounts.forEach(a => {
-            options += `<option value="Bank-${a.name}">🏦 ${a.name}</option>`;
-        });
-
-        const fromSelect = document.getElementById('ctr_from_account');
-        const toSelect = document.getElementById('ctr_to_account');
-        if (fromSelect) fromSelect.innerHTML = options;
-        if (toSelect) toSelect.innerHTML = options;
-    }
-        async saveContraVoucher() {
-        // ✅ FIX: Firm dropdown से firm लो
+    async saveContraVoucher() {
         const firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
         if (!firmKey) { showToast('❌ Please select Firm'); return; }
 
@@ -2106,6 +1469,9 @@ class App {
     }
 
     resetContraForm() {
+        const editIdEl = document.getElementById('ctr_edit_id');
+        if (editIdEl) editIdEl.value = '';
+
         const date = document.getElementById('ctr_date');
         if (date) date.value = getToday();
         const from = document.getElementById('ctr_from_account');
@@ -2118,8 +1484,95 @@ class App {
         if (ref) ref.value = '';
         const narr = document.getElementById('ctr_narration');
         if (narr) narr.value = '';
-        this.generateContraVoucherNo();
+
+        const submitBtn = document.querySelector('#module-contra .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Submit Contra';
+
+        this.onContraFirmChange();
         showToast('🔄 Contra form reset');
+    }
+
+    editContra(id) {
+        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to edit');
+            return;
+        }
+        const v = this.db.find(x => x.id === id);
+        if (!v || v.type !== 'CTR') { showToast('Voucher not found'); return; }
+
+        const ctrFirmSel = document.getElementById('ctr_firm');
+        if (ctrFirmSel) {
+            ctrFirmSel.value = v.firmKey || '';
+            this.onContraFirmChange();
+        }
+
+        document.getElementById('ctr_edit_id').value = v.id;
+        document.getElementById('ctr_date').value = v.date;
+        document.getElementById('ctr_from_account').value = v.fromAccount || '';
+        document.getElementById('ctr_to_account').value = v.toAccount || '';
+        document.getElementById('ctr_amount').value = v.amount;
+        document.getElementById('ctr_reference').value = v.reference || '';
+        document.getElementById('ctr_narration').value = v.narration || '';
+        document.getElementById('ctr_vno').value = v.vno;
+
+        const submitBtn = document.querySelector('#module-contra .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Update Contra';
+
+        this.switchModule('contra');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('✏️ Edit mode — Modify and submit');
+    }
+
+    async deleteContra(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to delete');
+            return;
+        }
+        if (!confirm('Delete this contra voucher?')) return;
+
+        const v = this.db.find(x => x.id === id);
+        if (!v) { showToast('Voucher not found'); return; }
+
+        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
+        this.deletedVouchers.push(deletedV);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        await this.storage.deleteVoucher(id);
+        this.db = this.db.filter(x => x.id !== id);
+
+        this.renderContraList();
+        this.renderAll();
+        showToast('✅ Contra deleted');
+    }
+
+    async recoverContra(id) {
+        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to recover');
+            return;
+        }
+        if (!confirm('Recover this contra voucher?')) return;
+
+        const index = this.deletedVouchers.findIndex(v => v.id === id && v.type === 'CTR');
+        if (index === -1) { showToast('❌ Deleted contra not found'); return; }
+
+        const voucher = this.deletedVouchers[index];
+        voucher.status = 'active';
+        delete voucher.deletedBy;
+        delete voucher.deletedAt;
+
+        this.deletedVouchers.splice(index, 1);
+        this.db.push(voucher);
+
+        await this.storage.saveVoucher(voucher);
+        await this.storage.save(STORAGE_KEYS.DELETED,
+            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
+        );
+
+        this.renderContraList();
+        this.renderAll();
+        showToast(`✅ Contra ${voucher.vno} recovered!`);
     }
 
     renderContraList() {
@@ -2133,9 +1586,21 @@ class App {
             return;
         }
 
-        tbody.innerHTML = contraVouchers.slice().reverse().slice(0, 20).map(v => {
+        tbody.innerHTML = contraVouchers.slice().reverse().slice(0, 50).map(v => {
             const fromDisplay = (v.fromAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
             const toDisplay = (v.toAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
+
+            let actions = '';
+            if (this.userPermissions.print || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-print" onclick="app.printContraById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
+            }
+            if (this.userPermissions.edit || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-edit" onclick="app.editContra('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
+            }
+            if (this.userPermissions.delete || this.currentRole === 'Admin') {
+                actions += `<button class="btn-action btn-del" onclick="app.deleteContra('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
+            }
+
             return `<tr>
                 <td>${v.date}</td>
                 <td><b>${v.vno}</b></td>
@@ -2143,10 +1608,7 @@ class App {
                 <td>${toDisplay}</td>
                 <td>₹${v.amount.toLocaleString()}</td>
                 <td>${v.narration || '-'}</td>
-                <td>
-                    <button class="btn-action btn-print" onclick="app.printContraById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>
-                    <button class="btn-action btn-del" onclick="app.deleteContra('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-                </td>
+                <td>${actions}</td>
             </tr>`;
         }).join('');
     }
@@ -2198,35 +1660,50 @@ class App {
         }
     }
 
-    async deleteContra(id) {
-        if (!confirm('Delete this contra voucher?')) return;
-        const v = this.db.find(x => x.id === id);
-        if (!v) return;
-        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
-        this.deletedVouchers.push(deletedV);
-        await this.storage.save(STORAGE_KEYS.DELETED, Object.fromEntries(this.deletedVouchers.map(d => [d.id, d])));
-        await this.storage.deleteVoucher(id);
-        this.db = this.db.filter(x => x.id !== id);
-        this.renderContraList();
-        showToast('✅ Contra deleted');
+    // ===== RECEIPT VOUCHER =====
+
+    populateReceiptFirms() {
+        const select = document.getElementById('rcp_firm');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Firm --</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+        });
+        if (this.currentFirm) {
+            select.value = this.currentFirm;
+        } else if (Object.keys(this.allFirms).length > 0) {
+            select.value = Object.keys(this.allFirms)[0];
+        }
+        this.onReceiptFirmChange();
     }
 
-    // ============================================================
-    // ✅ NEW: RECEIPT VOUCHER FUNCTIONS
-    // ============================================================
-
-    generateReceiptVoucherNo() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
-        const firm = this.allFirms[firmKey];
-        if (!firm) {
-            const el = document.getElementById('rcp_vno');
-            if (el) el.value = 'Select Firm First';
+    onReceiptFirmChange() {
+        const firmKey = document.getElementById('rcp_firm')?.value;
+        if (!firmKey) {
+            const bankSel = document.getElementById('rcp_bank_account');
+            if (bankSel) bankSel.innerHTML = '<option value="">Select Firm First</option>';
+            const vnoEl = document.getElementById('rcp_vno');
+            if (vnoEl) vnoEl.value = 'Select Firm First';
             return;
         }
-        const fy = getFinancialYear();
-        const rcpCount = (this.voucherCounter['RCP_' + firmKey] || 0) + 1;
-        const el = document.getElementById('rcp_vno');
-        if (el) el.value = `${firm.short}/RCP/${fy}/${String(rcpCount).padStart(3, '0')}`;
+
+        const banks = this.bankAccounts[firmKey] || [];
+        const bankSel = document.getElementById('rcp_bank_account');
+        if (bankSel) {
+            let options = '<option value="">Select Bank</option>';
+            banks.forEach(b => {
+                options += `<option value="${b.name}|${b.account}">${b.name} - ${b.account}</option>`;
+            });
+            bankSel.innerHTML = options;
+        }
+
+        const firm = this.allFirms[firmKey];
+        if (firm) {
+            const fy = getFinancialYear();
+            const rcpCount = (this.voucherCounter['RCP_' + firmKey] || 0) + 1;
+            const vnoEl = document.getElementById('rcp_vno');
+            if (vnoEl) vnoEl.value = `${firm.short}/RCP/${fy}/${String(rcpCount).padStart(3, '0')}`;
+        }
     }
 
     toggleReceiptMode() {
@@ -2238,449 +1715,12 @@ class App {
         if (bankField) bankField.style.display = (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
         if (upiField) upiField.style.display = (mode === 'UPI') ? 'block' : 'none';
         if (chequeField) chequeField.style.display = (mode === 'Cheque') ? 'block' : 'none';
-
-        if (mode === 'Bank' || mode === 'Cheque') this.populateReceiptBankDropdown();
-    }
-
-    populateReceiptBankDropdown() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
-        const banks = this.bankAccounts[firmKey] || [];
-        const select = document.getElementById('rcp_bank_account');
-        if (!select) return;
-
-        let options = '<option value="">Select Bank</option>';
-        banks.forEach(b => {
-            options += `<option value="${b.name}|${b.account}">${b.name} - ${b.account}</option>`;
-        });
-        select.innerHTML = options;
-    }
-
-           async saveReceiptVoucher() {
-        // ✅ FIX: Firm dropdown से firm लो
-        const firmKey = document.getElementById('rcp_firm')?.value || this.currentFirm || 'DevVidyalaya';
-        if (!firmKey) { showToast('❌ Please select Firm'); return; }
-        const date = document.getElementById('rcp_date').value;
-        const studentName = document.getElementById('rcp_student_name').value.trim();
-        const fatherName = document.getElementById('rcp_father_name').value.trim();
-        const studentClass = document.getElementById('rcp_class').value.trim();
-        const roll = document.getElementById('rcp_roll').value.trim();
-        const mobile = document.getElementById('rcp_mobile').value.trim();
-        const category = document.getElementById('rcp_category').value;
-        const amount = parseFloat(document.getElementById('rcp_amount').value) || 0;
-        const mode = document.getElementById('rcp_mode').value;
-        const bankVal = document.getElementById('rcp_bank_account')?.value || '';
-        const upiApp = document.getElementById('rcp_upi_app')?.value || '';
-        const chequeNo = document.getElementById('rcp_cheque_no')?.value?.trim() || '';
-        const chequeDate = document.getElementById('rcp_cheque_date')?.value || '';
-        const chequeBank = document.getElementById('rcp_cheque_bank')?.value?.trim() || '';
-        const narration = document.getElementById('rcp_narration').value.trim();
-        const vno = document.getElementById('rcp_vno').value;
-
-        if (!date) { showToast('❌ Please select date'); return; }
-        if (!studentName) { showToast('❌ Enter student name'); return; }
-        if (amount <= 0) { showToast('❌ Enter valid amount'); return; }
-        if (mode === 'Cheque' && !chequeNo) { showToast('❌ Enter cheque number'); return; }
-
-        let bankName = '', bankAccount = '';
-        if (bankVal) {
-            const parts = bankVal.split('|');
-            bankName = parts[0] || '';
-            bankAccount = parts[1] || '';
-        }
-
-        const voucher = {
-            id: generateId(),
-            vno, date, firmKey,
-            firmName: this.allFirms[firmKey]?.name || firmKey,
-            type: 'RCP',
-            studentName, fatherName, studentClass, roll, mobile, category,
-            amount, mode,
-            bankName, bankAccount, upiApp,
-            chequeNo, chequeDate, chequeBank,
-            chequeStatus: mode === 'Cheque' ? 'pending' : null,
-            narration,
-            status: 'active',
-            createdBy: this.currentUser,
-            createdAt: new Date().toISOString(),
-            timestamp: Date.now()
-        };
-
-        await this.storage.saveVoucher(voucher);
-
-        if (!this.voucherCounter['RCP_' + firmKey]) this.voucherCounter['RCP_' + firmKey] = 0;
-        this.voucherCounter['RCP_' + firmKey]++;
-        await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
-
-        this.db.push(voucher);
-        this.resetReceiptForm();
-        this.renderReceiptList();
-        showToast('✅ Receipt voucher submitted!');
-        setTimeout(() => this.printReceiptById(voucher.id), 500);
-    }
-
-    resetReceiptForm() {
-        const fields = ['rcp_student_name', 'rcp_father_name', 'rcp_class', 'rcp_roll', 'rcp_mobile', 'rcp_cheque_no', 'rcp_cheque_bank', 'rcp_narration'];
-        fields.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        const dateEl = document.getElementById('rcp_date');
-        if (dateEl) dateEl.value = getToday();
-        const amt = document.getElementById('rcp_amount');
-        if (amt) amt.value = '0';
-        const mode = document.getElementById('rcp_mode');
-        if (mode) mode.value = 'Cash';
-        this.toggleReceiptMode();
-        this.generateReceiptVoucherNo();
-        showToast('🔄 Receipt form reset');
-    }
-
-    renderReceiptList() {
-        const tbody = document.getElementById('rcp_list');
-        if (!tbody) return;
-
-        const receipts = this.db.filter(v => v.type === 'RCP' && v.status !== 'deleted');
-
-        if (receipts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999; padding:20px;">No receipts yet</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = receipts.slice().reverse().slice(0, 20).map(v => {
-            let statusBadge = '<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">✅ Active</span>';
-            if (v.mode === 'Cheque' && v.chequeStatus === 'pending') {
-                statusBadge = '<span style="background:#f59e0b; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">⏳ Pending</span>';
-            } else if (v.chequeStatus === 'cleared') {
-                statusBadge = '<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">✅ Cleared</span>';
-            } else if (v.chequeStatus === 'bounced') {
-                statusBadge = '<span style="background:#dc2626; color:white; padding:2px 8px; border-radius:10px; font-size:10px;">❌ Bounced</span>';
-            }
-
-            let chequeBtn = '';
-            if (v.mode === 'Cheque' && v.chequeStatus === 'pending') {
-                chequeBtn = `<button class="btn-action" onclick="app.clearCheque('${v.id}')" title="Mark as Cleared" style="background:#16a34a; color:white; padding:4px 8px; border:none; border-radius:4px; font-size:11px; cursor:pointer;">✔ Clear</button>`;
-            }
-
-            return `<tr>
-                <td>${v.date}</td>
-                <td><b>${v.vno}</b></td>
-                <td>${v.studentName}${v.fatherName ? ' (s/o ' + v.fatherName + ')' : ''}</td>
-                <td>${v.studentClass || '-'}</td>
-                <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.mode}${v.chequeNo ? ' #' + v.chequeNo : ''}</td>
-                <td>${statusBadge}</td>
-                <td>
-                    <button class="btn-action btn-print" onclick="app.printReceiptById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>
-                    ${chequeBtn}
-                    <button class="btn-action btn-del" onclick="app.deleteReceipt('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`;
-        }).join('');
-    }
-
-    async printReceiptById(id) {
-        const voucher = this.db.find(v => v.id === id);
-        if (!voucher) { showToast('❌ Receipt not found'); return; }
-        try {
-            const firm = this.allFirms[voucher.firmKey] || {};
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html><head><title>Receipt ${voucher.vno}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    .receipt { max-width: 700px; margin: 0 auto; border: 2px solid #000; padding: 20px; }
-                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
-                    .header h2 { margin: 0; color: #1e293b; }
-                    .title { text-align: center; font-size: 20px; font-weight: bold; margin: 10px 0; text-decoration: underline; }
-                    .row { display: flex; margin-bottom: 10px; }
-                    .row .label { font-weight: bold; width: 180px; }
-                    .row .value { flex: 1; }
-                    .amount-box { background: #f0f9ff; padding: 12px; border: 1px solid #0284c7; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-weight: bold; }
-                    .footer { margin-top: 30px; display: flex; justify-content: space-between; }
-                    .copy-label { text-align: right; font-size: 12px; color: #666; }
-                </style></head>
-                <body>
-                    <div class="receipt">
-                        <div class="header">
-                            <h2>${firm.name || 'Firm'}</h2>
-                            <p>${firm.addr || ''}<br>📞 ${firm.mobile || ''} | ✉ ${firm.email || ''}</p>
-                        </div>
-                        <div class="title">FEE RECEIPT</div>
-                        <div class="copy-label">Original Copy</div>
-
-                        <div class="row"><span class="label">Receipt No:</span><span class="value">${voucher.vno}</span></div>
-                        <div class="row"><span class="label">Date:</span><span class="value">${voucher.date}</span></div>
-                        <div class="row"><span class="label">Student Name:</span><span class="value">${voucher.studentName}</span></div>
-                        ${voucher.fatherName ? `<div class="row"><span class="label">Father Name:</span><span class="value">${voucher.fatherName}</span></div>` : ''}
-                        <div class="row"><span class="label">Class:</span><span class="value">${voucher.studentClass || '-'}${voucher.roll ? ' (Roll: ' + voucher.roll + ')' : ''}</span></div>
-                        ${voucher.mobile ? `<div class="row"><span class="label">Mobile:</span><span class="value">${voucher.mobile}</span></div>` : ''}
-                        <div class="row"><span class="label">Category:</span><span class="value">${voucher.category}</span></div>
-                        <div class="row"><span class="label">Mode:</span><span class="value">${voucher.mode}${voucher.chequeNo ? ' - Cheque #' + voucher.chequeNo + ' (' + (voucher.chequeBank || '') + ')' : ''}${voucher.bankName ? ' - ' + voucher.bankName : ''}${voucher.upiApp ? ' - ' + voucher.upiApp : ''}</span></div>
-
-                        <div class="amount-box">Amount Received: ₹ ${voucher.amount.toLocaleString()}</div>
-
-                        ${voucher.narration ? `<div class="row"><span class="label">Narration:</span><span class="value">${voucher.narration}</span></div>` : ''}
-
-                        <div class="footer">
-                            <div>Received By: ${voucher.createdBy}</div>
-                            <div>Signature: _____________</div>
-                        </div>
-                    </div>
-                </body></html>
-            `);
-            printWindow.document.close();
-            setTimeout(() => printWindow.print(), 500);
-        } catch (error) {
-            console.error('Print error:', error);
-            showToast('❌ Print failed: ' + error.message);
-        }
-    }
-
-    async clearCheque(id) {
-        if (!confirm('Mark this cheque as CLEARED?')) return;
-        const v = this.db.find(x => x.id === id);
-        if (!v) return;
-        v.chequeStatus = 'cleared';
-        v.clearedAt = new Date().toISOString();
-        v.clearedBy = this.currentUser;
-        await this.storage.saveVoucher(v);
-        this.renderReceiptList();
-        showToast('✅ Cheque marked as cleared');
-    }
-
-    async deleteReceipt(id) {
-        if (!confirm('Delete this receipt?')) return;
-        const v = this.db.find(x => x.id === id);
-        if (!v) return;
-        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
-        this.deletedVouchers.push(deletedV);
-        await this.storage.save(STORAGE_KEYS.DELETED, Object.fromEntries(this.deletedVouchers.map(d => [d.id, d])));
-        await this.storage.deleteVoucher(id);
-        this.db = this.db.filter(x => x.id !== id);
-        this.renderReceiptList();
-        showToast('✅ Receipt deleted');
-    }
-    // ============================================================
-    // ✅ PART 3: CONTRA VOUCHER — Edit / Delete / Recover
-    // ============================================================
-
-    editContra(id) {
-        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to edit');
-            return;
-        }
-        const v = this.db.find(x => x.id === id);
-        if (!v || v.type !== 'CTR') { showToast('Voucher not found'); return; }
-
-        // Form fill करो
-        document.getElementById('ctr_edit_id').value = v.id;
-        document.getElementById('ctr_date').value = v.date;
-        document.getElementById('ctr_from_account').value = v.fromAccount || '';
-        document.getElementById('ctr_to_account').value = v.toAccount || '';
-        document.getElementById('ctr_amount').value = v.amount;
-        document.getElementById('ctr_reference').value = v.reference || '';
-        document.getElementById('ctr_narration').value = v.narration || '';
-        document.getElementById('ctr_vno').value = v.vno;
-
-        // Button label change
-        const submitBtn = document.querySelector('#module-contra .btn-login');
-        if (submitBtn) submitBtn.innerHTML = '💾 Update Contra';
-
-        // Module switch करो
-        this.switchModule('contra');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        showToast('✏️ Edit mode — Modify and submit');
-    }
-
-    async saveContraVoucher() {
-        // ✅ FIX: Edit + New दोनों handle करो
-        const firmKey = this.currentFirm || 'DevVidyalaya';
-        const editId = document.getElementById('ctr_edit_id')?.value || '';
-        const date = document.getElementById('ctr_date').value;
-        const fromAcc = document.getElementById('ctr_from_account').value;
-        const toAcc = document.getElementById('ctr_to_account').value;
-        const amount = parseFloat(document.getElementById('ctr_amount').value) || 0;
-        const reference = document.getElementById('ctr_reference').value.trim();
-        const narration = document.getElementById('ctr_narration').value.trim();
-        const vno = document.getElementById('ctr_vno').value;
-
-        if (!date) { showToast('❌ Please select date'); return; }
-        if (!fromAcc) { showToast('❌ Please select From Account'); return; }
-        if (!toAcc) { showToast('❌ Please select To Account'); return; }
-        if (fromAcc === toAcc) { showToast('❌ From and To accounts cannot be same'); return; }
-        if (amount <= 0) { showToast('❌ Please enter valid amount'); return; }
-
-        const voucher = {
-            id: editId || generateId(),
-            vno, date, firmKey,
-            firmName: this.allFirms[firmKey]?.name || firmKey,
-            type: 'CTR',
-            fromAccount: fromAcc,
-            toAccount: toAcc,
-            amount, reference, narration,
-            status: 'active',
-            createdBy: this.currentUser,
-            createdAt: editId ? (this.db.find(x => x.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
-            updatedAt: editId ? new Date().toISOString() : null,
-            timestamp: Date.now()
-        };
-
-        await this.storage.saveVoucher(voucher);
-
-        if (editId) {
-            // ✅ Edit mode — existing update करो
-            const idx = this.db.findIndex(x => x.id === editId);
-            if (idx !== -1) this.db[idx] = voucher;
-            showToast('✅ Contra updated!');
-        } else {
-            // ✅ New mode — counter बढ़ाओ
-            if (!this.voucherCounter['CTR_' + firmKey]) this.voucherCounter['CTR_' + firmKey] = 0;
-            this.voucherCounter['CTR_' + firmKey]++;
-            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
-            this.db.push(voucher);
-            showToast('✅ Contra voucher submitted!');
-        }
-
-        this.resetContraForm();
-        this.renderContraList();
-        setTimeout(() => this.printContraById(voucher.id), 500);
-    }
-
-    resetContraForm() {
-        const editIdEl = document.getElementById('ctr_edit_id');
-        if (editIdEl) editIdEl.value = '';
-
-        const date = document.getElementById('ctr_date');
-        if (date) date.value = getToday();
-        const from = document.getElementById('ctr_from_account');
-        if (from) from.value = '';
-        const to = document.getElementById('ctr_to_account');
-        if (to) to.value = '';
-        const amt = document.getElementById('ctr_amount');
-        if (amt) amt.value = '0';
-        const ref = document.getElementById('ctr_reference');
-        if (ref) ref.value = '';
-        const narr = document.getElementById('ctr_narration');
-        if (narr) narr.value = '';
-
-        const submitBtn = document.querySelector('#module-contra .btn-login');
-        if (submitBtn) submitBtn.innerHTML = '💾 Submit Contra';
-
-        this.generateContraVoucherNo();
-    }
-
-    async deleteContra(id) {
-        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to delete');
-            return;
-        }
-        if (!confirm('Delete this contra voucher?')) return;
-
-        const v = this.db.find(x => x.id === id);
-        if (!v) { showToast('Voucher not found'); return; }
-
-        // ✅ Deleted list में add करो
-        const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
-        this.deletedVouchers.push(deletedV);
-        await this.storage.save(STORAGE_KEYS.DELETED,
-            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
-        );
-
-        // ✅ Active से remove
-        await this.storage.deleteVoucher(id);
-        this.db = this.db.filter(x => x.id !== id);
-
-        this.renderContraList();
-        this.renderAll();
-        showToast('✅ Contra deleted');
-    }
-
-    async recoverContra(id) {
-        if (!this.userPermissions.delete && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to recover');
-            return;
-        }
-        if (!confirm('Recover this contra voucher?')) return;
-
-        const index = this.deletedVouchers.findIndex(v => v.id === id && v.type === 'CTR');
-        if (index === -1) { showToast('❌ Deleted contra not found'); return; }
-
-        const voucher = this.deletedVouchers[index];
-        voucher.status = 'active';
-        delete voucher.deletedBy;
-        delete voucher.deletedAt;
-
-        this.deletedVouchers.splice(index, 1);
-        this.db.push(voucher);
-
-        await this.storage.saveVoucher(voucher);
-        await this.storage.save(STORAGE_KEYS.DELETED,
-            Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
-        );
-
-        this.renderContraList();
-        this.renderAll();
-        showToast(`✅ Contra ${voucher.vno} recovered!`);
-    }
-
-    // ============================================================
-    // ✅ PART 3: RECEIPT VOUCHER — Edit / Delete / Recover
-    // ============================================================
-
-    editReceipt(id) {
-        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to edit');
-            return;
-        }
-        const v = this.db.find(x => x.id === id);
-        if (!v || v.type !== 'RCP') { showToast('Receipt not found'); return; }
-
-        // Form fill करो
-        document.getElementById('rcp_edit_id').value = v.id;
-        document.getElementById('rcp_date').value = v.date;
-        document.getElementById('rcp_student_name').value = v.studentName || '';
-        document.getElementById('rcp_father_name').value = v.fatherName || '';
-        document.getElementById('rcp_class').value = v.studentClass || '';
-        document.getElementById('rcp_roll').value = v.roll || '';
-        document.getElementById('rcp_mobile').value = v.mobile || '';
-        document.getElementById('rcp_category').value = v.category || 'Student Fee';
-        document.getElementById('rcp_amount').value = v.amount;
-        document.getElementById('rcp_mode').value = v.mode || 'Cash';
-        document.getElementById('rcp_vno').value = v.vno;
-        document.getElementById('rcp_narration').value = v.narration || '';
-
-        // Mode toggle
-        this.toggleReceiptMode();
-
-        // Bank select करो
-        if (v.bankName && v.bankAccount) {
-            const bankVal = v.bankName + '|' + v.bankAccount;
-            const bankSel = document.getElementById('rcp_bank_account');
-            if (bankSel) bankSel.value = bankVal;
-        }
-        if (v.upiApp) {
-            const upiSel = document.getElementById('rcp_upi_app');
-            if (upiSel) upiSel.value = v.upiApp;
-        }
-        if (v.mode === 'Cheque') {
-            document.getElementById('rcp_cheque_no').value = v.chequeNo || '';
-            document.getElementById('rcp_cheque_date').value = v.chequeDate || '';
-            document.getElementById('rcp_cheque_bank').value = v.chequeBank || '';
-        }
-
-        // Button label change
-        const submitBtn = document.querySelector('#module-receipt .btn-login');
-        if (submitBtn) submitBtn.innerHTML = '💾 Update Receipt';
-
-        // Module switch करो
-        this.switchModule('receipt');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        showToast('✏️ Edit mode — Modify and submit');
     }
 
     async saveReceiptVoucher() {
-        // ✅ FIX: Edit + New दोनों handle करो
-        const firmKey = this.currentFirm || 'DevVidyalaya';
+        const firmKey = document.getElementById('rcp_firm')?.value || this.currentFirm || 'DevVidyalaya';
+        if (!firmKey) { showToast('❌ Please select Firm'); return; }
+
         const editId = document.getElementById('rcp_edit_id')?.value || '';
         const date = document.getElementById('rcp_date').value;
         const studentName = document.getElementById('rcp_student_name').value.trim();
@@ -2770,7 +1810,60 @@ class App {
         if (submitBtn) submitBtn.innerHTML = '💾 Submit Receipt';
 
         this.toggleReceiptMode();
-        this.generateReceiptVoucherNo();
+        this.onReceiptFirmChange();
+        showToast('🔄 Receipt form reset');
+    }
+
+    editReceipt(id) {
+        if (!this.userPermissions.edit && this.currentRole !== 'Admin') {
+            showToast('❌ No permission to edit');
+            return;
+        }
+        const v = this.db.find(x => x.id === id);
+        if (!v || v.type !== 'RCP') { showToast('Receipt not found'); return; }
+
+        const rcpFirmSel = document.getElementById('rcp_firm');
+        if (rcpFirmSel) {
+            rcpFirmSel.value = v.firmKey || '';
+            this.onReceiptFirmChange();
+        }
+
+        document.getElementById('rcp_edit_id').value = v.id;
+        document.getElementById('rcp_date').value = v.date;
+        document.getElementById('rcp_student_name').value = v.studentName || '';
+        document.getElementById('rcp_father_name').value = v.fatherName || '';
+        document.getElementById('rcp_class').value = v.studentClass || '';
+        document.getElementById('rcp_roll').value = v.roll || '';
+        document.getElementById('rcp_mobile').value = v.mobile || '';
+        document.getElementById('rcp_category').value = v.category || 'Student Fee';
+        document.getElementById('rcp_amount').value = v.amount;
+        document.getElementById('rcp_mode').value = v.mode || 'Cash';
+        document.getElementById('rcp_vno').value = v.vno;
+        document.getElementById('rcp_narration').value = v.narration || '';
+
+        this.toggleReceiptMode();
+
+        if (v.bankName && v.bankAccount) {
+            const bankVal = v.bankName + '|' + v.bankAccount;
+            const bankSel = document.getElementById('rcp_bank_account');
+            if (bankSel) bankSel.value = bankVal;
+        }
+        if (v.upiApp) {
+            const upiSel = document.getElementById('rcp_upi_app');
+            if (upiSel) upiSel.value = v.upiApp;
+        }
+        if (v.mode === 'Cheque') {
+            document.getElementById('rcp_cheque_no').value = v.chequeNo || '';
+            document.getElementById('rcp_cheque_date').value = v.chequeDate || '';
+            document.getElementById('rcp_cheque_bank').value = v.chequeBank || '';
+        }
+
+        const submitBtn = document.querySelector('#module-receipt .btn-login');
+        if (submitBtn) submitBtn.innerHTML = '💾 Update Receipt';
+
+        this.switchModule('receipt');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('✏️ Edit mode — Modify and submit');
     }
 
     async deleteReceipt(id) {
@@ -2825,52 +1918,6 @@ class App {
         showToast(`✅ Receipt ${voucher.vno} recovered!`);
     }
 
-    // ============================================================
-    // ✅ PART 3: UPDATED renderContraList (with Edit + Delete + Print)
-    // ============================================================
-
-    renderContraList() {
-        const tbody = document.getElementById('ctr_list');
-        if (!tbody) return;
-
-        const contraVouchers = this.db.filter(v => v.type === 'CTR' && v.status !== 'deleted');
-
-        if (contraVouchers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999; padding:20px;">No contra vouchers yet</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = contraVouchers.slice().reverse().slice(0, 50).map(v => {
-            const fromDisplay = (v.fromAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
-            const toDisplay = (v.toAccount || '').replace('Bank-', '🏦 ').replace('Petty-', '💵 ');
-
-            let actions = '';
-            if (this.userPermissions.print || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-print" onclick="app.printContraById('${v.id}')" title="Print"><i class="fas fa-print"></i></button>`;
-            }
-            if (this.userPermissions.edit || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-edit" onclick="app.editContra('${v.id}')" title="Edit"><i class="fas fa-edit"></i></button>`;
-            }
-            if (this.userPermissions.delete || this.currentRole === 'Admin') {
-                actions += `<button class="btn-action btn-del" onclick="app.deleteContra('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
-            }
-
-            return `<tr>
-                <td>${v.date}</td>
-                <td><b>${v.vno}</b></td>
-                <td>${fromDisplay}</td>
-                <td>${toDisplay}</td>
-                <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.narration || '-'}</td>
-                <td>${actions}</td>
-            </tr>`;
-        }).join('');
-    }
-
-    // ============================================================
-    // ✅ PART 3: UPDATED renderReceiptList (with Edit + Delete + Print + Clear)
-    // ============================================================
-
     renderReceiptList() {
         const tbody = document.getElementById('rcp_list');
         if (!tbody) return;
@@ -2922,9 +1969,75 @@ class App {
         }).join('');
     }
 
-    // ============================================================
-    // ✅ PART 3: WhatsApp Share for Receipt
-    // ============================================================
+    async clearCheque(id) {
+        if (!confirm('Mark this cheque as CLEARED?')) return;
+        const v = this.db.find(x => x.id === id);
+        if (!v) return;
+        v.chequeStatus = 'cleared';
+        v.clearedAt = new Date().toISOString();
+        v.clearedBy = this.currentUser;
+        await this.storage.saveVoucher(v);
+        this.renderReceiptList();
+        showToast('✅ Cheque marked as cleared');
+    }
+
+    async printReceiptById(id) {
+        const voucher = this.db.find(v => v.id === id);
+        if (!voucher) { showToast('❌ Receipt not found'); return; }
+        try {
+            const firm = this.allFirms[voucher.firmKey] || {};
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html><head><title>Receipt ${voucher.vno}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    .receipt { max-width: 700px; margin: 0 auto; border: 2px solid #000; padding: 20px; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
+                    .header h2 { margin: 0; color: #1e293b; }
+                    .title { text-align: center; font-size: 20px; font-weight: bold; margin: 10px 0; text-decoration: underline; }
+                    .row { display: flex; margin-bottom: 10px; }
+                    .row .label { font-weight: bold; width: 180px; }
+                    .row .value { flex: 1; }
+                    .amount-box { background: #f0f9ff; padding: 12px; border: 1px solid #0284c7; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-weight: bold; }
+                    .footer { margin-top: 30px; display: flex; justify-content: space-between; }
+                    .copy-label { text-align: right; font-size: 12px; color: #666; }
+                </style></head>
+                <body>
+                    <div class="receipt">
+                        <div class="header">
+                            <h2>${firm.name || 'Firm'}</h2>
+                            <p>${firm.addr || ''}<br>📞 ${firm.mobile || ''} | ✉ ${firm.email || ''}</p>
+                        </div>
+                        <div class="title">FEE RECEIPT</div>
+                        <div class="copy-label">Original Copy</div>
+
+                        <div class="row"><span class="label">Receipt No:</span><span class="value">${voucher.vno}</span></div>
+                        <div class="row"><span class="label">Date:</span><span class="value">${voucher.date}</span></div>
+                        <div class="row"><span class="label">Student Name:</span><span class="value">${voucher.studentName}</span></div>
+                        ${voucher.fatherName ? `<div class="row"><span class="label">Father Name:</span><span class="value">${voucher.fatherName}</span></div>` : ''}
+                        <div class="row"><span class="label">Class:</span><span class="value">${voucher.studentClass || '-'}${voucher.roll ? ' (Roll: ' + voucher.roll + ')' : ''}</span></div>
+                        ${voucher.mobile ? `<div class="row"><span class="label">Mobile:</span><span class="value">${voucher.mobile}</span></div>` : ''}
+                        <div class="row"><span class="label">Category:</span><span class="value">${voucher.category}</span></div>
+                        <div class="row"><span class="label">Mode:</span><span class="value">${voucher.mode}${voucher.chequeNo ? ' - Cheque #' + voucher.chequeNo + ' (' + (voucher.chequeBank || '') + ')' : ''}${voucher.bankName ? ' - ' + voucher.bankName : ''}${voucher.upiApp ? ' - ' + voucher.upiApp : ''}</span></div>
+
+                        <div class="amount-box">Amount Received: ₹ ${voucher.amount.toLocaleString()}</div>
+
+                        ${voucher.narration ? `<div class="row"><span class="label">Narration:</span><span class="value">${voucher.narration}</span></div>` : ''}
+
+                        <div class="footer">
+                            <div>Received By: ${voucher.createdBy}</div>
+                            <div>Signature: _____________</div>
+                        </div>
+                    </div>
+                </body></html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 500);
+        } catch (error) {
+            console.error('Print error:', error);
+            showToast('❌ Print failed: ' + error.message);
+        }
+    }
 
     shareReceipt(id) {
         const v = this.db.find(x => x.id === id);
@@ -2932,8 +2045,10 @@ class App {
         const message = `*${v.firmName}*\n\n🎓 *Fee Receipt*\nReceipt No: ${v.vno}\nDate: ${v.date}\nStudent: ${v.studentName}\nClass: ${v.studentClass || '-'}\nAmount: ₹${v.amount.toFixed(2)}\nCategory: ${v.category || '-'}\nMode: ${v.mode}\n\nThank you!`;
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     }
+
+    // ⬇️ अगली file में जारी है...
     // ============================================================
-    // ✅ NEW: DAILY CASH BOOK
+    // ✅ DAILY CASH BOOK
     // ============================================================
 
     async renderCashBook() {
@@ -3074,14 +2189,13 @@ class App {
     }
 
     // ============================================================
-    // ✅ NEW: ACCOUNTS MANAGEMENT
+    // ✅ ACCOUNTS MANAGEMENT (Cash / Bank / Petty)
     // ============================================================
 
-        renderAccountsList() {
+    renderAccountsList() {
         const container = document.getElementById('accounts_list');
         if (!container) return;
 
-        // ✅ FIX: ensure array
         if (!Array.isArray(this.accounts)) {
             const acc = this.accounts;
             if (acc && typeof acc === 'object') {
@@ -3111,12 +2225,12 @@ class App {
         `).join('');
     }
 
-        async addAccount() {
+    async addAccount() {
         const typeEl = document.getElementById('new_account_type');
         const nameEl = document.getElementById('new_account_name');
-        if (!typeEl || !nameEl) { 
-            showToast('❌ Form fields not found'); 
-            return; 
+        if (!typeEl || !nameEl) {
+            showToast('❌ Form fields not found');
+            return;
         }
 
         const type = typeEl.value;
@@ -3124,13 +2238,11 @@ class App {
 
         if (!name) { showToast('❌ Enter account name'); return; }
 
-        // ✅ FIX: ensure array
         if (!Array.isArray(this.accounts)) {
             this.accounts = [];
         }
 
-        // Duplicate check
-        const existing = this.accounts.find(a => 
+        const existing = this.accounts.find(a =>
             a.name && a.name.toLowerCase() === name.toLowerCase()
         );
         if (existing) {
@@ -3150,15 +2262,14 @@ class App {
         console.log('📋 All accounts:', this.accounts);
 
         try {
-            // ✅ Save
-            await this.storage.save('accounts', this.accounts);
+            await this.storage.save(STORAGE_KEYS.ACCOUNTS, this.accounts);
             console.log('✅ Account saved');
 
             this.renderAccountsList();
-            if (typeof this.populateContraAccounts === 'function') {
-                this.populateContraAccounts();
+            if (typeof this.populateContraFirms === 'function') {
+                this.populateContraFirms();
             }
-            
+
             nameEl.value = '';
             showToast('✅ Account "' + name + '" added');
         } catch (err) {
@@ -3169,14 +2280,20 @@ class App {
 
     async deleteAccount(id) {
         if (!confirm('Delete this account?')) return;
+        if (!Array.isArray(this.accounts)) {
+            this.accounts = Object.values(this.accounts || {});
+        }
         this.accounts = this.accounts.filter(a => a.id !== id);
         await this.storage.save(STORAGE_KEYS.ACCOUNTS, this.accounts);
         this.renderAccountsList();
+        if (typeof this.populateContraFirms === 'function') {
+            this.populateContraFirms();
+        }
         showToast('✅ Account deleted');
     }
 
     // ============================================================
-    // ✅ NEW: OPENING BALANCES
+    // ✅ OPENING BALANCES
     // ============================================================
 
     loadOpeningBalances() {
@@ -3240,7 +2357,10 @@ class App {
         showToast('✅ Opening balances saved');
     }
 
-    // ===== IMPORT/EXPORT =====
+    // ============================================================
+    // ✅ IMPORT / EXPORT
+    // ============================================================
+
     async importExpenseHeads() {
         if (!this.canExportImport()) { showToast('❌ No permission to import'); return; }
         const fileInput = document.getElementById('importHeadsFile');
@@ -3513,7 +2633,6 @@ class App {
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        // ✅ NEW
         await this.storage.save(STORAGE_KEYS.ACCOUNTS, this.accounts || []);
         await this.storage.save(STORAGE_KEYS.OPENING_BALANCES, this.openingBalances || {});
 
@@ -3562,10 +2681,9 @@ class App {
             }
         });
 
-        // ✅ NEW: module-specific render
         if (module === 'reports') this.renderReports();
-        if (module === 'contra') { this.populateContraAccounts(); this.generateContraVoucherNo(); this.renderContraList(); }
-        if (module === 'receipt') { this.generateReceiptVoucherNo(); this.renderReceiptList(); }
+        if (module === 'contra') { this.populateContraFirms(); this.renderContraList(); }
+        if (module === 'receipt') { this.populateReceiptFirms(); this.renderReceiptList(); }
         if (module === 'cashbook') {
             const cbFirm = document.getElementById('cb_firm');
             if (cbFirm && !cbFirm.value) {
@@ -3599,7 +2717,6 @@ class App {
             this.updateStats();
             this.generateVoucherNo();
             this.updateHeadFilter();
-            // ✅ NEW
             this.renderContraList();
             this.renderReceiptList();
         });
