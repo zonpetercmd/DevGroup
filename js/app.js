@@ -1869,30 +1869,156 @@ class App {
     // ✅ NEW: CONTRA VOUCHER FUNCTIONS
     // ============================================================
 
-    generateContraVoucherNo() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
-        const firm = this.allFirms[firmKey];
-        if (!firm) {
-            const el = document.getElementById('ctr_vno');
-            if (el) el.value = 'Select Firm First';
-            return;
-        }
-        const fy = getFinancialYear();
-        const ctrCount = (this.voucherCounter['CTR_' + firmKey] || 0) + 1;
-        const el = document.getElementById('ctr_vno');
-        if (el) el.value = `${firm.short}/CTR/${fy}/${String(ctrCount).padStart(3, '0')}`;
-    }
-
-        populateContraAccounts() {
-        let firmKey = this.currentFirm || 'DevVidyalaya';
-        if (!this.currentFirm && this.allFirms) {
+        generateContraVoucherNo() {
+        // ✅ FIX: Firm dropdown से firm लो, fallback currentFirm
+        let firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
+        
+        if (!firmKey && this.allFirms) {
             const firms = Object.keys(this.allFirms);
             if (firms.length > 0) firmKey = firms[0];
         }
 
+        const firm = this.allFirms[firmKey];
+        const el = document.getElementById('ctr_vno');
+        if (!el) return;
+
+        if (!firm) {
+            el.value = 'Select Firm First';
+            return;
+        }
+
+        const fy = getFinancialYear();
+        const ctrCount = (this.voucherCounter['CTR_' + firmKey] || 0) + 1;
+        el.value = `${firm.short}/CTR/${fy}/${String(ctrCount).padStart(3, '0')}`;
+    }
+            populateContraAccounts() {
+        // ✅ FIX: Firm dropdown से firm लो
+        let firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
+        if (!firmKey && this.allFirms) {
+            const firms = Object.keys(this.allFirms);
+            if (firms.length > 0) firmKey = firms[0];
+        }
+    // ============================================================
+    // ✅ NEW: Firm dropdown functions for Contra + Receipt
+    // ============================================================
+
+    populateContraFirms() {
+        const select = document.getElementById('ctr_firm');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Firm --</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+        });
+        // Auto-select current firm
+        if (this.currentFirm) {
+            select.value = this.currentFirm;
+        } else if (Object.keys(this.allFirms).length > 0) {
+            select.value = Object.keys(this.allFirms)[0];
+        }
+        // Update accounts + voucher no
+        this.onContraFirmChange();
+    }
+
+    onContraFirmChange() {
+        const firmKey = document.getElementById('ctr_firm')?.value;
+        if (!firmKey) {
+            const fromSel = document.getElementById('ctr_from_account');
+            const toSel = document.getElementById('ctr_to_account');
+            if (fromSel) fromSel.innerHTML = '<option value="">-- Select Firm First --</option>';
+            if (toSel) toSel.innerHTML = '<option value="">-- Select Firm First --</option>';
+            const vnoEl = document.getElementById('ctr_vno');
+            if (vnoEl) vnoEl.value = 'Select Firm First';
+            return;
+        }
+
+        // ✅ Accounts load करो
         const banks = this.bankAccounts[firmKey] || [];
-        
-        // ✅ FIX: ensure array
+
+        if (!Array.isArray(this.accounts)) {
+            const acc = this.accounts;
+            if (acc && typeof acc === 'object') this.accounts = Object.values(acc);
+            else this.accounts = [];
+        }
+        const cashAccounts = this.accounts.filter(a => a.type === 'cash' || a.type === 'petty');
+        const bankAccounts = this.accounts.filter(a => a.type === 'bank');
+
+        let options = '<option value="">-- Select Account --</option>';
+        options += '<option value="Cash">💵 Cash in Hand</option>';
+        cashAccounts.forEach(a => {
+            options += `<option value="Petty-${a.name}">💵 ${a.name}</option>`;
+        });
+        banks.forEach(b => {
+            options += `<option value="Bank-${b.name}|${b.account}">🏦 ${b.name} - ${b.account}</option>`;
+        });
+        bankAccounts.forEach(a => {
+            options += `<option value="Bank-${a.name}">🏦 ${a.name}</option>`;
+        });
+
+        const fromSel = document.getElementById('ctr_from_account');
+        const toSel = document.getElementById('ctr_to_account');
+        if (fromSel) fromSel.innerHTML = options;
+        if (toSel) toSel.innerHTML = options;
+
+        // ✅ Voucher No update
+        const firm = this.allFirms[firmKey];
+        if (firm) {
+            const fy = getFinancialYear();
+            const ctrCount = (this.voucherCounter['CTR_' + firmKey] || 0) + 1;
+            const vnoEl = document.getElementById('ctr_vno');
+            if (vnoEl) vnoEl.value = `${firm.short}/CTR/${fy}/${String(ctrCount).padStart(3, '0')}`;
+        }
+    }
+
+    populateReceiptFirms() {
+        const select = document.getElementById('rcp_firm');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Firm --</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
+        });
+        // Auto-select current firm
+        if (this.currentFirm) {
+            select.value = this.currentFirm;
+        } else if (Object.keys(this.allFirms).length > 0) {
+            select.value = Object.keys(this.allFirms)[0];
+        }
+        // Update bank + voucher no
+        this.onReceiptFirmChange();
+    }
+
+    onReceiptFirmChange() {
+        const firmKey = document.getElementById('rcp_firm')?.value;
+        if (!firmKey) {
+            const bankSel = document.getElementById('rcp_bank_account');
+            if (bankSel) bankSel.innerHTML = '<option value="">Select Firm First</option>';
+            const vnoEl = document.getElementById('rcp_vno');
+            if (vnoEl) vnoEl.value = 'Select Firm First';
+            return;
+        }
+
+        // ✅ Banks load करो
+        const banks = this.bankAccounts[firmKey] || [];
+        const bankSel = document.getElementById('rcp_bank_account');
+        if (bankSel) {
+            let options = '<option value="">Select Bank</option>';
+            banks.forEach(b => {
+                options += `<option value="${b.name}|${b.account}">${b.name} - ${b.account}</option>`;
+            });
+            bankSel.innerHTML = options;
+        }
+
+        // ✅ Voucher No update
+        const firm = this.allFirms[firmKey];
+        if (firm) {
+            const fy = getFinancialYear();
+            const rcpCount = (this.voucherCounter['RCP_' + firmKey] || 0) + 1;
+            const vnoEl = document.getElementById('rcp_vno');
+            if (vnoEl) vnoEl.value = `${firm.short}/RCP/${fy}/${String(rcpCount).padStart(3, '0')}`;
+        }
+    }
+        const banks = this.bankAccounts[firmKey] || [];
+
+        // ✅ ensure array
         if (!Array.isArray(this.accounts)) {
             const acc = this.accounts;
             if (acc && typeof acc === 'object') {
@@ -1911,11 +2037,11 @@ class App {
         cashAccounts.forEach(a => {
             options += `<option value="Petty-${a.name}">💵 ${a.name}</option>`;
         });
-        
+
         banks.forEach(b => {
             options += `<option value="Bank-${b.name}|${b.account}">🏦 ${b.name} - ${b.account}</option>`;
         });
-        
+
         bankAccounts.forEach(a => {
             options += `<option value="Bank-${a.name}">🏦 ${a.name}</option>`;
         });
@@ -1925,8 +2051,12 @@ class App {
         if (fromSelect) fromSelect.innerHTML = options;
         if (toSelect) toSelect.innerHTML = options;
     }
-    async saveContraVoucher() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
+        async saveContraVoucher() {
+        // ✅ FIX: Firm dropdown से firm लो
+        const firmKey = document.getElementById('ctr_firm')?.value || this.currentFirm || 'DevVidyalaya';
+        if (!firmKey) { showToast('❌ Please select Firm'); return; }
+
+        const editId = document.getElementById('ctr_edit_id')?.value || '';
         const date = document.getElementById('ctr_date').value;
         const fromAcc = document.getElementById('ctr_from_account').value;
         const toAcc = document.getElementById('ctr_to_account').value;
@@ -1942,31 +2072,36 @@ class App {
         if (amount <= 0) { showToast('❌ Please enter valid amount'); return; }
 
         const voucher = {
-            id: generateId(),
+            id: editId || generateId(),
             vno, date, firmKey,
             firmName: this.allFirms[firmKey]?.name || firmKey,
             type: 'CTR',
             fromAccount: fromAcc,
             toAccount: toAcc,
-            amount,
-            reference,
-            narration,
+            amount, reference, narration,
             status: 'active',
             createdBy: this.currentUser,
-            createdAt: new Date().toISOString(),
+            createdAt: editId ? (this.db.find(x => x.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+            updatedAt: editId ? new Date().toISOString() : null,
             timestamp: Date.now()
         };
 
         await this.storage.saveVoucher(voucher);
 
-        if (!this.voucherCounter['CTR_' + firmKey]) this.voucherCounter['CTR_' + firmKey] = 0;
-        this.voucherCounter['CTR_' + firmKey]++;
-        await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
+        if (editId) {
+            const idx = this.db.findIndex(x => x.id === editId);
+            if (idx !== -1) this.db[idx] = voucher;
+            showToast('✅ Contra updated!');
+        } else {
+            if (!this.voucherCounter['CTR_' + firmKey]) this.voucherCounter['CTR_' + firmKey] = 0;
+            this.voucherCounter['CTR_' + firmKey]++;
+            await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
+            this.db.push(voucher);
+            showToast('✅ Contra voucher submitted!');
+        }
 
-        this.db.push(voucher);
         this.resetContraForm();
         this.renderContraList();
-        showToast('✅ Contra voucher submitted!');
         setTimeout(() => this.printContraById(voucher.id), 500);
     }
 
@@ -2120,8 +2255,10 @@ class App {
         select.innerHTML = options;
     }
 
-    async saveReceiptVoucher() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
+           async saveReceiptVoucher() {
+        // ✅ FIX: Firm dropdown से firm लो
+        const firmKey = document.getElementById('rcp_firm')?.value || this.currentFirm || 'DevVidyalaya';
+        if (!firmKey) { showToast('❌ Please select Firm'); return; }
         const date = document.getElementById('rcp_date').value;
         const studentName = document.getElementById('rcp_student_name').value.trim();
         const fatherName = document.getElementById('rcp_father_name').value.trim();
