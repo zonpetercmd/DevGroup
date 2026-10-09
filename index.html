@@ -68,7 +68,7 @@
         <!-- Tabs -->
         <div class="module-tabs" id="moduleTabsContainer"></div>
 
-        <!-- ===== CREATE VOUCHER ===== -->
+        <!-- ===== CREATE PAYMENT VOUCHER (EXISTING - UNCHANGED) ===== -->
         <div id="module-transactions" class="module-pane active">
             <div class="form-card">
                 <div class="firm-header" id="firmHeader">
@@ -87,7 +87,7 @@
                     <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
-                    <!-- Expense Head - Search + Dropdown (Read-only input) -->
+                    <!-- Expense Head - Search + Dropdown -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
@@ -97,7 +97,7 @@
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
-                    <!-- Sub Head - Search + Dropdown (Read-only input) -->
+                    <!-- Sub Head -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
@@ -107,7 +107,7 @@
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Firm - Search + Dropdown (Read-only input) -->
+                    <!-- Firm -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
@@ -117,7 +117,7 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
-                    <!-- Party - Search + Dropdown -->
+                    <!-- Party -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
@@ -128,7 +128,7 @@
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
-                    <!-- Payment Mode - Search + Dropdown with Sub-options -->
+                    <!-- Payment Mode -->
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
@@ -138,13 +138,13 @@
                         <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Bank Account - Dynamic Sub-options -->
+                    <!-- Bank Account -->
                     <div id="bank_account_field" style="display:none;">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <!-- UPI Sub-options -->
+                    <!-- UPI -->
                     <div id="upi_options_field" style="display:none;">
                         <label>📱 UPI App</label>
                         <select id="upi_app">
@@ -157,7 +157,7 @@
                         </select>
                     </div>
                     
-                    <!-- Reference No - Optional -->
+                    <!-- Reference No -->
                     <div><label>🔢 Reference No. <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label><input type="text" id="reference_no" placeholder="Optional"></div>
                     
                     <!-- Amount -->
@@ -166,7 +166,7 @@
                     <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <!-- Narration - Full Width -->
+                    <!-- Narration -->
                     <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
@@ -180,7 +180,7 @@
                 </div>
             </div>
             
-            <!-- ===== FILTER - ENHANCED ===== -->
+            <!-- Filter -->
             <div class="filter-card">
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
                     <div><label>🔍 Search</label><input type="text" id="f_search" oninput="renderAll()" placeholder="Search..."></div>
@@ -189,9 +189,7 @@
                     <div><label>💰 Amount Min</label><input type="number" id="f_amount_min" onchange="renderAll()" placeholder="Min"></div>
                     <div><label>💰 Amount Max</label><input type="number" id="f_amount_max" onchange="renderAll()" placeholder="Max"></div>
                     <div><label>📂 Head</label>
-                        <select id="f_head_filter" onchange="renderAll()">
-                            <option value="">All Heads</option>
-                        </select>
+                        <select id="f_head_filter" onchange="renderAll()"><option value="">All Heads</option></select>
                     </div>
                     <div><label>👤 Party</label><input type="text" id="f_party_filter" oninput="renderAll()" placeholder="Party name..."></div>
                     <div><label>💳 Mode</label>
@@ -217,28 +215,185 @@
             <div class="table-res">
                 <table>
                     <thead><tr>
-                        <th>Date</th>
-                        <th>Voucher No</th>
-                        <th>Head</th>
-                        <th>Sub Head</th>
-                        <th>Party</th>
-                        <th>Amount</th>
-                        <th>Mode</th>
-                        <th>Created By</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>Date</th><th>Voucher No</th><th>Head</th><th>Sub Head</th><th>Party</th>
+                        <th>Amount</th><th>Mode</th><th>Created By</th><th>Status</th><th>Actions</th>
                     </tr></thead>
                     <tbody id="v_list"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ===== VOUCHER LIST (formerly Reports) ===== -->
+        <!-- ===== ✅ NEW: CONTRA VOUCHER ===== -->
+        <div id="module-contra" class="module-pane">
+            <div class="form-card">
+                <h4>💱 Create Contra Voucher (Bank ↔ Cash Transfer)</h4>
+                <input type="hidden" id="ctr_edit_id">
+                
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
+                    <div><label>📅 Date</label><input type="date" id="ctr_date"></div>
+                    
+                    <div>
+                        <label>🔄 From Account</label>
+                        <select id="ctr_from_account" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">-- Select From Account --</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label>➡️ To Account</label>
+                        <select id="ctr_to_account" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">-- Select To Account --</option>
+                        </select>
+                    </div>
+                    
+                    <div><label>💰 Amount (₹)</label><input type="number" id="ctr_amount" value="0" step="0.01"></div>
+                    <div><label>🔢 Reference No. (Optional)</label><input type="text" id="ctr_reference" placeholder="Optional"></div>
+                    <div><label>📋 Voucher No.</label><input type="text" id="ctr_vno" readonly></div>
+                    
+                    <div style="grid-column: 1 / -1;">
+                        <label>📝 Narration</label>
+                        <textarea id="ctr_narration" placeholder="Enter details..."></textarea>
+                    </div>
+                </div>
+                
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-login" style="width:auto; padding:10px 25px; background:linear-gradient(135deg,#0891b2,#0e7490);" onclick="saveContraVoucher()">💾 Submit Contra</button>
+                    <button class="btn-action" style="background:#64748b; color:white;" onclick="resetContraForm()">🔄 Reset</button>
+                </div>
+            </div>
+            
+            <!-- Contra List -->
+            <div class="table-res" style="margin-top:20px;">
+                <h4>📋 Recent Contra Vouchers</h4>
+                <table>
+                    <thead><tr>
+                        <th>Date</th><th>Voucher No</th><th>From</th><th>To</th>
+                        <th>Amount</th><th>Narration</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody id="ctr_list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== ✅ NEW: RECEIPT VOUCHER ===== -->
+        <div id="module-receipt" class="module-pane">
+            <div class="form-card">
+                <h4>🧾 Create Receipt Voucher (Fee Receipt)</h4>
+                <input type="hidden" id="rcp_edit_id">
+                
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
+                    <div><label>📅 Date</label><input type="date" id="rcp_date"></div>
+                    <div><label>🎓 Student Name</label><input type="text" id="rcp_student_name" placeholder="Student name"></div>
+                    <div><label>👨 Father Name</label><input type="text" id="rcp_father_name" placeholder="Father name"></div>
+                    
+                    <div><label>🏫 Class</label><input type="text" id="rcp_class" placeholder="5-A"></div>
+                    <div><label>🔢 Roll No.</label><input type="text" id="rcp_roll" placeholder="Optional"></div>
+                    <div><label>📱 Mobile</label><input type="text" id="rcp_mobile" placeholder="Optional"></div>
+                    
+                    <div><label>📂 Category</label>
+                        <select id="rcp_category" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="Student Fee">Student Fee</option>
+                            <option value="Admission Fee">Admission Fee</option>
+                            <option value="Exam Fee">Exam Fee</option>
+                            <option value="Transport Fee">Transport Fee</option>
+                            <option value="Hostel Fee">Hostel Fee</option>
+                            <option value="Donation">Donation</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div><label>💰 Amount (₹)</label><input type="number" id="rcp_amount" value="0" step="0.01"></div>
+                    
+                    <div><label>💳 Mode</label>
+                        <select id="rcp_mode" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;" onchange="toggleReceiptMode()">
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    
+                    <div id="rcp_bank_field" style="display:none;">
+                        <label>🏦 Bank Account</label>
+                        <select id="rcp_bank_account" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">Select Bank</option>
+                        </select>
+                    </div>
+                    
+                    <div id="rcp_upi_field" style="display:none;">
+                        <label>📱 UPI App</label>
+                        <select id="rcp_upi_app" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="GooglePay">GooglePay</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div><label>📋 Receipt No.</label><input type="text" id="rcp_vno" readonly></div>
+                </div>
+                
+                <!-- Cheque Details -->
+                <div id="rcp_cheque_field" style="display:none; margin-top:15px; padding:15px; background:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
+                    <h4 style="margin:0 0 10px 0;">📝 Cheque Details</h4>
+                    <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div><label>Cheque No.</label><input type="text" id="rcp_cheque_no" placeholder="123456"></div>
+                        <div><label>Cheque Date</label><input type="date" id="rcp_cheque_date"></div>
+                        <div><label>Bank Name</label><input type="text" id="rcp_cheque_bank" placeholder="HDFC Bank"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:15px; grid-column:1/-1;">
+                    <label>📝 Narration</label>
+                    <textarea id="rcp_narration" placeholder="Enter details..."></textarea>
+                </div>
+                
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-login" style="width:auto; padding:10px 25px; background:linear-gradient(135deg,#16a34a,#15803d);" onclick="saveReceiptVoucher()">💾 Submit Receipt</button>
+                    <button class="btn-action" style="background:#64748b; color:white;" onclick="resetReceiptForm()">🔄 Reset</button>
+                </div>
+            </div>
+            
+            <!-- Receipt List -->
+            <div class="table-res" style="margin-top:20px;">
+                <h4>📋 Recent Receipt Vouchers</h4>
+                <table>
+                    <thead><tr>
+                        <th>Date</th><th>Receipt No</th><th>Student</th><th>Class</th>
+                        <th>Amount</th><th>Mode</th><th>Status</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody id="rcp_list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== ✅ NEW: DAILY CASH BOOK ===== -->
+        <div id="module-cashbook" class="module-pane">
+            <div class="form-card">
+                <h4>📊 Daily Cash Book (रोकड़ पोता)</h4>
+                
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:15px;">
+                    <div><label>📅 Date</label><input type="date" id="cb_date" onchange="renderCashBook()"></div>
+                    <div><label>🏢 Firm</label>
+                        <select id="cb_firm" onchange="renderCashBook()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">-- Select Firm --</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:end; gap:8px;">
+                        <button class="btn-add" style="background:#16a34a;" onclick="renderCashBook()">🔄 Refresh</button>
+                        <button class="btn-add" style="background:#2563eb;" onclick="printCashBook()">🖨️ Print</button>
+                    </div>
+                </div>
+                
+                <div id="cashbook_content"></div>
+            </div>
+        </div>
+
+        <!-- ===== VOUCHER LIST (EXISTING - UNCHANGED) ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
                 <h4>📋 Voucher List</h4>
                 
-                <!-- ✅ Enhanced Filters -->
                 <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:15px;">
                     <div><label>🔍 Search</label><input type="text" id="r_search" oninput="renderReports()" placeholder="Search..."></div>
                     <div><label>📅 From</label><input type="date" id="r_start" onchange="renderReports()"></div>
@@ -246,9 +401,7 @@
                     <div><label>💰 Amount Min</label><input type="number" id="r_amount_min" onchange="renderReports()" placeholder="Min"></div>
                     <div><label>💰 Amount Max</label><input type="number" id="r_amount_max" onchange="renderReports()" placeholder="Max"></div>
                     <div><label>📂 Head</label>
-                        <select id="r_head_filter" onchange="renderReports()">
-                            <option value="">All Heads</option>
-                        </select>
+                        <select id="r_head_filter" onchange="renderReports()"><option value="">All Heads</option></select>
                     </div>
                     <div><label>👤 Party</label><input type="text" id="r_party_filter" oninput="renderReports()" placeholder="Party name..."></div>
                     <div><label>💳 Mode</label>
@@ -274,7 +427,6 @@
                     </div>
                 </div>
                 
-                <!-- ===== EXPORT/IMPORT BUTTONS - ONLY ONCE ===== -->
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin:15px 0;">
                     <button class="btn-xlsx" onclick="exportAllVouchers()">📎 Export All</button>
                     <button class="btn-xlsx" style="background:#10b981;" onclick="exportActiveVouchers()">📎 Export Active</button>
@@ -319,7 +471,7 @@
     <div class="modal-content" style="max-width: 800px;">
         <h3>⚙️ Admin Settings</h3>
         
-        <!-- ===== FIRMS ===== -->
+        <!-- FIRMS -->
         <h4>🏢 Firms</h4>
         <div id="firms_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -336,7 +488,7 @@
             <input type="text" id="new_firm_pan" placeholder="PAN" style="width:150px;">
         </div>
         
-        <!-- ===== USERS ===== -->
+        <!-- USERS -->
         <h4>👤 Users</h4>
         <div id="users_list"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -346,9 +498,8 @@
             <select id="new_user_firm" style="width:200px;"><option value="">Select Firm</option></select>
             <button class="btn-add" onclick="addUser()">+ Add</button>
         </div>
-        <div style="font-size:11px; color:#64748b; margin-top:5px;">💡 Staff को multiple firms access देने के लिए एक से ज्यादा Staff entries बनाएं</div>
         
-        <!-- ===== PERMISSIONS - UPDATED ===== -->
+        <!-- PERMISSIONS -->
         <h4>🔐 Permissions</h4>
         <div class="permission-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin:10px 0; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
             <label><input type="checkbox" id="perm_print" checked> 🖨️ Print</label>
@@ -364,7 +515,7 @@
             <label><input type="checkbox" id="perm_edit_firm" checked> ✏️ Edit Firm</label>
         </div>
         
-        <!-- ===== EXPENSE HEADS - FIRM WISE ===== -->
+        <!-- EXPENSE HEADS -->
         <h4>📂 Expense Heads</h4>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
             <select id="expense_head_firm" style="width:200px;">
@@ -377,7 +528,7 @@
         </div>
         <div id="heads_list"></div>
         
-        <!-- ===== BANK MANAGEMENT ===== -->
+        <!-- BANK MANAGEMENT -->
         <h4>🏦 Bank Management (Firm Wise)</h4>
         <div style="margin-bottom:10px;">
             <label style="font-size:12px;">Select Firm</label>
@@ -393,7 +544,45 @@
             <button class="btn-add" onclick="app.addBankAccount()">+ Add Bank</button>
         </div>
         
-        <!-- ===== PARTIES - FIRM WISE ===== -->
+        <!-- ===== ✅ NEW: ACCOUNTS MANAGEMENT (CASH / BANK / PETTY) ===== -->
+        <h4>💵 Accounts (Cash / Petty Cash / Bank)</h4>
+        <div id="accounts_list" style="margin-bottom:10px;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; background:#f0fdf4; padding:10px; border-radius:8px; border:1px solid #86efac;">
+            <div>
+                <label style="font-size:11px;">Type</label>
+                <select id="new_account_type" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                    <option value="cash">Cash</option>
+                    <option value="petty">Petty Cash</option>
+                    <option value="bank">Bank</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:11px;">Name</label>
+                <input type="text" id="new_account_name" placeholder="e.g., Petty Cash 3" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            </div>
+            <button class="btn-add" onclick="addAccount()" style="background:#16a34a;">+ Add Account</button>
+        </div>
+        
+        <!-- ===== ✅ NEW: OPENING BALANCES ===== -->
+        <h4>💰 Opening Balances</h4>
+        <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px solid #93c5fd; margin-bottom:15px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div>
+                    <label style="font-size:11px;">Firm</label>
+                    <select id="ob_firm" onchange="loadOpeningBalances()" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1; width:200px;">
+                        <option value="">-- Select Firm --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;">As on Date</label>
+                    <input type="date" id="ob_date" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                </div>
+            </div>
+            <div id="opening_balances_list"></div>
+            <button class="btn-add" style="background:#2563eb; margin-top:10px;" onclick="saveOpeningBalances()">💾 Save Opening Balances</button>
+        </div>
+        
+        <!-- PARTIES -->
         <h4>👤 Parties</h4>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
             <select id="party_firm_filter" onchange="renderPartiesList()" style="width:200px;">
@@ -406,7 +595,7 @@
         </div>
         <div id="parties_list"></div>
         
-        <!-- ===== BULK IMPORT ===== -->
+        <!-- BULK IMPORT -->
         <div style="margin-top:15px; padding:15px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
             <h4>📥 Bulk Import / Export</h4>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
@@ -447,30 +636,17 @@
         <input type="hidden" id="edit_user_identifier">
         
         <div style="display:flex; flex-direction:column; gap:12px;">
-            <div>
-                <label>Email / Username</label>
-                <input type="text" id="edit_user_email" placeholder="Email" required>
-            </div>
-            <div>
-                <label>Password (Leave blank to keep current)</label>
-                <input type="text" id="edit_user_password" placeholder="New password (optional)">
-            </div>
-            <div>
-                <label>Name</label>
-                <input type="text" id="edit_user_name" placeholder="Name">
-            </div>
-            <div>
-                <label>Role</label>
+            <div><label>Email / Username</label><input type="text" id="edit_user_email" required></div>
+            <div><label>Password (Leave blank to keep current)</label><input type="text" id="edit_user_password"></div>
+            <div><label>Name</label><input type="text" id="edit_user_name"></div>
+            <div><label>Role</label>
                 <select id="edit_user_role">
                     <option value="Admin">Admin</option>
                     <option value="Staff">Staff</option>
                 </select>
             </div>
-            <div>
-                <label>Firm</label>
-                <select id="edit_user_firm">
-                    <option value="">-- Select Firm --</option>
-                </select>
+            <div><label>Firm</label>
+                <select id="edit_user_firm"><option value="">-- Select Firm --</option></select>
             </div>
             
             <h4>🔐 Permissions</h4>
@@ -506,7 +682,7 @@
     const app = new App();
     window.app = app;
     
-    // Expose functions to window
+    // Existing functions
     window.openSettings = () => app.openSettings();
     window.logout = () => app.logout();
     window.saveVoucher = () => app.saveVoucher();
@@ -526,7 +702,6 @@
     window.renderPartiesList = () => app.renderPartiesList();
     window.exportFilteredVouchers = () => app.exportFilteredVouchers();
     
-    // ✅ Search + Dropdown Functions
     window.filterExpenseHeads = (v) => app.filterExpenseHeads(v);
     window.filterSubHeads = (v) => app.filterSubHeads(v);
     window.filterFirms = (v) => app.filterFirms(v);
@@ -561,11 +736,33 @@
     window.deleteFirm = (k) => app.deleteFirm(k);
     window.deleteUser = (id) => app.deleteUser(id);
     window.deleteExpenseHead = (h) => app.deleteExpenseHead(h);
-    
-    // ✅ Edit User Functions
     window.editUser = (id) => app.editUser(id);
     window.updateUser = () => app.updateUser();
     window.closeEditUserModal = () => app.closeEditUserModal();
+
+    // ===== ✅ NEW: CONTRA VOUCHER FUNCTIONS =====
+    window.saveContraVoucher = () => app.saveContraVoucher();
+    window.resetContraForm = () => app.resetContraForm();
+    window.printContraById = (id) => app.printContraById(id);
+    window.deleteContra = (id) => app.deleteContra(id);
+
+    // ===== ✅ NEW: RECEIPT VOUCHER FUNCTIONS =====
+    window.saveReceiptVoucher = () => app.saveReceiptVoucher();
+    window.resetReceiptForm = () => app.resetReceiptForm();
+    window.toggleReceiptMode = () => app.toggleReceiptMode();
+    window.printReceiptById = (id) => app.printReceiptById(id);
+    window.deleteReceipt = (id) => app.deleteReceipt(id);
+    window.clearCheque = (id) => app.clearCheque(id);
+
+    // ===== ✅ NEW: CASH BOOK FUNCTIONS =====
+    window.renderCashBook = () => app.renderCashBook();
+    window.printCashBook = () => app.printCashBook();
+
+    // ===== ✅ NEW: ACCOUNTS + OPENING BALANCE =====
+    window.addAccount = () => app.addAccount();
+    window.deleteAccount = (id) => app.deleteAccount(id);
+    window.loadOpeningBalances = () => app.loadOpeningBalances();
+    window.saveOpeningBalances = () => app.saveOpeningBalances();
 
     // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
@@ -574,31 +771,23 @@
                 const wrapper = dropdown.closest('.search-wrapper');
                 if (wrapper) {
                     const input = wrapper.querySelector('input');
-                    if (input && e.target !== input) {
-                        dropdown.style.display = 'none';
-                    }
+                    if (input && e.target !== input) dropdown.style.display = 'none';
                 }
             }
         });
     });
 
-    // ===== KEYBOARD NAVIGATION FOR DROPDOWNS =====
+    // ===== KEYBOARD NAVIGATION =====
     document.addEventListener('keydown', function(e) {
-        // Close dropdowns on Escape
         if (e.key === 'Escape') {
-            document.querySelectorAll('.dropdown-list').forEach(dropdown => {
-                dropdown.style.display = 'none';
-            });
+            document.querySelectorAll('.dropdown-list').forEach(d => d.style.display = 'none');
         }
-        
-        // Arrow down/up navigation for dropdowns
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             const activeDropdown = document.querySelector('.dropdown-list[style*="display: block"]');
             if (activeDropdown) {
                 e.preventDefault();
                 const items = activeDropdown.querySelectorAll('div:not(.no-result)');
                 if (items.length === 0) return;
-                
                 let currentIndex = -1;
                 items.forEach((item, idx) => {
                     if (item.classList.contains('selected')) {
@@ -606,19 +795,12 @@
                         item.classList.remove('selected');
                     }
                 });
-                
-                if (e.key === 'ArrowDown') {
-                    currentIndex = (currentIndex + 1) % items.length;
-                } else {
-                    currentIndex = (currentIndex - 1 + items.length) % items.length;
-                }
-                
+                if (e.key === 'ArrowDown') currentIndex = (currentIndex + 1) % items.length;
+                else currentIndex = (currentIndex - 1 + items.length) % items.length;
                 items[currentIndex].classList.add('selected');
                 items[currentIndex].scrollIntoView({ block: 'nearest' });
             }
         }
-        
-        // Enter to select from dropdown
         if (e.key === 'Enter') {
             const selectedItem = document.querySelector('.dropdown-list[style*="display: block"] .selected');
             if (selectedItem) {
@@ -628,12 +810,7 @@
         }
     });
 
-    // Start App
-    app.init().then(() => {
-        console.log('✅ App Ready!');
-    }).catch(err => {
-        console.error('❌ App Error:', err);
-    });
+    app.init().then(() => console.log('✅ App Ready!')).catch(err => console.error('❌ App Error:', err));
 </script>
 </body>
 </html>
