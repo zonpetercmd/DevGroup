@@ -68,7 +68,7 @@
         <!-- Tabs -->
         <div class="module-tabs" id="moduleTabsContainer"></div>
 
-        <!-- ===== CREATE PAYMENT VOUCHER (EXISTING - UNCHANGED) ===== -->
+        <!-- ===== CREATE PAYMENT VOUCHER ===== -->
         <div id="module-transactions" class="module-pane active">
             <div class="form-card">
                 <div class="firm-header" id="firmHeader">
@@ -82,12 +82,9 @@
                 <h4 id="form-title">📝 Create Payment Voucher</h4>
                 <input type="hidden" id="edit_id">
                 
-                <!-- ✅ ALL SEARCH + DROPDOWN - 3 Columns Grid -->
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
-                    <!-- Date -->
                     <div><label>📅 Date</label><input type="date" id="v_date"></div>
                     
-                    <!-- Expense Head - Search + Dropdown -->
                     <div>
                         <label>📂 Expense Head</label>
                         <div class="search-wrapper">
@@ -97,7 +94,6 @@
                         <input type="hidden" id="expense_head_value">
                     </div>
                     
-                    <!-- Sub Head -->
                     <div>
                         <label>📂 Sub Head</label>
                         <div class="search-wrapper">
@@ -107,7 +103,6 @@
                         <input type="hidden" id="sub_head_value">
                     </div>
                     
-                    <!-- Firm -->
                     <div>
                         <label>🏢 Firm</label>
                         <div class="search-wrapper">
@@ -117,7 +112,6 @@
                         <input type="hidden" id="firm_name_value">
                     </div>
                     
-                    <!-- Party -->
                     <div>
                         <label>👤 Party</label>
                         <div class="search-wrapper">
@@ -128,7 +122,6 @@
                         <button class="btn-add" onclick="openAddPartyModal()" style="margin-top:5px; font-size:11px; padding:4px 10px;">+ New Party</button>
                     </div>
                     
-                    <!-- Payment Mode -->
                     <div>
                         <label>💳 Payment Mode</label>
                         <div class="search-wrapper">
@@ -138,13 +131,11 @@
                         <input type="hidden" id="v_mode_value">
                     </div>
                     
-                    <!-- Bank Account -->
                     <div id="bank_account_field" style="display:none;">
                         <label>🏦 Bank Account</label>
                         <select id="bank_account"><option value="">Select Bank</option></select>
                     </div>
                     
-                    <!-- UPI -->
                     <div id="upi_options_field" style="display:none;">
                         <label>📱 UPI App</label>
                         <select id="upi_app">
@@ -157,16 +148,12 @@
                         </select>
                     </div>
                     
-                    <!-- Reference No -->
                     <div><label>🔢 Reference No. <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label><input type="text" id="reference_no" placeholder="Optional"></div>
                     
-                    <!-- Amount -->
                     <div><label>💰 Amount (₹)</label><input type="number" id="v_amt" value="0" step="0.01"></div>
                     
-                    <!-- Voucher No -->
                     <div><label>📋 Voucher No.</label><input type="text" id="v_no" readonly></div>
                     
-                    <!-- Narration -->
                     <div style="grid-column: 1 / -1;">
                         <label>📝 Narration</label>
                         <textarea id="v_narration" placeholder="Enter details..."></textarea>
@@ -223,7 +210,7 @@
             </div>
         </div>
 
-        <!-- ===== ✅ NEW: CONTRA VOUCHER ===== -->
+        <!-- ===== CONTRA VOUCHER (✅ Firm dropdown added) ===== -->
         <div id="module-contra" class="module-pane">
             <div class="form-card">
                 <h4>💱 Create Contra Voucher (Bank ↔ Cash Transfer)</h4>
@@ -231,6 +218,14 @@
                 
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
                     <div><label>📅 Date</label><input type="date" id="ctr_date"></div>
+                    
+                    <!-- ✅ NEW: Firm dropdown -->
+                    <div>
+                        <label>🏢 Firm</label>
+                        <select id="ctr_firm" onchange="app.onContraFirmChange()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">-- Select Firm --</option>
+                        </select>
+                    </div>
                     
                     <div>
                         <label>🔄 From Account</label>
@@ -262,7 +257,6 @@
                 </div>
             </div>
             
-            <!-- Contra List -->
             <div class="table-res" style="margin-top:20px;">
                 <h4>📋 Recent Contra Vouchers</h4>
                 <table>
@@ -275,7 +269,7 @@
             </div>
         </div>
 
-        <!-- ===== ✅ NEW: RECEIPT VOUCHER ===== -->
+        <!-- ===== RECEIPT VOUCHER (✅ Firm dropdown added) ===== -->
         <div id="module-receipt" class="module-pane">
             <div class="form-card">
                 <h4>🧾 Create Receipt Voucher (Fee Receipt)</h4>
@@ -283,6 +277,15 @@
                 
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr); align-items: stretch;">
                     <div><label>📅 Date</label><input type="date" id="rcp_date"></div>
+                    
+                    <!-- ✅ NEW: Firm dropdown -->
+                    <div>
+                        <label>🏢 Firm</label>
+                        <select id="rcp_firm" onchange="app.onReceiptFirmChange()" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <option value="">-- Select Firm --</option>
+                        </select>
+                    </div>
+                    
                     <div><label>🎓 Student Name</label><input type="text" id="rcp_student_name" placeholder="Student name"></div>
                     <div><label>👨 Father Name</label><input type="text" id="rcp_father_name" placeholder="Father name"></div>
                     
@@ -333,7 +336,6 @@
                     <div><label>📋 Receipt No.</label><input type="text" id="rcp_vno" readonly></div>
                 </div>
                 
-                <!-- Cheque Details -->
                 <div id="rcp_cheque_field" style="display:none; margin-top:15px; padding:15px; background:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
                     <h4 style="margin:0 0 10px 0;">📝 Cheque Details</h4>
                     <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
@@ -354,7 +356,6 @@
                 </div>
             </div>
             
-            <!-- Receipt List -->
             <div class="table-res" style="margin-top:20px;">
                 <h4>📋 Recent Receipt Vouchers</h4>
                 <table>
@@ -367,7 +368,7 @@
             </div>
         </div>
 
-        <!-- ===== ✅ NEW: DAILY CASH BOOK ===== -->
+        <!-- ===== DAILY CASH BOOK ===== -->
         <div id="module-cashbook" class="module-pane">
             <div class="form-card">
                 <h4>📊 Daily Cash Book (रोकड़ पोता)</h4>
@@ -389,7 +390,7 @@
             </div>
         </div>
 
-        <!-- ===== VOUCHER LIST (EXISTING - UNCHANGED) ===== -->
+        <!-- ===== VOUCHER LIST ===== -->
         <div id="module-reports" class="module-pane">
             <div class="report-card">
                 <h4>📋 Voucher List</h4>
@@ -544,7 +545,7 @@
             <button class="btn-add" onclick="app.addBankAccount()">+ Add Bank</button>
         </div>
         
-        <!-- ===== ✅ NEW: ACCOUNTS MANAGEMENT (CASH / BANK / PETTY) ===== -->
+        <!-- ACCOUNTS MANAGEMENT -->
         <h4>💵 Accounts (Cash / Petty Cash / Bank)</h4>
         <div id="accounts_list" style="margin-bottom:10px;"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; background:#f0fdf4; padding:10px; border-radius:8px; border:1px solid #86efac;">
@@ -563,7 +564,7 @@
             <button class="btn-add" onclick="addAccount()" style="background:#16a34a;">+ Add Account</button>
         </div>
         
-        <!-- ===== ✅ NEW: OPENING BALANCES ===== -->
+        <!-- OPENING BALANCES -->
         <h4>💰 Opening Balances</h4>
         <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px solid #93c5fd; margin-bottom:15px;">
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -682,7 +683,6 @@
     const app = new App();
     window.app = app;
     
-    // Existing functions
     window.openSettings = () => app.openSettings();
     window.logout = () => app.logout();
     window.saveVoucher = () => app.saveVoucher();
@@ -740,31 +740,35 @@
     window.updateUser = () => app.updateUser();
     window.closeEditUserModal = () => app.closeEditUserModal();
 
-    // ===== ✅ NEW: CONTRA VOUCHER FUNCTIONS =====
+    // CONTRA
     window.saveContraVoucher = () => app.saveContraVoucher();
     window.resetContraForm = () => app.resetContraForm();
     window.printContraById = (id) => app.printContraById(id);
     window.deleteContra = (id) => app.deleteContra(id);
+    window.editContra = (id) => app.editContra(id);
+    window.recoverContra = (id) => app.recoverContra(id);
 
-    // ===== ✅ NEW: RECEIPT VOUCHER FUNCTIONS =====
+    // RECEIPT
     window.saveReceiptVoucher = () => app.saveReceiptVoucher();
     window.resetReceiptForm = () => app.resetReceiptForm();
     window.toggleReceiptMode = () => app.toggleReceiptMode();
     window.printReceiptById = (id) => app.printReceiptById(id);
     window.deleteReceipt = (id) => app.deleteReceipt(id);
     window.clearCheque = (id) => app.clearCheque(id);
+    window.editReceipt = (id) => app.editReceipt(id);
+    window.recoverReceipt = (id) => app.recoverReceipt(id);
+    window.shareReceipt = (id) => app.shareReceipt(id);
 
-    // ===== ✅ NEW: CASH BOOK FUNCTIONS =====
+    // CASH BOOK
     window.renderCashBook = () => app.renderCashBook();
     window.printCashBook = () => app.printCashBook();
 
-    // ===== ✅ NEW: ACCOUNTS + OPENING BALANCE =====
+    // ACCOUNTS + OPENING BALANCE
     window.addAccount = () => app.addAccount();
     window.deleteAccount = (id) => app.deleteAccount(id);
     window.loadOpeningBalances = () => app.loadOpeningBalances();
     window.saveOpeningBalances = () => app.saveOpeningBalances();
 
-    // ===== CLOSE DROPDOWN ON OUTSIDE CLICK =====
     document.addEventListener('click', function(e) {
         document.querySelectorAll('.dropdown-list').forEach(dropdown => {
             if (!dropdown.contains(e.target)) {
@@ -777,7 +781,6 @@
         });
     });
 
-    // ===== KEYBOARD NAVIGATION =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.dropdown-list').forEach(d => d.style.display = 'none');
