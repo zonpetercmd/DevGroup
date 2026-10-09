@@ -13,7 +13,7 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         .login-container {
             background: white;
@@ -56,6 +56,7 @@
             border-radius: 8px;
             font-size: 14px;
             box-sizing: border-box;
+            font-family: inherit;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
@@ -73,8 +74,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
+            font-family: inherit;
         }
-        .btn-login:hover {
+        .btn-login:hover:not(:disabled) {
             transform: translateY(-2px);
         }
         .btn-login:disabled {
@@ -113,17 +115,20 @@
         <form id="loginForm">
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="email" placeholder="Enter your email" required>
+                <input type="email" id="email" placeholder="Enter your email" required autocomplete="username">
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="password" placeholder="Enter password" required>
+                <input type="password" id="password" placeholder="Enter password" required autocomplete="current-password">
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <select id="login_role" class="role-select">
+                <select id="login_role" class="role-select" required>
                     <option value="">-- Select Role --</option>
                     <option value="Admin">Admin (Full Access)</option>
+                    <option value="Staff_DevVidyalaya">Staff - D E V विद्यालय</option>
+                    <option value="Staff_DevGas">Staff - Dev Gas Agency</option>
+                    <option value="Staff_Rama">Staff - Rama Enterprises</option>
                 </select>
             </div>
             <button type="submit" class="btn-login" id="loginBtn">Login</button>
@@ -146,13 +151,19 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const role = document.getElementById('login_role').value;
-            
+
+            // Validation
             if (!email || !password) {
                 message.textContent = 'Please enter email and password';
+                message.className = 'error';
+                return;
+            }
+            if (!email.includes('@')) {
+                message.textContent = 'Please enter a valid email address';
                 message.className = 'error';
                 return;
             }
@@ -167,7 +178,12 @@
             loginBtn.disabled = true;
 
             try {
-                // ✅ API call with email
+                // ✅ Firebase initialize करो (agar nahi hua)
+                if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                    firebase.initializeApp(window.FIREBASE_CONFIG || {});
+                }
+
+                // ✅ API call
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -181,18 +197,55 @@
                 }
 
                 // ✅ Firebase Custom Token se sign in
-                await firebase.auth().signInWithCustomToken(data.token);
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    await firebase.auth().signInWithCustomToken(data.token);
+                }
 
-                // ✅ Store user data
+                // ✅ User data store करो (localStorage)
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('firmId', data.user.firmId);
 
-                // ✅ Session storage for existing app
+                // ✅ Session storage for the app
                 sessionStorage.setItem('auth', 'ok');
                 sessionStorage.setItem('user', data.user.email);
                 sessionStorage.setItem('role', role);
                 sessionStorage.setItem('firm', data.user.firmId);
 
+                // ✅ Permissions - Admin = full, Staff = user permissions
+                let permissions;
+                const isAdmin = (role === 'Admin' || data.user.role === 'Admin');
+                if (isAdmin) {
+                    permissions = {
+                        print: true,
+                        edit: true,
+                        delete: true,
+                        whatsapp: true,
+                        reports: true,
+                        view_all: true,
+                        party_add: true,
+                        bank_add: true,
+                        expense_add: true,
+                        export_import: true,
+                        edit_firm: true
+                    };
+                } else {
+                    permissions = data.user.permissions || {
+                        print: true,
+                        edit: false,
+                        delete: false,
+                        whatsapp: true,
+                        reports: true,
+                        view_all: false,
+                        party_add: false,
+                        bank_add: false,
+                        expense_add: false,
+                        export_import: false,
+                        edit_firm: false
+                    };
+                }
+                sessionStorage.setItem('permissions', JSON.stringify(permissions));
+
+                // ✅ Success!
                 message.textContent = '✅ Login successful! Redirecting...';
                 message.className = 'success';
 
@@ -207,6 +260,9 @@
                 loginBtn.disabled = false;
             }
         });
+
+        // ✅ Auto-focus on email field
+        document.getElementById('email').focus();
     </script>
 </body>
 </html>
