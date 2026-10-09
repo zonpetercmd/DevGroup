@@ -28,7 +28,6 @@ class Storage {
     // ============================================
     emailToKey(email) {
         if (!email) return '';
-        // Firebase keys can't contain: . # $ / [ ] @
         return String(email)
             .toLowerCase()
             .replace(/[.#$\[\]@]/g, '_');
@@ -187,7 +186,8 @@ class Storage {
 
     // ===== PUBLIC METHODS =====
     async load(key) {
-        const publicKeys = ['users', 'firms', 'userPermissions'];
+        // ✅ NEW: accounts, openingBalances added to publicKeys
+        const publicKeys = ['users', 'firms', 'userPermissions', 'accounts', 'openingBalances'];
         if (publicKeys.includes(key)) {
             if (this.mode === 'firebase') {
                 return await this._getFirebasePublic(key);
@@ -212,7 +212,8 @@ class Storage {
     }
 
     async save(key, data) {
-        const publicKeys = ['users', 'firms', 'userPermissions'];
+        // ✅ NEW: accounts, openingBalances added to publicKeys
+        const publicKeys = ['users', 'firms', 'userPermissions', 'accounts', 'openingBalances'];
         if (publicKeys.includes(key)) {
             if (this.mode === 'firebase') {
                 return await this._setFirebasePublic(key, data);
@@ -264,7 +265,9 @@ class Storage {
             STORAGE_KEYS.USERS,
             STORAGE_KEYS.VOUCHER_COUNTER,
             STORAGE_KEYS.BANK_ACCOUNTS,
-            STORAGE_KEYS.PERMISSIONS
+            STORAGE_KEYS.PERMISSIONS,
+            STORAGE_KEYS.ACCOUNTS,              // ✅ NEW
+            STORAGE_KEYS.OPENING_BALANCES       // ✅ NEW
         ];
 
         const results = {};
@@ -305,7 +308,9 @@ class Storage {
             allUsers: Object.values(results[STORAGE_KEYS.USERS] || {}),
             voucherCounter: results[STORAGE_KEYS.VOUCHER_COUNTER] || {},
             bankAccounts: results[STORAGE_KEYS.BANK_ACCOUNTS] || {},
-            userPermissions: results[STORAGE_KEYS.PERMISSIONS] || {}
+            userPermissions: results[STORAGE_KEYS.PERMISSIONS] || {},
+            accounts: results[STORAGE_KEYS.ACCOUNTS] || {},                    // ✅ NEW
+            openingBalances: results[STORAGE_KEYS.OPENING_BALANCES] || {}      // ✅ NEW
         };
     }
 
@@ -321,7 +326,9 @@ class Storage {
             allUsers: [],
             voucherCounter: {},
             bankAccounts: {},
-            userPermissions: {}
+            userPermissions: {},
+            accounts: {},              // ✅ NEW
+            openingBalances: {}        // ✅ NEW
         };
     }
 
@@ -404,7 +411,8 @@ class Storage {
             STORAGE_KEYS.FIRMS, STORAGE_KEYS.VOUCHERS, STORAGE_KEYS.DELETED,
             STORAGE_KEYS.EDIT_LOGS, STORAGE_KEYS.PARTIES, STORAGE_KEYS.SIGNATORIES,
             STORAGE_KEYS.EXPENSE_HEADS, STORAGE_KEYS.USERS, STORAGE_KEYS.VOUCHER_COUNTER,
-            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS
+            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS,
+            STORAGE_KEYS.ACCOUNTS, STORAGE_KEYS.OPENING_BALANCES   // ✅ NEW
         ];
         for (const k of keys) data[k] = await this.load(k);
         return data;
@@ -416,7 +424,8 @@ class Storage {
             STORAGE_KEYS.FIRMS, STORAGE_KEYS.VOUCHERS, STORAGE_KEYS.DELETED,
             STORAGE_KEYS.EDIT_LOGS, STORAGE_KEYS.PARTIES, STORAGE_KEYS.SIGNATORIES,
             STORAGE_KEYS.EXPENSE_HEADS, STORAGE_KEYS.USERS, STORAGE_KEYS.VOUCHER_COUNTER,
-            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS
+            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS,
+            STORAGE_KEYS.ACCOUNTS, STORAGE_KEYS.OPENING_BALANCES   // ✅ NEW
         ];
         for (const key of keys) {
             if (data[key]) await this.save(key, data[key]);
