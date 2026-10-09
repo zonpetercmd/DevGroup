@@ -5,7 +5,7 @@ import { DEFAULT_FIRMS, STORAGE_KEYS, PROTECTED_FIRMS } from '../config/constant
 
 class Storage {
     constructor() {
-        this.mode = STORAGE_MODE.current || 'firebase';  // ✅ Firebase mode
+        this.mode = STORAGE_MODE.current || 'firebase';
         this.rtdb = null;
         this.currentUser = null;
         this.currentFirmId = null;
@@ -23,49 +23,48 @@ class Storage {
         }
     }
 
+    // ============================================
+    // ✅ EMAIL → SAFE KEY (Bug fix)
+    // ============================================
+    emailToKey(email) {
+        if (!email) return '';
+        // Firebase keys can't contain: . # $ / [ ] @
+        return String(email)
+            .toLowerCase()
+            .replace(/[.#$\[\]@]/g, '_');
+    }
+
     // ==========================================
-    // 🔐 AUTHENTICATION FUNCTIONS (CLASS KE ANDAR)
+    // 🔐 AUTHENTICATION FUNCTIONS
     // ==========================================
 
-    // 🔐 LOGIN - Backend API call
-    async login(username, password) {
+    async login(email, password) {
         try {
-            console.log('🔐 Attempting login for:', username);
-            
+            console.log('🔐 Attempting login for:', email);
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
-
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.error || 'Login failed');
             }
-
-            // Firebase Custom Token se sign in
             if (typeof firebase !== 'undefined' && firebase.auth) {
                 await firebase.auth().signInWithCustomToken(data.token);
             }
-
-            // Store user data
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('firmId', data.user.firmId);
-            
             this.currentUser = data.user;
             this.currentFirmId = data.user.firmId;
-
-            console.log('✅ Login successful:', data.user.username);
+            console.log('✅ Login successful:', data.user.email);
             return data.user;
-
         } catch (error) {
             console.error('❌ Login error:', error);
             throw error;
         }
     }
 
-    // 👤 GET CURRENT USER
     getCurrentUser() {
         try {
             return JSON.parse(localStorage.getItem('user') || 'null');
@@ -74,13 +73,11 @@ class Storage {
         }
     }
 
-    // 🏢 GET CURRENT FIRM ID
     getCurrentFirmId() {
         const user = this.getCurrentUser();
         return user?.firmId || localStorage.getItem('firmId') || 'DevVidyalaya';
     }
 
-    // 🔒 AUTH CHECK
     requireAuth() {
         const user = this.getCurrentUser();
         if (!user) {
@@ -89,7 +86,6 @@ class Storage {
         return user;
     }
 
-    // 🚪 LOGOUT
     async logout() {
         try {
             if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -100,16 +96,16 @@ class Storage {
         }
         localStorage.removeItem('user');
         localStorage.removeItem('firmId');
+        sessionStorage.clear();
         this.currentUser = null;
         this.currentFirmId = null;
         console.log('👋 Logged out');
         window.location.href = 'login.html';
     }
 
-    // 👤 CREATE USER (Admin only)
     async createUser(userData) {
         try {
-            console.log('👤 Creating user:', userData.username);
+            console.log('👤 Creating user:', userData.email);
             const response = await fetch('/api/create-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -156,7 +152,6 @@ class Storage {
     async _getFirebase(key) {
         if (!this.rtdb) return {};
         try {
-            // Agar key firm-wise hai toh path add karein
             const path = this._getFirmPath(key);
             const snap = await this.rtdb.ref(path).once('value');
             return snap.val() || {};
@@ -192,7 +187,6 @@ class Storage {
 
     // ===== PUBLIC METHODS =====
     async load(key) {
-        // Public keys - bina firm path ke
         const publicKeys = ['users', 'firms', 'userPermissions'];
         if (publicKeys.includes(key)) {
             if (this.mode === 'firebase') {
@@ -200,7 +194,6 @@ class Storage {
             }
             return this._getLocal(key);
         }
-
         if (this.mode === 'firebase') {
             return await this._getFirebase(key);
         }
@@ -226,7 +219,6 @@ class Storage {
             }
             return this._setLocal(key, data);
         }
-
         if (this.mode === 'firebase') {
             return await this._setFirebase(key, data);
         }
@@ -254,7 +246,6 @@ class Storage {
 
     // ===== LOAD ALL DATA =====
     async loadAllData() {
-        // Check authentication
         try {
             this.requireAuth();
         } catch (e) {
@@ -282,7 +273,6 @@ class Storage {
             console.log(`📥 Loaded ${key}:`, Object.keys(results[key] || {}).length);
         }
 
-        // ✅ Expense Heads - Format
         const expenseHeads = results[STORAGE_KEYS.EXPENSE_HEADS] || {};
         const formattedExpenseHeads = {};
         Object.keys(expenseHeads).forEach(key => {
@@ -384,7 +374,6 @@ class Storage {
                 console.warn('⚠️ Cannot start listener (not authenticated)');
             }
         } else {
-            // Local Storage polling
             let lastData = '';
             const interval = setInterval(() => {
                 const current = this._getLocal(STORAGE_KEYS.VOUCHERS);
@@ -395,67 +384,46 @@ class Storage {
                     callback(db);
                 }
             }, 3000);
-            
             return () => clearInterval(interval);
         }
     }
 
-    // ===== REMOVE LISTENERS =====
     removeListeners() {
         if (this.rtdb) {
             try {
                 const path = this._getFirmPath(STORAGE_KEYS.VOUCHERS);
                 this.rtdb.ref(path).off();
-            } catch (e) {
-                // Ignore
-            }
+            } catch (e) {}
         }
     }
 
-    // ===== EXPORT DATA =====
     async exportAllData() {
         this.requireAuth();
-        const data = {
-            firms: await this.load(STORAGE_KEYS.FIRMS),
-            vouchers: await this.load(STORAGE_KEYS.VOUCHERS),
-            deleted: await this.load(STORAGE_KEYS.DELETED),
-            editLogs: await this.load(STORAGE_KEYS.EDIT_LOGS),
-            parties: await this.load(STORAGE_KEYS.PARTIES),
-            signatories: await this.load(STORAGE_KEYS.SIGNATORIES),
-            expenseHeads: await this.load(STORAGE_KEYS.EXPENSE_HEADS),
-            users: await this.load(STORAGE_KEYS.USERS),
-            voucherCounter: await this.load(STORAGE_KEYS.VOUCHER_COUNTER),
-            bankAccounts: await this.load(STORAGE_KEYS.BANK_ACCOUNTS),
-            permissions: await this.load(STORAGE_KEYS.PERMISSIONS)
-        };
+        const data = {};
+        const keys = [
+            STORAGE_KEYS.FIRMS, STORAGE_KEYS.VOUCHERS, STORAGE_KEYS.DELETED,
+            STORAGE_KEYS.EDIT_LOGS, STORAGE_KEYS.PARTIES, STORAGE_KEYS.SIGNATORIES,
+            STORAGE_KEYS.EXPENSE_HEADS, STORAGE_KEYS.USERS, STORAGE_KEYS.VOUCHER_COUNTER,
+            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS
+        ];
+        for (const k of keys) data[k] = await this.load(k);
         return data;
     }
 
-    // ===== IMPORT DATA =====
     async importAllData(data) {
         this.requireAuth();
         const keys = [
-            STORAGE_KEYS.FIRMS,
-            STORAGE_KEYS.VOUCHERS,
-            STORAGE_KEYS.DELETED,
-            STORAGE_KEYS.EDIT_LOGS,
-            STORAGE_KEYS.PARTIES,
-            STORAGE_KEYS.SIGNATORIES,
-            STORAGE_KEYS.EXPENSE_HEADS,
-            STORAGE_KEYS.USERS,
-            STORAGE_KEYS.VOUCHER_COUNTER,
-            STORAGE_KEYS.BANK_ACCOUNTS,
-            STORAGE_KEYS.PERMISSIONS
+            STORAGE_KEYS.FIRMS, STORAGE_KEYS.VOUCHERS, STORAGE_KEYS.DELETED,
+            STORAGE_KEYS.EDIT_LOGS, STORAGE_KEYS.PARTIES, STORAGE_KEYS.SIGNATORIES,
+            STORAGE_KEYS.EXPENSE_HEADS, STORAGE_KEYS.USERS, STORAGE_KEYS.VOUCHER_COUNTER,
+            STORAGE_KEYS.BANK_ACCOUNTS, STORAGE_KEYS.PERMISSIONS
         ];
         for (const key of keys) {
-            if (data[key]) {
-                await this.save(key, data[key]);
-            }
+            if (data[key]) await this.save(key, data[key]);
         }
         return true;
     }
 
-    // ===== SET FIRM ID =====
     setFirmId(firmId) {
         this.currentFirmId = firmId;
         localStorage.setItem('firmId', firmId);
