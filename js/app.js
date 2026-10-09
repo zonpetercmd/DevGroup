@@ -2,9 +2,9 @@
 
 import Storage from './storage.js';
 import PrintEngine from './print.js';
-import { 
-    showToast, generateId, getFinancialYear, 
-    formatDate, formatCurrency, getToday 
+import {
+    showToast, generateId, getFinancialYear,
+    formatDate, formatCurrency, getToday
 } from './utils.js';
 import { DEFAULT_PERMISSIONS, STORAGE_KEYS } from '../config/constants.js';
 
@@ -12,7 +12,7 @@ class App {
     constructor() {
         this.storage = new Storage();
         this.printEngine = new PrintEngine();
-        
+
         // Data
         this.db = [];
         this.deletedVouchers = [];
@@ -26,7 +26,7 @@ class App {
         this.userPermissions = { ...DEFAULT_PERMISSIONS };
         this.paymentModes = ['Cash', 'Bank', 'UPI', 'Cheque'];
         this.upiApps = ['PhonePe', 'GooglePay', 'Paytm', 'AmazonPay', 'Other'];
-        
+
         // Session
         this.currentUser = '';
         this.currentRole = '';
@@ -69,9 +69,9 @@ class App {
             setTimeout(() => this.checkSession(), 300);
             return;
         }
-        
+
         this.updateLoginRoleDropdown();
-        
+
         if (sessionStorage.getItem('auth') === 'ok') {
             this.currentUser = sessionStorage.getItem('user') || 'Admin';
             this.currentRole = sessionStorage.getItem('role') || 'Admin';
@@ -92,30 +92,30 @@ class App {
         document.getElementById('main-app').style.display = 'none';
     }
 
-    // ===== SHOW MAIN APP - FIXED =====
+    // ===== SHOW MAIN APP =====
     showMainApp() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
-        
+
         document.getElementById('display_user').innerText = '👤 ' + this.currentUser;
-        document.getElementById('display_role').innerText = this.currentRole + 
+        document.getElementById('display_role').innerText = this.currentRole +
             (this.currentFirm ? ' (' + (this.allFirms[this.currentFirm]?.name || '') + ')' : '');
-        
-        const isAdmin = this.currentRole && 
-            (this.currentRole.toLowerCase() === 'admin' || 
-             this.currentRole === 'Admin' || 
-             this.currentRole === 'ADMIN');
-        document.getElementById('admin_settings_btn').style.display = 
+
+        const isAdmin = this.currentRole &&
+            (this.currentRole.toLowerCase() === 'admin' ||
+                this.currentRole === 'Admin' ||
+                this.currentRole === 'ADMIN');
+        document.getElementById('admin_settings_btn').style.display =
             isAdmin ? 'inline-block' : 'none';
-        
+
         document.getElementById('v_date').value = getToday();
-        
+
         let tabs = `<button class="module-tab active" onclick="switchModule('transactions')">📝 Create Voucher</button>`;
         if (this.userPermissions.reports || isAdmin) {
             tabs += `<button class="module-tab" onclick="switchModule('reports')">📋 Voucher List</button>`;
         }
         document.getElementById('moduleTabsContainer').innerHTML = tabs;
-        
+
         this.renderAll();
         this.updateFirmHeader();
         this.generateVoucherNo();
@@ -123,15 +123,15 @@ class App {
         this.renderPartiesList();
     }
 
-    // ===== LOGIN - Email-based =====
+    // ===== LOGIN (inline form) =====
     async doLogin() {
         const email = document.getElementById('user_id').value.trim();
         const pass = document.getElementById('user_pass').value.trim();
         const role = document.getElementById('login_role').value;
         const errorDiv = document.getElementById('login_error');
-        
+
         errorDiv.style.display = 'none';
-        
+
         if (!email || !pass) {
             errorDiv.innerText = 'Please enter Email and Password';
             errorDiv.style.display = 'block';
@@ -177,6 +177,13 @@ class App {
             sessionStorage.setItem('role', role);
             sessionStorage.setItem('firm', data.user.firmId);
 
+            // ✅ Permissions
+            const isAdmin = (role === 'Admin' || data.user.role === 'Admin');
+            const permissions = isAdmin
+                ? { print: true, edit: true, delete: true, whatsapp: true, reports: true, view_all: true, party_add: true, bank_add: true, expense_add: true, export_import: true, edit_firm: true }
+                : (data.user.permissions || { print: true, edit: false, delete: false, whatsapp: true, reports: true, view_all: false, party_add: false, bank_add: false, expense_add: false, export_import: false, edit_firm: false });
+            sessionStorage.setItem('permissions', JSON.stringify(permissions));
+
             this.currentUser = data.user.email;
             this.currentRole = role;
             this.currentFirm = data.user.firmId;
@@ -208,15 +215,12 @@ class App {
     // ===== UPDATE LOGIN ROLE DROPDOWN =====
     updateLoginRoleDropdown() {
         const select = document.getElementById('login_role');
-        if (!select) {
-            console.warn('⚠️ login_role element not found');
-            return;
-        }
-        
+        if (!select) return;
+
         const currentVal = select.value;
         let html = '<option value="">-- Select Role --</option>';
         html += '<option value="Admin">Admin (Full Access)</option>';
-        
+
         const firms = Object.keys(this.allFirms || {});
         if (firms.length > 0) {
             firms.forEach(f => {
@@ -237,13 +241,11 @@ class App {
                 html += `<option value="Staff_${f.key}">Staff - ${f.name}</option>`;
             });
         }
-        
+
         select.innerHTML = html;
         if (currentVal) {
             const optionExists = Array.from(select.options).some(opt => opt.value === currentVal);
-            if (optionExists) {
-                select.value = currentVal;
-            }
+            if (optionExists) select.value = currentVal;
         }
     }
 
@@ -251,17 +253,12 @@ class App {
         const select = document.getElementById('new_user_role');
         if (!select) return;
         const currentVal = select.value;
-        select.innerHTML = '';
-        select.innerHTML += '<option value="Admin">Admin</option>';
-        
-        const firms = Object.keys(this.allFirms);
-        if (firms.length > 0) {
-            firms.forEach(f => {
-                if (this.allFirms[f]) {
-                    select.innerHTML += `<option value="Staff_${f}">Staff - ${this.allFirms[f].name}</option>`;
-                }
-            });
-        }
+        select.innerHTML = '<option value="Admin">Admin</option>';
+        Object.keys(this.allFirms).forEach(f => {
+            if (this.allFirms[f]) {
+                select.innerHTML += `<option value="Staff_${f}">Staff - ${this.allFirms[f].name}</option>`;
+            }
+        });
         if (currentVal) select.value = currentVal;
     }
 
@@ -270,13 +267,7 @@ class App {
         if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">-- Select Firm --</option>';
-        
-        const firms = Object.keys(this.allFirms);
-        if (firms.length === 0) {
-            select.innerHTML += '<option value="" disabled>No firms available</option>';
-            return;
-        }
-        firms.forEach(f => {
+        Object.keys(this.allFirms).forEach(f => {
             if (this.allFirms[f]) {
                 select.innerHTML += `<option value="${f}">${this.allFirms[f].name}</option>`;
             }
@@ -309,21 +300,19 @@ class App {
         const firm = this.allFirms[firmKey] || this.allFirms['DevVidyalaya'];
         if (firm) {
             document.getElementById('form_firm_name').innerText = firm.name;
-            document.getElementById('form_firm_addr').innerText = 
+            document.getElementById('form_firm_addr').innerText =
                 (firm.addr || '📍 ' + firm.name) + ' | 📞 ' + (firm.mobile || '');
             document.getElementById('form_logo').src = firm.logo || 'logo.png';
         }
         this.updateBankDropdown();
     }
 
-    // ===== BANK DROPDOWN =====
     updateBankDropdown() {
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         const select = document.getElementById('bank_account');
         if (!select) return;
         const currentVal = select.value;
         select.innerHTML = '<option value="">Select Bank</option>';
-        
         const banks = this.bankAccounts[firmKey] || [];
         banks.forEach(b => {
             select.innerHTML += `<option value="${b.name}|${b.account}|${b.ifsc || ''}">${b.name} - ${b.account}</option>`;
@@ -331,18 +320,13 @@ class App {
         if (currentVal) select.value = currentVal;
     }
 
-    // ===== TOGGLE BANK FIELD =====
     toggleBankField() {
         const mode = document.getElementById('v_mode_value').value || 'Cash';
         const bankField = document.getElementById('bank_account_field');
         const upiField = document.getElementById('upi_options_field');
-        
         bankField.style.display = (mode === 'Bank' || mode === 'Cheque') ? 'block' : 'none';
         upiField.style.display = mode === 'UPI' ? 'block' : 'none';
-        
-        if (mode === 'Bank' || mode === 'Cheque') {
-            this.updateBankDropdown();
-        }
+        if (mode === 'Bank' || mode === 'Cheque') this.updateBankDropdown();
     }
 
     // ===== VOUCHER NUMBER =====
@@ -373,12 +357,9 @@ class App {
         const narration = document.getElementById('v_narration').value.trim();
         const vno = document.getElementById('v_no').value;
         const editId = document.getElementById('edit_id').value;
-        
-        let bankAccount = '';
-        let bankName = '';
-        let bankIfsc = '';
-        let upiApp = '';
-        
+
+        let bankAccount = '', bankName = '', bankIfsc = '', upiApp = '';
+
         if (mode === 'Bank' || mode === 'Cheque') {
             const bankVal = document.getElementById('bank_account').value;
             if (bankVal) {
@@ -388,41 +369,30 @@ class App {
                 bankIfsc = parts[2] || '';
             }
         }
-        
         if (mode === 'UPI') {
             upiApp = document.getElementById('upi_app').value || '';
         }
-        
+
         if (!firmKey) { showToast('Please select a Firm'); return; }
         if (!head) { showToast('Please select Expense Head'); return; }
         if (!party) { showToast('Please select Party'); return; }
         if (amount <= 0) { showToast('Please enter valid amount'); return; }
         if (!date) { showToast('Please select date'); return; }
-        
+
         const voucher = {
             id: editId || generateId(),
-            vno: vno,
-            date: date,
-            firmKey: firmKey,
+            vno, date, firmKey,
             firmName: this.allFirms[firmKey]?.name || firmKey,
-            head: head,
-            subHead: subHead,
-            party: party,
-            amount: amount,
-            mode: mode,
-            bankName: bankName,
-            bankAccount: bankAccount,
-            bankIfsc: bankIfsc,
-            upiApp: upiApp,
-            referenceNo: referenceNo,
-            narration: narration,
+            head, subHead, party, amount, mode,
+            bankName, bankAccount, bankIfsc, upiApp,
+            referenceNo, narration,
             type: 'EXP',
             status: 'active',
             createdBy: this.currentUser,
             createdAt: new Date().toISOString(),
             timestamp: Date.now()
         };
-        
+
         if (editId) {
             const oldVoucher = this.db.find(v => v.id === editId);
             if (oldVoucher) {
@@ -437,45 +407,39 @@ class App {
                     changes: 'Voucher edited'
                 };
                 this.editLogs.push(logEntry);
-                await this.storage.save(STORAGE_KEYS.EDIT_LOGS, 
+                await this.storage.save(STORAGE_KEYS.EDIT_LOGS,
                     Object.fromEntries(this.editLogs.map(e => [e.id, e]))
                 );
             }
         }
-        
+
         await this.storage.saveVoucher(voucher);
-        
+
         if (!editId) {
             if (!this.voucherCounter[firmKey]) this.voucherCounter[firmKey] = 0;
             this.voucherCounter[firmKey]++;
             await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
         }
-        
+
         if (editId) {
             const idx = this.db.findIndex(v => v.id === editId);
             if (idx !== -1) this.db[idx] = voucher;
         } else {
             this.db.push(voucher);
         }
-        
+
         this.renderAll();
         this.resetForm();
         showToast(editId ? '✅ Voucher updated!' : '✅ Voucher submitted!');
         this.updateHeadFilter();
-        
         setTimeout(() => this.printVoucher(voucher), 500);
     }
 
     // ===== PRINT VOUCHER =====
     async printVoucher(voucher) {
         try {
-            if (!voucher) {
-                showToast('❌ Voucher not found');
-                return;
-            }
-            if (!voucher.amount || isNaN(voucher.amount)) {
-                voucher.amount = 0;
-            }
+            if (!voucher) { showToast('❌ Voucher not found'); return; }
+            if (!voucher.amount || isNaN(voucher.amount)) voucher.amount = 0;
             console.log('🖨️ Printing voucher:', voucher.vno, 'Amount:', voucher.amount);
             await this.printEngine.print(voucher, this.allFirms);
         } catch (error) {
@@ -487,10 +451,7 @@ class App {
     async printVoucherById(id) {
         try {
             const voucher = this.db.find(v => v.id === id);
-            if (!voucher) {
-                showToast('❌ Voucher not found');
-                return;
-            }
+            if (!voucher) { showToast('❌ Voucher not found'); return; }
             await this.printVoucher(voucher);
         } catch (error) {
             console.error('❌ Print error:', error);
@@ -498,7 +459,6 @@ class App {
         }
     }
 
-    // ===== RESET FORM =====
     resetForm() {
         document.getElementById('edit_id').value = '';
         document.getElementById('expense_head_input').value = '';
@@ -534,7 +494,7 @@ class App {
         }
         const v = this.db.find(x => x.id === id);
         if (!v) { showToast('Voucher not found'); return; }
-        
+
         document.getElementById('edit_id').value = v.id;
         document.getElementById('v_date').value = v.date;
         document.getElementById('expense_head_input').value = v.head;
@@ -552,7 +512,7 @@ class App {
         document.getElementById('v_narration').value = v.narration || '';
         document.getElementById('v_no').value = v.vno;
         document.getElementById('form-title').innerHTML = '✏️ Edit Voucher: ' + v.vno;
-        
+
         if (v.bankName) {
             const bankVal = v.bankName + '|' + (v.bankAccount || '') + '|' + (v.bankIfsc || '');
             document.getElementById('bank_account').value = bankVal;
@@ -562,7 +522,7 @@ class App {
             document.getElementById('upi_app').value = v.upiApp;
             document.getElementById('upi_options_field').style.display = 'block';
         }
-        
+
         this.toggleBankField();
         this.updateFirmHeader();
         this.populateSubHeads(v.head);
@@ -579,15 +539,15 @@ class App {
         if (!confirm('Delete this voucher permanently?')) return;
         const v = this.db.find(x => x.id === id);
         if (!v) { showToast('Voucher not found'); return; }
-        
+
         const deletedV = { ...v, status: 'deleted', deletedBy: this.currentUser, deletedAt: new Date().toISOString() };
         this.deletedVouchers.push(deletedV);
-        
-        await this.storage.save(STORAGE_KEYS.DELETED, 
+
+        await this.storage.save(STORAGE_KEYS.DELETED,
             Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
         );
         await this.storage.deleteVoucher(id);
-        
+
         this.db = this.db.filter(x => x.id !== id);
         this.renderAll();
         this.generateVoucherNo();
@@ -601,28 +561,24 @@ class App {
             showToast('❌ No permission to recover');
             return;
         }
-        
         if (!confirm('Are you sure you want to recover this voucher?')) return;
-        
+
         const index = this.deletedVouchers.findIndex(v => v.id === id);
-        if (index === -1) {
-            showToast('❌ Deleted voucher not found');
-            return;
-        }
-        
+        if (index === -1) { showToast('❌ Deleted voucher not found'); return; }
+
         const voucher = this.deletedVouchers[index];
         voucher.status = 'active';
         delete voucher.deletedBy;
         delete voucher.deletedAt;
-        
+
         this.deletedVouchers.splice(index, 1);
         this.db.push(voucher);
-        
+
         await this.storage.saveVoucher(voucher);
-        await this.storage.save(STORAGE_KEYS.DELETED, 
+        await this.storage.save(STORAGE_KEYS.DELETED,
             Object.fromEntries(this.deletedVouchers.map(d => [d.id, d]))
         );
-        
+
         this.renderAll();
         this.updateStats();
         this.generateVoucherNo();
@@ -648,7 +604,7 @@ class App {
         const headFilter = document.getElementById('f_head_filter')?.value || '';
         const partyFilter = document.getElementById('f_party_filter')?.value?.toLowerCase() || '';
         const modeFilter = document.getElementById('f_mode_filter')?.value || '';
-        
+
         let dataToShow = [];
         if (status === 'ALL' || status === 'active') {
             dataToShow = dataToShow.concat(this.db.filter(v => v.status !== 'deleted'));
@@ -656,21 +612,19 @@ class App {
         if (status === 'ALL' || status === 'deleted') {
             dataToShow = dataToShow.concat(this.deletedVouchers);
         }
-        
+
         const seen = new Set();
         dataToShow = dataToShow.filter(v => {
             if (seen.has(v.id)) return false;
             seen.add(v.id);
             return true;
         });
-        
+
         const filtered = dataToShow.filter(v => {
             let match = true;
-            
             if (this.currentRole !== 'Admin' && this.currentFirm) {
                 match = match && v.firmKey === this.currentFirm;
             }
-            
             if (search) {
                 match = match && (
                     v.party?.toLowerCase().includes(search) ||
@@ -690,19 +644,19 @@ class App {
             if (modeFilter) match = match && v.mode === modeFilter;
             return match;
         });
-        
+
         const tbody = document.getElementById('v_list');
         if (filtered.length === 0) {
             tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">No vouchers found</td></tr>';
             return;
         }
-        
+
         tbody.innerHTML = filtered.slice().reverse().map(v => {
             const isDeleted = v.status === 'deleted';
             const isEdited = this.editLogs.some(e => e.voucherId === v.id);
             const statusClass = isDeleted ? 'status-deleted' : (isEdited ? 'status-edited' : 'status-active');
             const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
-            
+
             let actions = '';
             if (!isDeleted) {
                 if (this.userPermissions.print || this.currentRole === 'Admin') {
@@ -718,16 +672,14 @@ class App {
                     actions += `<button class="btn-action btn-del" onclick="deleteVoucher('${v.id}')" title="Delete"><i class="fas fa-trash"></i></button>`;
                 }
             } else {
-                actions = `
-                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                `;
+                actions = `<button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
             }
-            
+
             const createdBy = v.createdBy || 'Unknown';
-            const creatorBadge = this.currentRole === 'Admin' ? 
+            const creatorBadge = this.currentRole === 'Admin' ?
                 `<span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span>` :
                 `<span style="font-size:11px; color:#64748b;">${createdBy}</span>`;
-            
+
             return `<tr>
                 <td>${v.date}</td>
                 <td><b>${v.vno}</b></td>
@@ -735,7 +687,7 @@ class App {
                 <td>${v.subHead || '-'}</td>
                 <td>${v.party || '-'}</td>
                 <td>₹${v.amount.toLocaleString()}</td>
-                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+                <td>${v.mode}${v.upiApp ? ' (' + v.upiApp + ')' : ''}</td>
                 <td>${creatorBadge}</td>
                 <td><span class="${statusClass}">${statusText}</span></td>
                 <td>${actions}</td>
@@ -748,7 +700,7 @@ class App {
         const active = this.db.filter(v => v.status !== 'deleted');
         const todayVouchers = active.filter(v => v.date === today);
         const totalAmount = active.reduce((sum, v) => sum + v.amount, 0);
-        
+
         document.getElementById('stat_today').innerHTML = todayVouchers.length;
         document.getElementById('stat_total').innerHTML = active.length;
         document.getElementById('stat_active').innerHTML = active.length;
@@ -757,11 +709,11 @@ class App {
         document.getElementById('stat_amount').innerHTML = '₹ ' + totalAmount.toLocaleString();
     }
 
-    // ===== REPORTS / VOUCHER LIST - FIXED (Duplicate buttons removed) =====
+    // ===== REPORTS / VOUCHER LIST =====
     renderReports() {
         const div = document.getElementById('report_content');
         if (!div) return;
-        
+
         const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('r_start')?.value || '';
         const end = document.getElementById('r_end')?.value || '';
@@ -772,7 +724,7 @@ class App {
         const partyFilter = document.getElementById('r_party_filter')?.value?.toLowerCase() || '';
         const modeFilter = document.getElementById('r_mode_filter')?.value || '';
         const firmFilter = document.getElementById('r_firm_filter')?.value || '';
-        
+
         let allVouchers = [];
         if (status === 'ALL' || status === 'active') {
             allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
@@ -780,21 +732,19 @@ class App {
         if (status === 'ALL' || status === 'deleted') {
             allVouchers = allVouchers.concat(this.deletedVouchers);
         }
-        
+
         const seen = new Set();
         allVouchers = allVouchers.filter(v => {
             if (seen.has(v.id)) return false;
             seen.add(v.id);
             return true;
         });
-        
+
         const filtered = allVouchers.filter(v => {
             let match = true;
-            
             if (this.currentRole !== 'Admin' && this.currentFirm) {
                 match = match && v.firmKey === this.currentFirm;
             }
-            
             if (search) {
                 match = match && (
                     v.party?.toLowerCase().includes(search) ||
@@ -815,12 +765,12 @@ class App {
             if (firmFilter) match = match && v.firmKey === firmFilter;
             return match;
         });
-        
+
         if (filtered.length === 0) {
             div.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No vouchers found</p>';
             return;
         }
-        
+
         div.innerHTML = `
             <div style="margin-bottom:10px; font-size:13px; color:#64748b; display:flex; gap:20px; flex-wrap:wrap;">
                 <span>Total: <strong>${filtered.length}</strong></span>
@@ -855,7 +805,7 @@ class App {
                             const isEdited = this.editLogs.some(e => e.voucherId === v.id);
                             const statusText = isDeleted ? '🗑️ Deleted' : (isEdited ? '✏️ Edited' : '✅ Active');
                             const createdBy = v.createdBy || 'Unknown';
-                            
+
                             let actions = '';
                             if (!isDeleted) {
                                 if (this.userPermissions.print || this.currentRole === 'Admin') {
@@ -871,11 +821,9 @@ class App {
                                     actions += `<button class="btn-action btn-whatsapp-small" onclick="shareVoucher('${v.id}')" title="WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
                                 }
                             } else {
-                                actions = `
-                                    <button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>
-                                `;
+                                actions = `<button class="btn-action" onclick="app.recoverVoucher('${v.id}')" title="Recover" style="background:#8b5cf6; color:white; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-size:11px;">↩️ Recover</button>`;
                             }
-                            
+
                             return `<tr>
                                 <td>${v.date}</td>
                                 <td><b>${v.vno}</b></td>
@@ -884,7 +832,7 @@ class App {
                                 <td>${v.subHead || '-'}</td>
                                 <td>${v.party || '-'}</td>
                                 <td>₹${v.amount.toLocaleString()}</td>
-                                <td>${v.mode}${v.upiApp ? ' ('+v.upiApp+')' : ''}</td>
+                                <td>${v.mode}${v.upiApp ? ' (' + v.upiApp + ')' : ''}</td>
                                 <td><span style="background:#2563eb; color:white; padding:2px 8px; border-radius:12px; font-size:10px;">${createdBy}</span></td>
                                 <td>${statusText}</td>
                                 <td>${actions}</td>
@@ -915,11 +863,9 @@ class App {
         `;
     }
 
-    // ===== UPDATE HEAD FILTER =====
     updateHeadFilter() {
         const headSelects = ['f_head_filter', 'r_head_filter'];
         const heads = [...new Set(this.db.map(v => v.head).filter(Boolean))];
-        
         headSelects.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
@@ -932,41 +878,30 @@ class App {
         });
     }
 
-    // ============================================================
-    // MODE DROPDOWN FUNCTIONS
-    // ============================================================
-
-    getModeOptions() {
-        return this.paymentModes;
-    }
+    // ===== MODE DROPDOWN =====
+    getModeOptions() { return this.paymentModes; }
 
     populateModes() {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
         const modes = this.getModeOptions();
-        dropdown.innerHTML = modes.map(m => 
+        dropdown.innerHTML = modes.map(m =>
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
     }
 
     filterModes(search) {
         const dropdown = document.getElementById('modeDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populateModes();
-            return;
-        }
-        const modes = this.getModeOptions();
-        const filtered = modes.filter(m => m.toLowerCase().includes(search.toLowerCase()));
+        if (!search || search.length < 1) { this.populateModes(); return; }
+        const filtered = this.getModeOptions().filter(m => m.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No mode found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = filtered.map(m => 
+        dropdown.innerHTML = filtered.map(m =>
             `<div onclick="selectMode('${m}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${m}</div>`
         ).join('');
         dropdown.style.display = 'block';
@@ -979,35 +914,27 @@ class App {
         this.toggleBankField();
     }
 
-    // ============================================================
-    // EXPENSE HEADS - FIRM WISE (UPDATED)
-    // ============================================================
-
+    // ===== EXPENSE HEADS =====
     populateExpenseHeads() {
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
-        
         const currentFirmKey = document.getElementById('firm_name_value')?.value || this.currentFirm || '';
         let heads = Object.keys(this.expenseHeads);
-        
         if (currentFirmKey) {
             heads = heads.filter(h => {
                 const headFirm = this.expenseHeads[h]?.firm || '';
                 return headFirm === '' || headFirm === currentFirmKey;
             });
         }
-        
         if (heads.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No heads added. Add in Settings.</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = heads.map(h => 
+        dropdown.innerHTML = heads.map(h =>
             `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
     }
 
     populateSubHeads(head) {
@@ -1019,22 +946,16 @@ class App {
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = subHeads.map(sh => 
+        dropdown.innerHTML = subHeads.map(sh =>
             `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
     }
 
     filterExpenseHeads(search) {
         const dropdown = document.getElementById('expenseHeadDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populateExpenseHeads();
-            return;
-        }
-        
+        if (!search || search.length < 1) { this.populateExpenseHeads(); return; }
         const currentFirmKey = document.getElementById('firm_name_value')?.value || this.currentFirm || '';
         let heads = Object.keys(this.expenseHeads);
         if (currentFirmKey) {
@@ -1043,14 +964,13 @@ class App {
                 return headFirm === '' || headFirm === currentFirmKey;
             });
         }
-        
         const filtered = heads.filter(h => h.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No head found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = filtered.map(h => 
+        dropdown.innerHTML = filtered.map(h =>
             `<div onclick="selectExpenseHead('${h.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${h}</div>`
         ).join('');
         dropdown.style.display = 'block';
@@ -1066,26 +986,20 @@ class App {
             return;
         }
         const subHeads = this.expenseHeads[head]?.subHeads || [];
-        if (!search || search.length < 1) {
-            this.populateSubHeads(head);
-            return;
-        }
+        if (!search || search.length < 1) { this.populateSubHeads(head); return; }
         const filtered = subHeads.filter(sh => sh.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No sub head found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = filtered.map(sh => 
+        dropdown.innerHTML = filtered.map(sh =>
             `<div onclick="selectSubHead('${sh.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${sh}</div>`
         ).join('');
         dropdown.style.display = 'block';
     }
 
-    // ============================================================
-    // EXPENSE HEADS - SETTINGS (UPDATED)
-    // ============================================================
-
+    // ===== EXPENSE HEADS SETTINGS =====
     renderHeadsList() {
         const container = document.getElementById('heads_list');
         if (!container) return;
@@ -1100,7 +1014,7 @@ class App {
         }
         container.innerHTML = heads.map(h => `
             <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center; flex-wrap:wrap;">
-                <span><strong>${h}</strong> → ${(this.expenseHeads[h]?.subHeads || []).join(', ')} 
+                <span><strong>${h}</strong> → ${(this.expenseHeads[h]?.subHeads || []).join(', ')}
                 ${this.expenseHeads[h]?.firm ? `<span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-size:10px;">${this.allFirms[this.expenseHeads[h].firm]?.name || this.expenseHeads[h].firm}</span>` : '<span style="background:#8b5cf6; color:white; padding:2px 8px; border-radius:4px; font-size:10px;">All Firms</span>'}</span>
                 <button class="btn-action btn-del" onclick="deleteExpenseHead('${h.replace(/'/g, "\\'")}')">✖</button>
             </div>
@@ -1108,17 +1022,14 @@ class App {
     }
 
     async addExpenseHead() {
-        if (!this.canAddExpense()) {
-            showToast('❌ No permission to add expense head');
-            return;
-        }
+        if (!this.canAddExpense()) { showToast('❌ No permission to add expense head'); return; }
         const firm = document.getElementById('expense_head_firm').value;
         const head = document.getElementById('new_head_name').value.trim();
         const subHead = document.getElementById('new_subhead_name').value.trim();
-        
+
         if (!firm) { showToast('❌ Please select a firm'); return; }
         if (!head) { showToast('Enter expense head name'); return; }
-        
+
         if (this.expenseHeads[head]) {
             if (subHead && !this.expenseHeads[head].subHeads.includes(subHead)) {
                 this.expenseHeads[head].subHeads.push(subHead);
@@ -1127,12 +1038,12 @@ class App {
                 return;
             }
         } else {
-            this.expenseHeads[head] = { 
-                firm: firm === 'all' ? '' : firm, 
-                subHeads: subHead ? [subHead] : [] 
+            this.expenseHeads[head] = {
+                firm: firm === 'all' ? '' : firm,
+                subHeads: subHead ? [subHead] : []
             };
         }
-        
+
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
         this.populateExpenseHeads();
         this.renderHeadsList();
@@ -1152,32 +1063,22 @@ class App {
         showToast('✅ Deleted');
     }
 
-    // ============================================================
-    // POPULATE FUNCTIONS - SEARCH + DROPDOWN
-    // ============================================================
-
+    // ===== DROPDOWNS =====
     populateFirmDropdown() {
         const dropdown = document.getElementById('firmDropdown');
         if (!dropdown) return;
         let firms = [];
-        
-        if (this.currentRole === 'Admin') {
-            firms = Object.keys(this.allFirms);
-        } else if (this.currentFirm) {
-            firms = [this.currentFirm];
-        }
-        
+        if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
+        else if (this.currentFirm) firms = [this.currentFirm];
         if (firms.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firms available</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = firms.map(f => 
+        dropdown.innerHTML = firms.map(f =>
             `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
     }
 
     populatePartyDropdown() {
@@ -1189,37 +1090,26 @@ class App {
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = parties.map(p => 
+        dropdown.innerHTML = parties.map(p =>
             `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
         ).join('');
         dropdown.style.display = 'block';
-        const firstItem = dropdown.querySelector('div');
-        if (firstItem) firstItem.classList.add('selected');
     }
-
-    // ============================================================
-    // FILTER FUNCTIONS
-    // ============================================================
 
     filterFirms(search) {
         const dropdown = document.getElementById('firmDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populateFirmDropdown();
-            return;
-        }
+        if (!search || search.length < 1) { this.populateFirmDropdown(); return; }
         let firms = [];
         if (this.currentRole === 'Admin') firms = Object.keys(this.allFirms);
         else if (this.currentFirm) firms = [this.currentFirm];
-        const filtered = firms.filter(f => 
-            (this.allFirms[f]?.name || f).toLowerCase().includes(search.toLowerCase())
-        );
+        const filtered = firms.filter(f => (this.allFirms[f]?.name || f).toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No firm found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = filtered.map(f => 
+        dropdown.innerHTML = filtered.map(f =>
             `<div onclick="selectFirm('${f}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${this.allFirms[f]?.name || f}</div>`
         ).join('');
         dropdown.style.display = 'block';
@@ -1228,28 +1118,19 @@ class App {
     filterParties(search) {
         const dropdown = document.getElementById('partyDropdown');
         if (!dropdown) return;
-        if (!search || search.length < 1) {
-            this.populatePartyDropdown();
-            return;
-        }
+        if (!search || search.length < 1) { this.populatePartyDropdown(); return; }
         const parties = this.getPartiesForCurrentFirm();
-        const filtered = parties.filter(p => 
-            p.name.toLowerCase().includes(search.toLowerCase())
-        );
+        const filtered = parties.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
         if (filtered.length === 0) {
             dropdown.innerHTML = '<div class="no-result">No party found</div>';
             dropdown.style.display = 'block';
             return;
         }
-        dropdown.innerHTML = filtered.map(p => 
+        dropdown.innerHTML = filtered.map(p =>
             `<div onclick="selectParty('${p.name.replace(/'/g, "\\'")}')" style="cursor:pointer; padding:8px 12px; border-bottom:1px solid #f1f5f9;">${p.name} ${p.phone ? '📞 ' + p.phone : ''}</div>`
         ).join('');
         dropdown.style.display = 'block';
     }
-
-    // ============================================================
-    // SELECT FUNCTIONS
-    // ============================================================
 
     selectExpenseHead(head) {
         document.getElementById('expense_head_input').value = head;
@@ -1279,25 +1160,15 @@ class App {
         document.getElementById('partyDropdown').style.display = 'none';
     }
 
-    // ============================================================
-    // FIRM-WISE HELPERS
-    // ============================================================
-
     getPartiesForCurrentFirm() {
         const firmKey = document.getElementById('firm_name_value')?.value || this.currentFirm;
         if (!firmKey) return this.parties;
         return this.parties.filter(p => p.firm === firmKey || !p.firm);
     }
 
-    // ============================================================
-    // PARTY FUNCTIONS
-    // ============================================================
-
+    // ===== PARTY =====
     openAddPartyModal() {
-        if (!this.canAddParty()) {
-            showToast('❌ No permission to add party');
-            return;
-        }
+        if (!this.canAddParty()) { showToast('❌ No permission to add party'); return; }
         const firmKey = document.getElementById('firm_name_value')?.value || '';
         document.getElementById('edit_party_id').value = '';
         document.getElementById('edit_party_firm').value = '';
@@ -1324,23 +1195,20 @@ class App {
     }
 
     async saveParty() {
-        if (!this.canAddParty()) {
-            showToast('❌ No permission to add party');
-            return;
-        }
+        if (!this.canAddParty()) { showToast('❌ No permission to add party'); return; }
         const id = document.getElementById('edit_party_id').value;
         const name = document.getElementById('new_party_name').value.trim();
         const firm = document.getElementById('new_party_firm').value || this.currentFirm;
         if (!name) { showToast('Party name required'); return; }
-        
-        const party = { 
-            id: id || generateId(), 
-            name: name, 
+
+        const party = {
+            id: id || generateId(),
+            name,
             phone: document.getElementById('new_party_phone').value.trim(),
             address: document.getElementById('new_party_address').value.trim(),
-            firm: firm
+            firm
         };
-        
+
         if (id) {
             const idx = this.parties.findIndex(p => p.id === id);
             if (idx !== -1) this.parties[idx] = party;
@@ -1351,11 +1219,10 @@ class App {
             }
             this.parties.push(party);
         }
-        
-        await this.storage.save(STORAGE_KEYS.PARTIES, 
+
+        await this.storage.save(STORAGE_KEYS.PARTIES,
             Object.fromEntries(this.parties.map(p => [p.id, p]))
         );
-        
         this.populatePartyDropdown();
         this.renderPartiesList();
         this.closeAddPartyModal();
@@ -1377,13 +1244,10 @@ class App {
 
     async deleteParty(id) {
         const used = this.db.some(v => v.party === this.parties.find(p => p.id === id)?.name);
-        if (used) {
-            showToast('❌ Cannot delete: Party is used in vouchers');
-            return;
-        }
+        if (used) { showToast('❌ Cannot delete: Party is used in vouchers'); return; }
         if (!confirm('Delete this party?')) return;
         this.parties = this.parties.filter(p => p.id !== id);
-        await this.storage.save(STORAGE_KEYS.PARTIES, 
+        await this.storage.save(STORAGE_KEYS.PARTIES,
             Object.fromEntries(this.parties.map(p => [p.id, p]))
         );
         this.populatePartyDropdown();
@@ -1396,9 +1260,7 @@ class App {
         if (!container) return;
         const firmFilter = document.getElementById('party_firm_filter')?.value || '';
         let parties = this.parties;
-        if (firmFilter) {
-            parties = parties.filter(p => p.firm === firmFilter);
-        }
+        if (firmFilter) parties = parties.filter(p => p.firm === firmFilter);
         if (parties.length === 0) {
             container.innerHTML = '<p style="color:#999;">No parties found</p>';
             return;
@@ -1419,20 +1281,13 @@ class App {
         `).join('');
     }
 
-    // ============================================================
-    // SETTINGS
-    // ============================================================
-
+    // ===== SETTINGS =====
     openSettings() {
-        const isAdmin = this.currentRole && 
-            (this.currentRole.toLowerCase() === 'admin' || 
-             this.currentRole === 'Admin' || 
-             this.currentRole === 'ADMIN');
-        
-        if (!isAdmin) {
-            showToast('❌ Only Admin can access settings');
-            return;
-        }
+        const isAdmin = this.currentRole &&
+            (this.currentRole.toLowerCase() === 'admin' ||
+                this.currentRole === 'Admin' ||
+                this.currentRole === 'ADMIN');
+        if (!isAdmin) { showToast('❌ Only Admin can access settings'); return; }
         document.getElementById('settings-modal').style.display = 'flex';
         this.renderFirmsList();
         this.renderUsersList();
@@ -1449,10 +1304,7 @@ class App {
         document.getElementById('settings-modal').style.display = 'none';
     }
 
-    // ============================================================
-    // FIRM MANAGEMENT - UPDATED (All firms editable & deletable)
-    // ============================================================
-
+    // ===== FIRM MANAGEMENT =====
     renderFirmsList() {
         const container = document.getElementById('firms_list');
         if (!container) return;
@@ -1495,21 +1347,19 @@ class App {
         const email = document.getElementById('new_firm_email').value.trim();
         const gst = document.getElementById('new_firm_gst').value.trim();
         const pan = document.getElementById('new_firm_pan').value.trim();
-        
+
         if (!name) { showToast('Firm name required'); return; }
         if (!short) { showToast('Short code required'); return; }
-        
+
         const key = name.replace(/\s/g, '');
         if (this.allFirms[key]) { showToast('Firm already exists'); return; }
-        
+
         this.allFirms[key] = { name, short, logo, addr, mobile, email, gst, pan };
-        
+
         const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            firmObj[k] = this.allFirms[k];
-        });
+        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
-        
+
         this.renderFirmsList();
         this.populateFirmDropdown();
         this.updateFirmSelectInSettings();
@@ -1517,7 +1367,7 @@ class App {
         this.updateSettingsRoleDropdown();
         this.updateBankFirmSelect();
         this.updateFirmDropdownsInSettings();
-        
+
         document.getElementById('new_firm_name').value = '';
         document.getElementById('new_firm_short').value = '';
         document.getElementById('new_firm_logo').value = '';
@@ -1532,35 +1382,33 @@ class App {
     editFirm(key) {
         const firm = this.allFirms[key];
         if (!firm) return;
-        
+
         const newName = prompt('🏢 Firm Name:', firm.name);
         if (newName !== null && newName.trim()) firm.name = newName.trim();
-        
+
         const newShort = prompt('📛 Short Code:', firm.short);
         if (newShort !== null && newShort.trim()) firm.short = newShort.trim().toUpperCase();
-        
+
         const newLogo = prompt('🖼️ Logo URL:', firm.logo || 'logo.png');
         if (newLogo !== null) firm.logo = newLogo.trim() || 'logo.png';
-        
+
         const newAddr = prompt('📍 Address:', firm.addr || '');
         if (newAddr !== null) firm.addr = newAddr.trim();
-        
+
         const newMobile = prompt('📞 Mobile No:', firm.mobile || '');
         if (newMobile !== null) firm.mobile = newMobile.trim();
-        
+
         const newEmail = prompt('✉ Email:', firm.email || '');
         if (newEmail !== null) firm.email = newEmail.trim();
-        
+
         const newGst = prompt('📄 GST No:', firm.gst || '');
         if (newGst !== null) firm.gst = newGst.trim();
-        
+
         const newPan = prompt('📄 PAN No:', firm.pan || '');
         if (newPan !== null) firm.pan = newPan.trim();
-        
+
         const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            firmObj[k] = this.allFirms[k];
-        });
+        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
         this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         this.renderFirmsList();
         this.populateFirmDropdown();
@@ -1575,19 +1423,12 @@ class App {
 
     async deleteFirm(key) {
         if (!confirm(`Delete firm "${this.allFirms[key]?.name}"?`)) return;
-        
-        const hasVouchers = this.db.some(v => v.firmKey === key) || 
-                           this.deletedVouchers.some(v => v.firmKey === key);
-        if (hasVouchers) {
-            showToast('Cannot delete: vouchers exist');
-            return;
-        }
+        const hasVouchers = this.db.some(v => v.firmKey === key) || this.deletedVouchers.some(v => v.firmKey === key);
+        if (hasVouchers) { showToast('Cannot delete: vouchers exist'); return; }
+
         delete this.allFirms[key];
-        
         const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            firmObj[k] = this.allFirms[k];
-        });
+        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         this.renderFirmsList();
         this.populateFirmDropdown();
@@ -1599,10 +1440,7 @@ class App {
         showToast('✅ Firm deleted');
     }
 
-    // ============================================================
-    // USER MANAGEMENT - FIXED (Email-based + Edit button)
-    // ============================================================
-
+    // ===== USER MANAGEMENT (FIXED) =====
     renderUsersList() {
         const container = document.getElementById('users_list');
         if (!container) return;
@@ -1614,19 +1452,19 @@ class App {
             const perms = u.permissions || {};
             const firmNames = u.firm ? (this.allFirms[u.firm]?.name || u.firm) : '🌐 All Firms';
             const isAdminUser = u.email === 'admin@dev.com' || u.id === 'Admin' || u.username === 'Admin';
+            const userKey = u.email || u.id || u.username || '';
             return `
             <div class="user-card" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#f8fafc;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
                         <span><strong>👤 ${u.email || u.id || u.username}</strong></span>
-                        <span>🔒 ${u.password}</span>
                         <span><span class="badge" style="background:${u.role === 'Admin' ? '#2563eb' : '#10b981'}">${u.role}</span></span>
                         <span><span class="firm-badge" style="background:#8b5cf6;">${firmNames}</span></span>
                     </div>
                     <div>
-                        ${!isAdminUser ? 
-                            `<button class="btn-action btn-edit" onclick="app.editUser('${u.email || u.id || u.username}')" title="Edit User" style="background:#f59e0b; color:white; padding:5px 12px; border:none; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Edit</button>
-                             <button class="btn-action btn-del" onclick="app.deleteUser('${u.email || u.id || u.username}')">✖</button>` :
+                        ${!isAdminUser ?
+                            `<button class="btn-action btn-edit" onclick="app.editUser('${userKey}')" title="Edit User" style="background:#f59e0b; color:white; padding:5px 12px; border:none; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Edit</button>
+                             <button class="btn-action btn-del" onclick="app.deleteUser('${userKey}')">✖</button>` :
                             `<span style="color:#94a3b8; font-size:12px;">🔒 Admin (Protected)</span>`
                         }
                     </div>
@@ -1648,33 +1486,21 @@ class App {
         `}).join('');
     }
 
-    // ✅ FIXED: Email-based API se user create
+    // ✅ FIXED: Email key bug fix
     async addUser() {
         const email = document.getElementById('new_user_id').value.trim();
         const pass = document.getElementById('new_user_pass').value.trim();
         const role = document.getElementById('new_user_role').value;
         const firm = document.getElementById('new_user_firm').value;
-        
-        if (!email || !pass) { 
-            showToast('❌ Enter Email and Password'); 
-            return; 
-        }
-        if (!email.includes('@')) {
-            showToast('❌ Valid email required'); 
-            return; 
-        }
-        if (this.allUsers.find(u => u.email === email)) { 
-            showToast('❌ Email already exists'); 
-            return; 
-        }
-        if (role !== 'Admin' && !firm) { 
-            showToast('❌ Please select a firm for Staff'); 
-            return; 
-        }
-        
+
+        if (!email || !pass) { showToast('❌ Enter Email and Password'); return; }
+        if (!email.includes('@')) { showToast('❌ Valid email required'); return; }
+        if (this.allUsers.find(u => u.email === email)) { showToast('❌ Email already exists'); return; }
+        if (role !== 'Admin' && !firm) { showToast('❌ Please select a firm for Staff'); return; }
+
         try {
             showToast('⏳ Creating user...');
-            
+
             const response = await fetch('/api/create-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1686,13 +1512,10 @@ class App {
                     role: role
                 })
             });
-            
+
             const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.error || 'Failed to create user');
-            }
-            
+            if (!data.success) throw new Error(data.error || 'Failed to create user');
+
             const permissions = {
                 print: document.getElementById('perm_print')?.checked || false,
                 edit: document.getElementById('perm_edit')?.checked || false,
@@ -1706,58 +1529,52 @@ class App {
                 export_import: document.getElementById('perm_export_import')?.checked || false,
                 edit_firm: document.getElementById('perm_edit_firm')?.checked || false
             };
-            
-            const user = { 
-                email: email,
-                name: email.split('@')[0],
-                password: pass, 
-                role, 
-                firm: role === 'Admin' ? null : firm, 
-                permissions 
+
+            const user = {
+                email, name: email.split('@')[0], password: pass, role,
+                firm: role === 'Admin' ? null : firm,
+                permissions
             };
-            
+
             this.allUsers.push(user);
-            
-            await this.storage.save(STORAGE_KEYS.USERS,
-                Object.fromEntries(this.allUsers.map(u => [u.email, u]))
-            );
-            
+
+            // ✅ FIX: Email → safe key
+            const usersObj = {};
+            this.allUsers.forEach(u => {
+                const safeKey = this.storage.emailToKey(u.email || u.id);
+                usersObj[safeKey] = u;
+            });
+            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
+
             this.renderUsersList();
             this.updateLoginRoleDropdown();
             this.updateSettingsRoleDropdown();
-            
+
             document.getElementById('new_user_id').value = '';
             document.getElementById('new_user_pass').value = '';
             document.getElementById('new_user_firm').value = '';
-            
+
             showToast(`✅ ${role} User "${email}" created successfully!`);
-            
+
         } catch (error) {
             console.error('❌ Create user error:', error);
             showToast('❌ ' + error.message);
         }
     }
 
-    // ✏️ EDIT USER - Open edit modal
     editUser(identifier) {
-        const user = this.allUsers.find(u => 
-            u.email === identifier || 
-            u.id === identifier || 
-            u.username === identifier
+        const user = this.allUsers.find(u =>
+            u.email === identifier || u.id === identifier || u.username === identifier
         );
-        
-        if (!user) {
-            showToast('❌ User not found');
-            return;
-        }
-        
+        if (!user) { showToast('❌ User not found'); return; }
+
         document.getElementById('edit_user_identifier').value = identifier;
         document.getElementById('edit_user_email').value = user.email || user.id || user.username;
         document.getElementById('edit_user_password').value = '';
         document.getElementById('edit_user_name').value = user.name || user.email || user.id;
         document.getElementById('edit_user_role').value = user.role || 'Staff';
         document.getElementById('edit_user_firm').value = user.firm || 'DevVidyalaya';
-        
+
         document.getElementById('edit_perm_print').checked = user.permissions?.print || false;
         document.getElementById('edit_perm_edit').checked = user.permissions?.edit || false;
         document.getElementById('edit_perm_delete').checked = user.permissions?.delete || false;
@@ -1769,11 +1586,10 @@ class App {
         document.getElementById('edit_perm_expense_add').checked = user.permissions?.expense_add || false;
         document.getElementById('edit_perm_export_import').checked = user.permissions?.export_import || false;
         document.getElementById('edit_perm_edit_firm').checked = user.permissions?.edit_firm || false;
-        
+
         document.getElementById('editUserModal').style.display = 'flex';
         document.getElementById('editUserModalTitle').innerHTML = `✏️ Edit User: ${user.email || user.id || user.username}`;
-        
-        // Update firm dropdown
+
         const firmSelect = document.getElementById('edit_user_firm');
         firmSelect.innerHTML = '<option value="">-- Select Firm --</option>';
         Object.keys(this.allFirms).forEach(f => {
@@ -1782,7 +1598,6 @@ class App {
         if (user.firm) firmSelect.value = user.firm;
     }
 
-    // 💾 UPDATE USER
     async updateUser() {
         const identifier = document.getElementById('edit_user_identifier').value;
         const email = document.getElementById('edit_user_email').value.trim();
@@ -1790,21 +1605,15 @@ class App {
         const name = document.getElementById('edit_user_name').value.trim();
         const role = document.getElementById('edit_user_role').value;
         const firm = document.getElementById('edit_user_firm').value;
-        
-        const userIndex = this.allUsers.findIndex(u => 
-            u.email === identifier || 
-            u.id === identifier || 
-            u.username === identifier
+
+        const userIndex = this.allUsers.findIndex(u =>
+            u.email === identifier || u.id === identifier || u.username === identifier
         );
-        
-        if (userIndex === -1) {
-            showToast('❌ User not found');
-            return;
-        }
-        
+        if (userIndex === -1) { showToast('❌ User not found'); return; }
+
         try {
             showToast('⏳ Updating user...');
-            
+
             const permissions = {
                 print: document.getElementById('edit_perm_print').checked,
                 edit: document.getElementById('edit_perm_edit').checked,
@@ -1818,28 +1627,29 @@ class App {
                 export_import: document.getElementById('edit_perm_export_import').checked,
                 edit_firm: document.getElementById('edit_perm_edit_firm').checked
             };
-            
+
             this.allUsers[userIndex].email = email;
             this.allUsers[userIndex].name = name;
             this.allUsers[userIndex].role = role;
             this.allUsers[userIndex].firm = role === 'Admin' ? null : firm;
             this.allUsers[userIndex].permissions = permissions;
-            
-            if (password) {
-                this.allUsers[userIndex].password = password;
-            }
-            
-            await this.storage.save(STORAGE_KEYS.USERS,
-                Object.fromEntries(this.allUsers.map(u => [u.email || u.id, u]))
-            );
-            
+            if (password) this.allUsers[userIndex].password = password;
+
+            // ✅ FIX: Email → safe key
+            const usersObj = {};
+            this.allUsers.forEach(u => {
+                const safeKey = this.storage.emailToKey(u.email || u.id);
+                usersObj[safeKey] = u;
+            });
+            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
+
             this.renderUsersList();
             this.updateLoginRoleDropdown();
             this.updateSettingsRoleDropdown();
-            
+
             document.getElementById('editUserModal').style.display = 'none';
             showToast(`✅ User "${email}" updated successfully!`);
-            
+
         } catch (error) {
             console.error('❌ Update user error:', error);
             showToast('❌ ' + error.message);
@@ -1849,76 +1659,52 @@ class App {
     closeEditUserModal() {
         document.getElementById('editUserModal').style.display = 'none';
     }
-// 🗑️ DELETE USER - Permanent fix
-async deleteUser(identifier) {
-    // Admin user delete nahi ho sakta
-    if (identifier === 'Admin' || identifier === 'admin@dev.com') { 
-        showToast('❌ Cannot delete Admin user'); 
-        return; 
-    }
-    
-    if (!confirm('Delete user: ' + identifier + ' permanently?')) return;
-    
-    try {
-        showToast('⏳ Deleting user...');
-        
-        // ✅ User dhoondhein
-        const user = this.allUsers.find(u => 
-            u.email === identifier || 
-            u.id === identifier || 
-            u.username === identifier
-        );
-        
-        if (!user) {
-            showToast('❌ User not found');
+
+    async deleteUser(identifier) {
+        if (identifier === 'Admin' || identifier === 'admin@dev.com') {
+            showToast('❌ Cannot delete Admin user');
             return;
         }
-        
-        // ✅ Firebase Database se delete
-        const usersRef = firebase.database().ref('users');
-        const snapshot = await usersRef.once('value');
-        const users = snapshot.val() || {};
-        let userKey = null;
-        
-        Object.keys(users).forEach(key => {
-            const u = users[key];
-            if (u.email === user.email || u.id === user.id || u.username === user.username) {
-                userKey = key;
+        if (!confirm('Delete user: ' + identifier + ' permanently?')) return;
+
+        try {
+            showToast('⏳ Deleting user...');
+            const user = this.allUsers.find(u =>
+                u.email === identifier || u.id === identifier || u.username === identifier
+            );
+            if (!user) { showToast('❌ User not found'); return; }
+
+            // ✅ Firebase से delete (safe key के साथ)
+            if (this.storage.rtdb) {
+                const safeKey = this.storage.emailToKey(user.email || user.id);
+                await this.storage.rtdb.ref('users/' + safeKey).remove();
+                console.log(`✅ User ${identifier} deleted from database`);
             }
-        });
-        
-        if (userKey) {
-            await usersRef.child(userKey).remove();
-            console.log(`✅ User ${identifier} deleted from database`);
+
+            this.allUsers = this.allUsers.filter(u =>
+                (u.email || u.id || u.username) !== identifier
+            );
+
+            // ✅ FIX: Email → safe key
+            const usersObj = {};
+            this.allUsers.forEach(u => {
+                const safeKey = this.storage.emailToKey(u.email || u.id);
+                usersObj[safeKey] = u;
+            });
+            await this.storage.save(STORAGE_KEYS.USERS, usersObj);
+
+            this.renderUsersList();
+            this.updateLoginRoleDropdown();
+            this.updateSettingsRoleDropdown();
+            showToast(`✅ User "${identifier}" deleted successfully!`);
+
+        } catch (error) {
+            console.error('❌ Delete user error:', error);
+            showToast('❌ ' + error.message);
         }
-        
-        // ✅ Local array se delete
-        this.allUsers = this.allUsers.filter(u => 
-            (u.email || u.id || u.username) !== identifier
-        );
-        
-        // ✅ Local storage update
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.email || u.id, u]))
-        );
-        
-        // ✅ UI update
-        this.renderUsersList();
-        this.updateLoginRoleDropdown();
-        this.updateSettingsRoleDropdown();
-        
-        showToast(`✅ User "${identifier}" deleted successfully!`);
-        
-    } catch (error) {
-        console.error('❌ Delete user error:', error);
-        showToast('❌ ' + error.message);
     }
-}
 
-    // ============================================================
-    // BANK MANAGEMENT
-    // ============================================================
-
+    // ===== BANK =====
     updateBankFirmSelect() {
         const select = document.getElementById('bank_firm_select');
         if (!select) return;
@@ -1963,27 +1749,23 @@ async deleteUser(identifier) {
     }
 
     async addBankAccount() {
-        if (!this.canAddBank()) {
-            showToast('❌ No permission to add bank');
-            return;
-        }
+        if (!this.canAddBank()) { showToast('❌ No permission to add bank'); return; }
         const firmKey = document.getElementById('bank_firm_select').value;
         const name = document.getElementById('new_bank_name').value.trim();
         const account = document.getElementById('new_bank_account').value.trim();
         const ifsc = document.getElementById('new_bank_ifsc').value.trim();
-        
+
         if (!firmKey) { showToast('❌ Please select a firm first'); return; }
         if (!name) { showToast('❌ Please enter bank name'); return; }
         if (!account) { showToast('❌ Please enter account number'); return; }
-        
+
         if (!this.bankAccounts[firmKey]) this.bankAccounts[firmKey] = [];
         this.bankAccounts[firmKey].push({ name, account, ifsc });
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        
+
         this.renderBankAccountsList(firmKey);
         this.updateBankDropdown();
         this.updateBankFirmSelect();
-        
         document.getElementById('new_bank_name').value = '';
         document.getElementById('new_bank_account').value = '';
         document.getElementById('new_bank_ifsc').value = '';
@@ -1994,9 +1776,7 @@ async deleteUser(identifier) {
         if (!confirm('Delete this bank account?')) return;
         if (this.bankAccounts[firmKey]) {
             this.bankAccounts[firmKey].splice(index, 1);
-            if (this.bankAccounts[firmKey].length === 0) {
-                delete this.bankAccounts[firmKey];
-            }
+            if (this.bankAccounts[firmKey].length === 0) delete this.bankAccounts[firmKey];
         }
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
         this.renderBankAccountsList(firmKey);
@@ -2005,44 +1785,18 @@ async deleteUser(identifier) {
         showToast('✅ Bank account deleted');
     }
 
-    // ============================================================
-    // PERMISSION CHECKS
-    // ============================================================
+    // ===== PERMISSIONS =====
+    canAddParty() { return this.userPermissions.party_add || this.currentRole === 'Admin'; }
+    canAddBank() { return this.userPermissions.bank_add || this.currentRole === 'Admin'; }
+    canAddExpense() { return this.userPermissions.expense_add || this.currentRole === 'Admin'; }
+    canExportImport() { return this.userPermissions.export_import || this.currentRole === 'Admin'; }
+    canEditFirm() { return this.userPermissions.edit_firm || this.currentRole === 'Admin'; }
 
-    canAddParty() {
-        return this.userPermissions.party_add || this.currentRole === 'Admin';
-    }
-
-    canAddBank() {
-        return this.userPermissions.bank_add || this.currentRole === 'Admin';
-    }
-
-    canAddExpense() {
-        return this.userPermissions.expense_add || this.currentRole === 'Admin';
-    }
-
-    canExportImport() {
-        return this.userPermissions.export_import || this.currentRole === 'Admin';
-    }
-
-    canEditFirm() {
-        return this.userPermissions.edit_firm || this.currentRole === 'Admin';
-    }
-
-    // ============================================================
-    // IMPORT/EXPORT FUNCTIONS
-    // ============================================================
-
+    // ===== IMPORT/EXPORT =====
     async importExpenseHeads() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to import');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to import'); return; }
         const fileInput = document.getElementById('importHeadsFile');
-        if (!fileInput.files || !fileInput.files[0]) {
-            showToast('❌ Please select a file');
-            return;
-        }
+        if (!fileInput.files || !fileInput.files[0]) { showToast('❌ Please select a file'); return; }
         try {
             const data = await this._readFile(fileInput.files[0]);
             const firm = document.getElementById('expense_head_firm').value || this.currentFirm;
@@ -2072,15 +1826,9 @@ async deleteUser(identifier) {
     }
 
     async importParties() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to import');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to import'); return; }
         const fileInput = document.getElementById('importPartiesFile');
-        if (!fileInput.files || !fileInput.files[0]) {
-            showToast('❌ Please select a file');
-            return;
-        }
+        if (!fileInput.files || !fileInput.files[0]) { showToast('❌ Please select a file'); return; }
         try {
             const data = await this._readFile(fileInput.files[0]);
             const firm = document.getElementById('party_firm_filter')?.value || this.currentFirm;
@@ -2094,7 +1842,7 @@ async deleteUser(identifier) {
                     count++;
                 }
             });
-            await this.storage.save(STORAGE_KEYS.PARTIES, 
+            await this.storage.save(STORAGE_KEYS.PARTIES,
                 Object.fromEntries(this.parties.map(p => [p.id, p]))
             );
             this.populatePartyDropdown();
@@ -2105,42 +1853,20 @@ async deleteUser(identifier) {
         }
     }
 
-    // ============================================================
-    // BULK VOUCHER IMPORT
-    // ============================================================
-
     async importVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to import');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to import'); return; }
         const fileInput = document.getElementById('importVouchersFile');
-        if (!fileInput.files || !fileInput.files[0]) {
-            showToast('❌ Please select a file');
-            return;
-        }
-        
+        if (!fileInput.files || !fileInput.files[0]) { showToast('❌ Please select a file'); return; }
         const firmSelect = document.getElementById('import_firm_select');
-        if (!firmSelect) {
-            showToast('❌ Please select a firm first');
-            return;
-        }
+        if (!firmSelect) { showToast('❌ Please select a firm first'); return; }
         const firmKey = firmSelect.value;
-        if (!firmKey) {
-            showToast('❌ Please select a firm for import');
-            return;
-        }
+        if (!firmKey) { showToast('❌ Please select a firm for import'); return; }
         const firm = this.allFirms[firmKey];
-        if (!firm) {
-            showToast('❌ Invalid firm selected');
-            return;
-        }
-        
+        if (!firm) { showToast('❌ Invalid firm selected'); return; }
+
         try {
             const data = await this._readFile(fileInput.files[0]);
-            let count = 0;
-            let skipped = 0;
-            
+            let count = 0, skipped = 0;
             for (const row of data) {
                 const date = row.Date || row.date || getToday();
                 const head = row.Head || row.head || '';
@@ -2151,57 +1877,36 @@ async deleteUser(identifier) {
                 const referenceNo = row.ReferenceNo || row.referenceNo || '';
                 const narration = row.Narration || row.narration || '';
                 const createdBy = row.CreatedBy || row.createdBy || this.currentUser;
-                
-                if (!head || !party || amount <= 0) {
-                    skipped++;
-                    continue;
-                }
-                
+
+                if (!head || !party || amount <= 0) { skipped++; continue; }
+
                 const vno = `${firm.short}/EXP/${getFinancialYear()}/${String(this.db.filter(v => v.firmKey === firmKey).length + 1).padStart(3, '0')}`;
-                
+
                 const voucher = {
-                    id: generateId(),
-                    vno: vno,
-                    date: date,
-                    firmKey: firmKey,
-                    firmName: firm.name,
-                    head: head,
-                    subHead: subHead,
-                    party: party,
-                    amount: amount,
-                    mode: mode,
-                    referenceNo: referenceNo,
-                    narration: narration,
-                    type: 'EXP',
-                    status: 'active',
-                    createdBy: createdBy,
-                    createdAt: new Date().toISOString(),
-                    timestamp: Date.now()
+                    id: generateId(), vno, date, firmKey, firmName: firm.name,
+                    head, subHead, party, amount, mode, referenceNo, narration,
+                    type: 'EXP', status: 'active', createdBy,
+                    createdAt: new Date().toISOString(), timestamp: Date.now()
                 };
-                
+
                 this.db.push(voucher);
                 await this.storage.saveVoucher(voucher);
-                
+
                 if (!this.voucherCounter[firmKey]) this.voucherCounter[firmKey] = 0;
                 this.voucherCounter[firmKey]++;
                 count++;
             }
-            
+
             await this.storage.save(STORAGE_KEYS.VOUCHER_COUNTER, this.voucherCounter);
             this.renderAll();
             this.updateStats();
             this.updateHeadFilter();
             showToast(`✅ ${count} vouchers imported! ${skipped > 0 ? '⚠️ ' + skipped + ' skipped' : ''}`);
-            
         } catch (error) {
             console.error('❌ Import error:', error);
             showToast('❌ Import failed: ' + error.message);
         }
     }
-
-    // ============================================================
-    // DOWNLOAD TEMPLATES
-    // ============================================================
 
     downloadPartyTemplate() {
         const headers = ['PartyName', 'Phone', 'Address', 'Firm'];
@@ -2236,10 +1941,7 @@ async deleteUser(identifier) {
     }
 
     exportExpenseHeads() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         const data = Object.keys(this.expenseHeads).map(head => ({
             Head: head,
             SubHead: (this.expenseHeads[head]?.subHeads || []).join(', '),
@@ -2249,10 +1951,7 @@ async deleteUser(identifier) {
     }
 
     exportParties() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         const data = this.parties.map(p => ({
             PartyName: p.name,
             Phone: p.phone || '',
@@ -2262,15 +1961,8 @@ async deleteUser(identifier) {
         this.exportToExcel(data, 'Parties_Export');
     }
 
-    // ============================================================
-    // VOUCHER EXPORT FUNCTIONS
-    // ============================================================
-
     exportToExcel(data, filename) {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         if (typeof XLSX === 'undefined') { showToast('Excel library loading...'); return; }
         const ws = XLSX.utils.json_to_sheet(data.map(v => ({
             'Date': v.date || v.Date || '',
@@ -2297,50 +1989,33 @@ async deleteUser(identifier) {
     }
 
     exportAllVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         const allVouchers = [...this.db.filter(v => v.status !== 'deleted'), ...this.deletedVouchers];
         const unique = [];
         const seen = new Set();
-        allVouchers.forEach(v => {
-            if (!seen.has(v.id)) { seen.add(v.id); unique.push(v); }
-        });
+        allVouchers.forEach(v => { if (!seen.has(v.id)) { seen.add(v.id); unique.push(v); } });
         this.exportToExcel(unique, 'All_Vouchers_Report');
     }
 
     exportActiveVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         this.exportToExcel(this.db.filter(v => v.status !== 'deleted'), 'Active_Vouchers');
     }
 
     exportDeletedVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         this.exportToExcel(this.deletedVouchers, 'Deleted_Vouchers');
     }
 
     exportEditedVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         const editedIds = new Set(this.editLogs.map(e => e.voucherId));
         const editedVouchers = this.db.filter(v => editedIds.has(v.id));
         this.exportToExcel(editedVouchers, 'Edited_Vouchers');
     }
 
     exportFilteredVouchers() {
-        if (!this.canExportImport()) {
-            showToast('❌ No permission to export');
-            return;
-        }
+        if (!this.canExportImport()) { showToast('❌ No permission to export'); return; }
         const search = document.getElementById('r_search')?.value?.toLowerCase() || '';
         const start = document.getElementById('r_start')?.value || '';
         const end = document.getElementById('r_end')?.value || '';
@@ -2351,32 +2026,17 @@ async deleteUser(identifier) {
         const firmFilter = document.getElementById('r_firm_filter')?.value || '';
         const amountMin = parseFloat(document.getElementById('r_amount_min')?.value) || 0;
         const amountMax = parseFloat(document.getElementById('r_amount_max')?.value) || Infinity;
-        
+
         let allVouchers = [];
-        if (status === 'ALL' || status === 'active') {
-            allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
-        }
-        if (status === 'ALL' || status === 'deleted') {
-            allVouchers = allVouchers.concat(this.deletedVouchers);
-        }
+        if (status === 'ALL' || status === 'active') allVouchers = allVouchers.concat(this.db.filter(v => v.status !== 'deleted'));
+        if (status === 'ALL' || status === 'deleted') allVouchers = allVouchers.concat(this.deletedVouchers);
+
         const seen = new Set();
-        allVouchers = allVouchers.filter(v => {
-            if (seen.has(v.id)) return false;
-            seen.add(v.id);
-            return true;
-        });
+        allVouchers = allVouchers.filter(v => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
+
         const filtered = allVouchers.filter(v => {
             let match = true;
-            if (search) {
-                match = match && (
-                    v.party?.toLowerCase().includes(search) ||
-                    v.head?.toLowerCase().includes(search) ||
-                    v.narration?.toLowerCase().includes(search) ||
-                    v.vno?.toLowerCase().includes(search) ||
-                    v.subHead?.toLowerCase().includes(search) ||
-                    v.createdBy?.toLowerCase().includes(search)
-                );
-            }
+            if (search) match = match && (v.party?.toLowerCase().includes(search) || v.head?.toLowerCase().includes(search) || v.narration?.toLowerCase().includes(search) || v.vno?.toLowerCase().includes(search) || v.subHead?.toLowerCase().includes(search) || v.createdBy?.toLowerCase().includes(search));
             if (start) match = match && v.date >= start;
             if (end) match = match && v.date <= end;
             if (amountMin > 0) match = match && v.amount >= amountMin;
@@ -2390,15 +2050,8 @@ async deleteUser(identifier) {
         this.exportToExcel(filtered, 'Filtered_Vouchers_Export');
     }
 
-    // ============================================================
-    // SHARE VOUCHER
-    // ============================================================
-
     shareVoucher(id) {
-        if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') {
-            showToast('❌ No permission to share');
-            return;
-        }
+        if (!this.userPermissions.whatsapp && this.currentRole !== 'Admin') { showToast('❌ No permission to share'); return; }
         const v = this.db.find(x => x.id === id);
         if (!v) { showToast('Voucher not found'); return; }
         const message = `*${v.firmName}*\nVoucher: ${v.vno}\nDate: ${v.date}\nHead: ${v.head}\nParty: ${v.party}\nAmount: ₹${v.amount.toFixed(2)}\n\nThank you!`;
@@ -2411,22 +2064,17 @@ async deleteUser(identifier) {
         this.shareVoucher(voucher.id);
     }
 
-    // ============================================================
-    // SAVE ALL SETTINGS
-    // ============================================================
-
+    // ===== SAVE ALL SETTINGS (FIXED - users removed) =====
     async saveAllSettings() {
         const firmObj = {};
-        Object.keys(this.allFirms).forEach(k => {
-            firmObj[k] = this.allFirms[k];
-        });
+        Object.keys(this.allFirms).forEach(k => { firmObj[k] = this.allFirms[k]; });
         await this.storage.save(STORAGE_KEYS.FIRMS, firmObj);
         await this.storage.save(STORAGE_KEYS.EXPENSE_HEADS, this.expenseHeads);
         await this.storage.save(STORAGE_KEYS.BANK_ACCOUNTS, this.bankAccounts);
-        await this.storage.save(STORAGE_KEYS.USERS,
-            Object.fromEntries(this.allUsers.map(u => [u.email, u]))
-        );
-        
+
+        // ❌ USERS को यहाँ से हटाया - email key bug की वजह से
+        // Users का management अब सिर्फ addUser/updateUser/deleteUser से होगा
+
         const perms = {
             print: document.getElementById('perm_print').checked,
             edit: document.getElementById('perm_edit').checked,
@@ -2442,7 +2090,7 @@ async deleteUser(identifier) {
         };
         await this.storage.save(STORAGE_KEYS.PERMISSIONS, perms);
         this.userPermissions = perms;
-        
+
         showToast('✅ All settings saved!');
         this.closeSettings();
         this.populateFirmDropdown();
@@ -2453,10 +2101,7 @@ async deleteUser(identifier) {
         this.renderAll();
     }
 
-    // ============================================================
-    // MODULE SWITCH
-    // ============================================================
-
+    // ===== MODULE SWITCH =====
     switchModule(module) {
         document.querySelectorAll('.module-pane').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
@@ -2470,23 +2115,17 @@ async deleteUser(identifier) {
         if (module === 'reports') this.renderReports();
     }
 
-    // ============================================================
-    // UI UPDATE
-    // ============================================================
-
     updateUI() {
         let firmName = 'All Firms (Admin)';
         if (this.currentRole === 'Admin') firmName = 'All Firms (Admin)';
         else if (this.currentFirm && this.allFirms[this.currentFirm]) {
             firmName = this.allFirms[this.currentFirm].name;
         }
-        document.getElementById('header_firm_name').innerText = firmName;
+        const el = document.getElementById('header_firm_name');
+        if (el) el.innerText = firmName;
     }
 
-    // ============================================================
-    // REAL-TIME LISTENER
-    // ============================================================
-
+    // ===== REALTIME =====
     setupRealtimeListener() {
         this.storage.onVoucherChange((db) => {
             this.db = db;
@@ -2497,16 +2136,15 @@ async deleteUser(identifier) {
         });
     }
 
-    // ============================================================
-    // EVENT LISTENERS
-    // ============================================================
-
+    // ===== EVENT LISTENERS =====
     setupEventListeners() {
-        document.getElementById('loginBtn').addEventListener('click', () => this.doLogin());
-        
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) loginBtn.addEventListener('click', () => this.doLogin());
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                if (document.getElementById('login-screen').style.display !== 'none') {
+                const loginScreen = document.getElementById('login-screen');
+                if (loginScreen && loginScreen.style.display !== 'none') {
                     this.doLogin();
                 }
             }
@@ -2514,20 +2152,18 @@ async deleteUser(identifier) {
                 document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; });
             }
         });
-        
+
         document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', function(e) {
+            modal.addEventListener('click', function (e) {
                 if (e.target === this) this.style.display = 'none';
             });
         });
 
-        document.getElementById('v_mode_value')?.addEventListener('change', () => this.toggleBankField());
+        const modeValue = document.getElementById('v_mode_value');
+        if (modeValue) modeValue.addEventListener('change', () => this.toggleBankField());
     }
 
-    // ============================================================
-    // UTILITY - READ FILE
-    // ============================================================
-
+    // ===== UTILITY - READ FILE =====
     async _readFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -2546,24 +2182,17 @@ async deleteUser(identifier) {
                             if (lines[i].trim()) {
                                 const values = lines[i].split(',').map(v => v.trim());
                                 const row = {};
-                                headers.forEach((h, idx) => {
-                                    row[h] = values[idx] || '';
-                                });
+                                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
                                 data.push(row);
                             }
                         }
                         resolve(data);
                     }
-                } catch (error) {
-                    reject(error);
-                }
+                } catch (error) { reject(error); }
             };
             reader.onerror = reject;
-            if (file.name.endsWith('.xlsx')) {
-                reader.readAsArrayBuffer(file);
-            } else {
-                reader.readAsText(file);
-            }
+            if (file.name.endsWith('.xlsx')) reader.readAsArrayBuffer(file);
+            else reader.readAsText(file);
         });
     }
 }
