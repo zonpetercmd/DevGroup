@@ -50,7 +50,7 @@ class App {
     }
 
     // ===== LOAD DATA =====
-    async loadAllData() {
+        async loadAllData() {
         const data = await this.storage.loadAllData();
         this.allFirms = data.allFirms || {};
         this.db = data.db || [];
@@ -62,13 +62,24 @@ class App {
         this.voucherCounter = data.voucherCounter || {};
         this.bankAccounts = data.bankAccounts || {};
         this.userPermissions = data.userPermissions || DEFAULT_PERMISSIONS;
-        // ✅ NEW
-        this.accounts = data.accounts || [];
+
+        // ✅ FIX: accounts को array में convert करो
+        const acc = data.accounts;
+        if (Array.isArray(acc)) {
+            this.accounts = acc;
+        } else if (acc && typeof acc === 'object') {
+            this.accounts = Object.values(acc);
+        } else {
+            this.accounts = [];
+        }
+
+        // ✅ FIX: openingBalances
         this.openingBalances = data.openingBalances || {};
+
         this.loaded = true;
         console.log('✅ Data loaded. Firms:', Object.keys(this.allFirms).length);
+        console.log('✅ Accounts loaded:', this.accounts.length);
     }
-
     // ===== SESSION =====
     checkSession() {
         if (!this.loaded) {
@@ -1872,18 +1883,41 @@ class App {
         if (el) el.value = `${firm.short}/CTR/${fy}/${String(ctrCount).padStart(3, '0')}`;
     }
 
-    populateContraAccounts() {
-        const firmKey = this.currentFirm || 'DevVidyalaya';
+        populateContraAccounts() {
+        let firmKey = this.currentFirm || 'DevVidyalaya';
+        if (!this.currentFirm && this.allFirms) {
+            const firms = Object.keys(this.allFirms);
+            if (firms.length > 0) firmKey = firms[0];
+        }
+
         const banks = this.bankAccounts[firmKey] || [];
-        const pettyAccounts = (this.accounts || []).filter(a => a.type === 'petty' || a.type === 'cash');
+        
+        // ✅ FIX: ensure array
+        if (!Array.isArray(this.accounts)) {
+            const acc = this.accounts;
+            if (acc && typeof acc === 'object') {
+                this.accounts = Object.values(acc);
+            } else {
+                this.accounts = [];
+            }
+        }
+
+        const cashAccounts = this.accounts.filter(a => a.type === 'cash' || a.type === 'petty');
+        const bankAccounts = this.accounts.filter(a => a.type === 'bank');
 
         let options = '<option value="">-- Select Account --</option>';
         options += '<option value="Cash">💵 Cash in Hand</option>';
+
+        cashAccounts.forEach(a => {
+            options += `<option value="Petty-${a.name}">💵 ${a.name}</option>`;
+        });
+        
         banks.forEach(b => {
             options += `<option value="Bank-${b.name}|${b.account}">🏦 ${b.name} - ${b.account}</option>`;
         });
-        pettyAccounts.forEach(p => {
-            options += `<option value="Petty-${p.name}">💵 ${p.name}</option>`;
+        
+        bankAccounts.forEach(a => {
+            options += `<option value="Bank-${a.name}">🏦 ${a.name}</option>`;
         });
 
         const fromSelect = document.getElementById('ctr_from_account');
@@ -1891,7 +1925,6 @@ class App {
         if (fromSelect) fromSelect.innerHTML = options;
         if (toSelect) toSelect.innerHTML = options;
     }
-
     async saveContraVoucher() {
         const firmKey = this.currentFirm || 'DevVidyalaya';
         const date = document.getElementById('ctr_date').value;
@@ -2907,14 +2940,25 @@ class App {
     // ✅ NEW: ACCOUNTS MANAGEMENT
     // ============================================================
 
-    renderAccountsList() {
+        renderAccountsList() {
         const container = document.getElementById('accounts_list');
         if (!container) return;
 
-        const accounts = this.accounts || [];
+        // ✅ FIX: ensure array
+        if (!Array.isArray(this.accounts)) {
+            const acc = this.accounts;
+            if (acc && typeof acc === 'object') {
+                this.accounts = Object.values(acc);
+            } else {
+                this.accounts = [];
+            }
+        }
+
+        const accounts = this.accounts;
+        console.log('🎨 Rendering accounts:', accounts);
 
         if (accounts.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No accounts added. Add Cash, Petty Cash, or Bank accounts.</p>';
+            container.innerHTML = '<p style="color:#999; font-size:12px;">No accounts added. Add Cash, Petty Cash, or Bank accounts.</p>';
             return;
         }
 
@@ -2930,23 +2974,60 @@ class App {
         `).join('');
     }
 
-    async addAccount() {
-        const type = document.getElementById('new_account_type').value;
-        const name = document.getElementById('new_account_name').value.trim();
+        async addAccount() {
+        const typeEl = document.getElementById('new_account_type');
+        const nameEl = document.getElementById('new_account_name');
+        if (!typeEl || !nameEl) { 
+            showToast('❌ Form fields not found'); 
+            return; 
+        }
+
+        const type = typeEl.value;
+        const name = nameEl.value.trim();
 
         if (!name) { showToast('❌ Enter account name'); return; }
 
-        if (!this.accounts) this.accounts = [];
-        this.accounts.push({
-            id: generateId(),
-            name, type,
-            createdAt: new Date().toISOString()
-        });
+        // ✅ FIX: ensure array
+        if (!Array.isArray(this.accounts)) {
+            this.accounts = [];
+        }
 
-        await this.storage.save(STORAGE_KEYS.ACCOUNTS, this.accounts);
-        this.renderAccountsList();
-        document.getElementById('new_account_name').value = '';
-        showToast('✅ Account added');
+        // Duplicate check
+        const existing = this.accounts.find(a => 
+            a.name && a.name.toLowerCase() === name.toLowerCase()
+        );
+        if (existing) {
+            showToast('⚠️ Account already exists');
+            return;
+        }
+
+        const newAccount = {
+            id: generateId(),
+            name: name,
+            type: type,
+            createdAt: new Date().toISOString()
+        };
+
+        this.accounts.push(newAccount);
+        console.log('📝 New account:', newAccount);
+        console.log('📋 All accounts:', this.accounts);
+
+        try {
+            // ✅ Save
+            await this.storage.save('accounts', this.accounts);
+            console.log('✅ Account saved');
+
+            this.renderAccountsList();
+            if (typeof this.populateContraAccounts === 'function') {
+                this.populateContraAccounts();
+            }
+            
+            nameEl.value = '';
+            showToast('✅ Account "' + name + '" added');
+        } catch (err) {
+            console.error('❌ Save error:', err);
+            showToast('❌ Save failed: ' + err.message);
+        }
     }
 
     async deleteAccount(id) {
