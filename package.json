@@ -1,7 +1,15 @@
 {
   "name": "voucher-app",
   "version": "1.0.0",
-  "description": "Voucher Management System",
+  "description": "Voucher Management System - DEV Vidyalaya",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
   "dependencies": {
     "firebase-admin": "^11.11.0",
     "bcryptjs": "^2.4.3"
