@@ -1,4 +1,7 @@
+// ============================================
 // config/firebase-config.js
+// Firebase Configuration & Initialization
+// ============================================
 
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDMwE-Vg6Q10VUQi41fQpW-fQGIwNidqqg",
@@ -11,5 +14,36 @@ export const FIREBASE_CONFIG = {
 };
 
 export const STORAGE_MODE = {
-  current: 'firebase'
+  current: 'firebase'   // 'firebase' | 'local'
 };
+
+// ✅ Auto-initialize Firebase (agar pehle se init nahi hai)
+export function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    console.error('❌ Firebase SDK load nahi hua. Check karein <script> tags.');
+    return null;
+  }
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    console.log('✅ Firebase initialized');
+  }
+  return firebase;
+}
+
+// ✅ Helper: Auth instance
+export function getAuth() {
+  initFirebase();
+  return firebase.auth();
+}
+
+// ✅ Helper: Realtime Database instance
+export function getDb() {
+  initFirebase();
+  return firebase.database();
+}
+
+// ✅ Helper: Storage instance
+export function getStorage() {
+  initFirebase();
+  return firebase.storage();
+}
